@@ -78,6 +78,13 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     """The whole script: one utterance plus a round number in, one response out."""
     text = turn.prompt.lower()
 
+    # Which surface is this? The tools the client declared say so, and they differ
+    # completely: the board apps register page actions, the admin registers
+    # admin-aware ones. Routing on capability rather than on configuration is how
+    # one model serves both.
+    if "open_changelist" in available:
+        return _admin_respond(turn, available, text)
+
     if re.search(r"\b(move|reschedule|drag|shift)\b", text) and "backlog" not in text:
         return _move_script(turn, available)
     if re.search(r"\b(scroll|jump|show me|find|where is)\b", text):
@@ -93,7 +100,116 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     return [HELP]
 
 
-# --- the four scripts ---------------------------------------------------------
+# --- the admin surface --------------------------------------------------------
+
+ADMIN_HELP = (
+    "I can drive this admin for you. Try:\n\n"
+    "- *open the events list*\n"
+    "- *how many events are there?*\n"
+    "- *rename standup to Morning standup*\n"
+    "- *what is registered in the admin?*"
+)
+
+MODEL = {"app_label": "board", "model": "event"}
+
+
+def _admin_respond(turn: Turn, available: set[str], text: str) -> list[Any]:
+    if re.search(r"\b(rename|retitle|call it|change the title)\b", text):
+        return _rename_script(turn, available)
+    if re.search(r"\b(open|list|show|go to)\b", text) and "admin" not in text:
+        return _changelist_script(turn, available)
+    if re.search(r"\b(how many|count)\b", text):
+        return _count_script(turn, available)
+    if re.search(r"\b(registered|models|admin|what)\b", text):
+        return _admin_models_script(turn, available)
+    return [ADMIN_HELP]
+
+
+def _changelist_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Navigate, which in an admin means a full page reload.
+
+    `open_changelist` carries `x-navigates`, so the component writes a checkpoint,
+    lets the browser leave, and completes the tool call from the page it lands on.
+    The result this round sees is that landed page — the round trip is an
+    observation point rather than a dropped conversation.
+    """
+    if "open_changelist" not in available:
+        return [_missing_tools("open_changelist")]
+    if turn.round == 0:
+        return [_call("open_changelist", MODEL)]
+    landed = _as_page(turn.last)
+    where = landed.get("url") or landed.get("title") or "the changelist"
+    return [f"Opened {where}."]
+
+
+def _count_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Answered from the ORM, server-side, with no page involved."""
+    if "count_model" not in available:
+        return [_missing_tools("count_model")]
+    if turn.round == 0:
+        return [_call("count_model", MODEL)]
+    return [f"There are {turn.last} events."]
+
+
+def _admin_models_script(turn: Turn, available: set[str]) -> list[Any]:
+    if "list_admin_models" not in available:
+        return [_missing_tools("list_admin_models")]
+    if turn.round == 0:
+        return [_call("list_admin_models", {})]
+    rows = turn.last if isinstance(turn.last, list) else []
+    names = [str(row.get("model") or row.get("label")) for row in rows if isinstance(row, dict)]
+    return ["Registered in this admin: " + (", ".join(names) if names else "nothing.")]
+
+
+def _rename_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Find it, open its form, type, save — across two page reloads.
+
+    This is the multi-page shape in full: a server tool to find the row, a
+    navigating tool to reach it, a destructive tool the user confirms, and a
+    second navigating tool whose result is the page Django rendered in reply,
+    validation errors included.
+    """
+    needed = {"query_model", "open_changeform", "fill_field", "submit_form"}
+    if not needed <= available:
+        return [_missing_tools(", ".join(sorted(needed)))]
+    old, new = _rename_parts(turn.prompt)
+    if new is None:
+        return ['Say it as *rename standup to "Morning standup"*.']
+    if turn.round == 0:
+        return [
+            _call(
+                "query_model",
+                {**MODEL, "filter": {"title__icontains": old}, "fields": ["id", "title"], "limit": 1},
+            )
+        ]
+    if turn.round == 1:
+        rows = turn.last if isinstance(turn.last, list) else []
+        if not rows or not isinstance(rows[0], dict):
+            return [f"I could not find an event matching {old!r}."]
+        return [_call("open_changeform", {**MODEL, "pk": rows[0].get("id")})]
+    if turn.round == 2:
+        return [_call("fill_field", {"field_name": "title", "value": new})]
+    if turn.round == 3:
+        if _declined(turn.last):
+            return ["I left the title alone."]
+        return [_call("submit_form", {"action": "save"})]
+    if _declined(turn.last):
+        return ["I typed it but did not save, so nothing changed."]
+    landed = _as_page(turn.last)
+    errors = landed.get("errors") or landed.get("errorlist")
+    if errors:
+        return [f"Django refused the save: {errors}"]
+    return [f"Renamed it to {new}."]
+
+
+def _rename_parts(prompt: str) -> tuple[str, str | None]:
+    match = re.search(r"rename\s+(.+?)\s+to\s+(.+?)\s*$", prompt, re.I)
+    if match is None:
+        return prompt, None
+    return match.group(1).strip(), match.group(2).strip().strip("\"'")
+
+
+# --- the board surface --------------------------------------------------------
 
 
 def _move_script(turn: Turn, available: set[str]) -> list[Any]:

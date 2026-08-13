@@ -13,6 +13,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django", version = "6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-admin-agent" },
     { name = "django-ag-ui", extra = ["spec-tools"] },
     { name = "djangorestframework" },
     { name = "djangorestframework-services" },
@@ -29,6 +30,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5.2" },
+    { name = "django-admin-agent", specifier = ">=0.22" },
     { name = "django-ag-ui", extras = ["spec-tools"], specifier = ">=0.42" },
     { name = "djangorestframework", specifier = ">=3.15" },
     { name = "djangorestframework-services", specifier = ">=0.39" },
@@ -147,6 +149,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e2/42/6cb20996733984c1f6661daeda3877990836c76c633c6c8879d39f7120eb/django-6.1.tar.gz", hash = "sha256:86a2aacd59b817e4d6ac2ebfe22356c58f66f7b24e503f71b7c2fead677ee48b", size = 11223034, upload-time = "2026-08-05T19:21:53.789Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/91/9c/ce847620134cfab903e75690c498af73b46abbede2912ea89bd76d5c1e76/django-6.1-py3-none-any.whl", hash = "sha256:6c132cd980c9392b06807d4ca52d72530d631dc65a85d9dacede00a780cefbbe", size = 8417399, upload-time = "2026-08-05T19:21:47.285Z" },
+]
+
+[[package]]
+name = "django-admin-agent"
+version = "0.22.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-ag-ui" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/85/54/962658dafe9a205d743b32a4be3372c199717407fd1e246e3677a9faea1f/django_admin_agent-0.22.0.tar.gz", hash = "sha256:dfb7c7af109cdb2fa779d48386b73ec493d810b057a91e7766bc4fba13bfd3b7", size = 280874, upload-time = "2026-08-11T12:51:46.587Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/84/a87569e1f8047ebd011630b765def6ccddadf30c9fca9c8c4e3957696f1a/django_admin_agent-0.22.0-py3-none-any.whl", hash = "sha256:d38201d7a887f3adacc5791ff717606847fe6c540caa6a84e1b6782e0cdded4a", size = 144937, upload-time = "2026-08-11T12:51:44.898Z" },
 ]
 
 [[package]]

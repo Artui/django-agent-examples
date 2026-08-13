@@ -11,14 +11,14 @@ init: ## Install everything and seed the demo database
 	cd backend && uv run python manage.py seed_board
 	cd react && pnpm install
 
-backend: ## Run the shared backend on :8000 (ASGI, required)
+backend: ## Run the shared backend and the admin surface on :8000 (ASGI, required)
 	cd backend && uv run uvicorn demo.asgi:application --port 8000 --reload
 
 react: ## Run the React app on :5173
 	cd react && pnpm dev
 
-test: ## Drive the backend and the agent endpoint
-	cd backend && uv run pytest
+test: ## Drive the backend and both agent endpoints
+	cd backend && uv run python -m pytest
 
 build: ## Type-check and build every app
 	cd react && pnpm build

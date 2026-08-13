@@ -53,11 +53,27 @@ class Command(BaseCommand):
         user_model = get_user_model()
         user, created = user_model.objects.get_or_create(
             username=DEMO_USERNAME,
-            defaults={"email": "demo@example.com", "is_active": True},
+            defaults={
+                "email": "demo@example.com",
+                "is_active": True,
+                # Staff, because the same demo person also uses the admin
+                # surface, and the admin agent's gate fails closed on non-staff.
+                "is_staff": True,
+                "is_superuser": True,
+            },
         )
         if created:
+            # No usable password anywhere in the gallery: the admin is reached
+            # through `/demo-login/`, which only works while DEBUG is on.
             user.set_unusable_password()
             user.save(update_fields=["password"])
+        elif not (user.is_staff and user.is_superuser):
+            # Idempotent means idempotent: `get_or_create` defaults only apply on
+            # creation, so a user seeded before the admin surface existed would
+            # never become staff and the admin agent would refuse it.
+            user.is_staff = True
+            user.is_superuser = True
+            user.save(update_fields=["is_staff", "is_superuser"])
         Token.objects.get_or_create(user=user, defaults={"key": DEMO_TOKEN})
 
         if options["reset"]:

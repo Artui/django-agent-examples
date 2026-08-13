@@ -22,7 +22,10 @@ ASGI is not optional — the agent endpoint streams.
 | `board/serializers.py` | Input dataclasses and the output serializer. |
 | `board/specs.py` | The four operations, declared once, in a `SpecRegistry`. |
 | `board/views.py` | HTTP routes over those same specs. |
-| `agent/server.py` | The `AGUIServer` every frontend points at. |
+| `agent/server.py` | The `AGUIServer` every single-page app points at. |
+| `agent/admin_server.py` | The `AdminAgentServer` the admin sidebar points at. |
+| `board/admin.py` | An ordinary `ModelAdmin`; the agent drives admin's own DOM. |
+| `demo/demo_login.py` | A demo-only one-click sign-in, so no password is typed anywhere. |
 | `agent/tools.py` | Server-side tools that are not board operations. |
 | `agent/scripted.py` | The offline model. |
 | `agent/auth.py` | Who is acting, on the agent endpoint. |
@@ -39,6 +42,9 @@ ASGI is not optional — the agent endpoint streams.
 | `GET /agent/tools/` | Tool label catalog, for the chat element's cards. |
 | `GET /agent/skills/` | Skill catalog, for the prompt chips. |
 | `GET /agent/threads/` | Thread index, for the history drawer. |
+| `/admin/` | The board through `django.contrib.admin`, with the agent in its chrome. |
+| `POST /admin-agent/` | The admin's own AG-UI endpoint: session principal, CSRF on. |
+| `GET /demo-login/` | Demo only, DEBUG only: signs the seeded user in. |
 
 ## One declaration, two transports
 
@@ -97,6 +103,21 @@ The demo user owns every row it can see: `list_events` filters on `owner=user`
 and `owned_event` resolves an id against its owner rather than against the id
 alone. That is the only thing standing between two users' boards, on both
 transports.
+
+## Two mounts, two auth models
+
+`agent/server.py` and `agent/admin_server.py` are the same class underneath and
+differ where the deployment differs. The single-page apps send a token in a header:
+no cookie, so CSRF does not apply and the endpoint's default exemption is right.
+The admin authenticates with a session cookie, so `csrf_exempt=False` is mandatory
+there — without it any third-party page could drive the admin as the signed-in
+staff user. Neither mount knows about the other, which is what makes running both
+in one project a useful thing to look at.
+
+Static files are the admin's other requirement, and the reason `demo/urls.py` adds
+`staticfiles_urlpatterns()`: the agent endpoint streams, so this runs under an ASGI
+server, and a bare ASGI server serves no static files. The component's bundle is a
+static file, so without that the sidebar is simply absent.
 
 ## Errors
 

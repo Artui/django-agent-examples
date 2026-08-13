@@ -13,6 +13,9 @@ dependencies = [
     # The AG-UI transport. [spec-tools] is the in-process bridge that turns the
     # same specs into agent tools with no MCP hop.
     "django-ag-ui[spec-tools]>=0.42",
+    # The admin surface: the same board through django.contrib.admin, with the
+    # agent in the admin sidebar and the vendored web-component bundle.
+    "django-admin-agent>=0.22",
     # ASGI is required: the agent endpoint streams.
     "uvicorn>=0.34",
 ]

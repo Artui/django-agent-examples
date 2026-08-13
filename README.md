@@ -13,11 +13,17 @@ install it. Nothing is linked to a local checkout.
 
 | Directory | What it is | Status |
 | --- | --- | --- |
-| [`backend/`](backend/) | The shared Django backend: board API, agent endpoint, offline model | Runs |
+| [`backend/`](backend/) | The shared Django backend: board API, two agent mounts, the admin, an offline model | Runs |
 | [`react/`](react/) | React 19 + Vite + React Router | Runs |
 | `angular/` | Angular | Not built yet |
 | `vue/` | Vue | Not built yet |
 | `svelte/` | Svelte | Not built yet |
+
+There is a fifth surface with no directory of its own: **the Django admin**, served
+by the same backend at `/admin/`. It is the one place in this gallery where the
+pages are server-rendered, the principal is a session, the component arrives as a
+vendored bundle instead of an npm dependency, and every navigation is a real page
+reload. See [The admin surface](#the-admin-surface).
 
 ## Quick start
 
@@ -33,7 +39,10 @@ Then the app:
 cd react && pnpm install && pnpm dev
 ```
 
-Open <http://localhost:5173>. No API key, no account, no model provider: the
+Open <http://localhost:5173> for the React app, or
+<http://localhost:8000/demo-login/> for the admin surface (that URL signs the demo
+user in; it works only while `DEBUG` is on, and it exists so the gallery needs no
+password typed anywhere). No API key, no account, no model provider: the
 backend answers with a scripted local model unless you tell it otherwise (see
 [backend/README.md](backend/README.md#a-model-or-not)).
 
@@ -60,6 +69,38 @@ Ask the assistant:
 
 The column fills in as the other three apps land. An interaction that needs a new
 built-in tool belongs upstream in the web component, not here.
+
+## The admin surface
+
+`http://localhost:8000/admin/` is the same board through `django.contrib.admin`,
+with [django-admin-agent](https://github.com/Artui/django-admin-agent) putting the
+assistant in the admin chrome. It is in the gallery because it is *different from
+the other four in every way that matters*, not because it is another framework:
+
+| | The four apps | The admin |
+| --- | --- | --- |
+| Pages | One, client-routed | Many, server-rendered |
+| Principal | A token in a header | A session cookie |
+| CSRF | Does not apply (no cookie) | Applies, so `csrf_exempt=False` |
+| The component | An npm dependency you bundle | A vendored bundle served as a static file |
+| Navigation | `navigate` keeps the run in memory | A real reload, so the run is checkpointed and resumed |
+| Tools | The board's own page actions | Admin-aware ORM and DOM tools |
+
+Ask it:
+
+- *how many events are there?* — answered server-side from the ORM
+- *open the events list* — a navigating tool, completed from the page it lands on
+- *rename Retro to Sprint retro* — find the row, open its form, type into the
+  field, save: four tools across two full page reloads, with a confirmation at
+  each write
+
+**Serving static files is not optional, and a bare ASGI server does not.** The
+agent endpoint streams, so the project runs under uvicorn; `runserver` would serve
+static files but cannot stream. The component's bundle *is* a static file, so a
+project that follows only the "deploy under ASGI" half gets an admin with no agent
+in it and no error to explain why. This backend adds
+`staticfiles_urlpatterns()` (DEBUG only) to close the gap; a real deployment uses
+`collectstatic` behind a web server, or WhiteNoise.
 
 ## How the pieces fit
 

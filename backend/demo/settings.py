@@ -25,6 +25,14 @@ ALLOWED_HOSTS = os.environ.get(
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
+    # The admin surface. It is a second, deliberately different integration of
+    # the same board: server-rendered pages, a session principal, and the
+    # vendored component bundle instead of an npm dependency.
+    "django.contrib.admin",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_admin_agent",
     "rest_framework",
     # DRF token auth: the frontends send `Authorization: Token <key>`, so no
     # cookie is involved and the browser's origin does not have to match.
@@ -39,7 +47,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
+    # Sessions and auth are here for the admin. The API and the SPA agent
+    # endpoint do not use them: DRF is configured for token auth only, and the
+    # SPA mount resolves its own principal from the same header. Two auth models
+    # in one project, which is the contrast the admin surface exists to show.
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
 ]
 
 ROOT_URLCONF = "demo.urls"
@@ -47,9 +62,16 @@ ROOT_URLCONF = "demo.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Holds the one template override the admin sidebar needs.
+        "DIRS": [BASE_DIR / "demo" / "templates"],
         "APP_DIRS": True,
-        "OPTIONS": {"context_processors": []},
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ]
+        },
     },
 ]
 
@@ -72,6 +94,12 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Demo only, and only honoured while DEBUG is on: `/demo-login/` signs the seeded
+# demo user in so the admin surface needs no password typed anywhere. Delete this
+# and the view in `demo/demo_login.py` when copying any of this into a real
+# project — a URL that logs somebody in is exactly as dangerous as it sounds.
+DEMO_AUTOLOGIN = os.environ.get("DEMO_AUTOLOGIN", "1") == "1"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
