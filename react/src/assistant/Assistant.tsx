@@ -32,6 +32,11 @@ export interface AssistantProps {
    * which is a write this page had no other way to learn about.
    */
   reload: () => void;
+  /**
+   * Values a templated skill's `{placeholder}`s are filled from. Read per pick,
+   * so it reflects the page as it is when the chip is pressed.
+   */
+  skillContext: () => Record<string, unknown>;
   /** The shared week note, as the page currently holds it. */
   note: string;
   /** The agent rewrote the note: adopt it. */
@@ -42,6 +47,7 @@ export interface AssistantProps {
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
   askUser: boolean;
+  skillContext: () => Record<string, unknown>;
   sharedState: Record<string, unknown>;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
@@ -112,6 +118,11 @@ export function Assistant(props: AssistantProps) {
 
     chat.headers = authHeaders();
     chat.getPageMap = () => latest.current.getPageMap();
+    // A skill whose prompt carries `{day}` is filled from here. An absent value
+    // is not an error: the component blocks the send and names what is missing,
+    // which is how the same chip can be ready in the day view and not in the week
+    // view without the catalog knowing anything about views.
+    chat.skillContext = () => latest.current.skillContext();
     // Page-map ids are not CSS selectors, so the default `querySelector`
     // resolver cannot find them. This is the documented seam for a host with
     // its own ids; the selector fallback keeps plain selectors working too.

@@ -21,6 +21,12 @@ import { authHeaders } from "../api";
 
 const props = defineProps<{
   getPageMap: () => PageMap;
+  /**
+   * Values a templated skill's `{placeholder}`s are filled from, read per pick.
+   * The day view has a day and the week view does not, so the same chip is ready
+   * in one and blocked in the other.
+   */
+  skillContext: () => Record<string, unknown>;
   readBoardState: () => unknown;
   writeBoardState: (patch: Record<string, unknown>) => unknown;
   routeMap: RouteMap;
@@ -32,6 +38,7 @@ const props = defineProps<{
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
   askUser: boolean;
+  skillContext: () => Record<string, unknown>;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
   routeMap: RouteMap;
@@ -61,6 +68,7 @@ const vConfigure = {
     element.askUser = true;
     element.headers = authHeaders();
     element.getPageMap = () => props.getPageMap();
+    element.skillContext = () => props.skillContext();
     // Page-map ids are not CSS selectors, so the default resolver cannot find
     // them. The selector fallback keeps plain selectors working too.
     element.resolvePageTarget = (target) =>

@@ -28,6 +28,7 @@ import { authHeaders } from "../api";
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
   askUser: boolean;
+  skillContext: () => Record<string, unknown>;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
   routeMap: RouteMap;
@@ -54,6 +55,7 @@ type ChatElement = HTMLElement & {
 })
 export class AssistantComponent implements OnInit, OnDestroy {
   readonly getPageMap = input.required<() => PageMap>();
+  readonly skillContext = input.required<() => Record<string, unknown>>();
   readonly readBoardState = input.required<() => unknown>();
   readonly writeBoardState = input.required<(patch: Record<string, unknown>) => unknown>();
   readonly routeMap = input.required<RouteMap>();
@@ -90,6 +92,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
     chat.headers = authHeaders();
 
     chat.getPageMap = () => this.getPageMap()();
+    chat.skillContext = () => this.skillContext()();
     // Page-map ids are not CSS selectors, so the default resolver cannot find them.
     chat.resolvePageTarget = (target) =>
       document.getElementById(target) ?? document.querySelector<HTMLElement>(target);

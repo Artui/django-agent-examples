@@ -58,6 +58,10 @@ Ask the assistant:
 - *show only the Basalt room*
 - *move standup to Friday* — a day and no hour, so it asks which slot
 
+Or press the **What is on this day?** chip. In the day view it sends *What is on
+Thu 13?*, because the page filled the day in; in the week view it refuses to send
+and says which value is missing.
+
 Or attach [`samples/week.csv`](samples/week.csv) with the clip in the composer and
 say *import these events*. The file uploads out of band, the agent reads it
 server-side, and each row it finds asks before it is written — so that one sentence
@@ -80,6 +84,7 @@ also shows what a batch of gated writes looks like.
 | Read a file the user attached | `attachment_store=` and the composer's `data-attachments-url` |
 | Ask the user a question mid-run | `askUser`, the component's built-in `ask_user` frontend tool |
 | Resume or fork a past run | `step_store=` and the ⭯ panel's `data-runs-url` |
+| Launch a prompt the page completes | a skill with a `{placeholder}`, filled from `skillContext` |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -262,6 +267,22 @@ large file costs one upload rather than a payload on every turn, and — because
 manifest is derived from the *messages* — it rides every later turn of the
 conversation, which is durable across a reload and therefore not a signal that the
 current question is about the file.
+
+**A skill either publishes its prompt or keeps it, and the choice is a real one.**
+Two of the three chips carry no prompt text: the client sends the bare `/name`
+token and the agent decides what it means, so nothing internal reaches anyone who
+can read the catalog — and `/agent/skills/` is a plain GET. The third publishes
+*What is on {day}?* on purpose, because it buys something the other kind cannot
+have: a placeholder **the page fills in**. The server does not know which day you
+are looking at, and the browser does.
+
+`skillContext` is that seam — a callback read at the moment the chip is pressed.
+The apps return a day only in the day view, so in the week view the placeholder
+cannot be filled, and the component does something better than refusing: it puts
+the partly-filled prompt in the composer with `{day}` **selected**, focuses it, and
+says which value it wanted. The next keystroke replaces the placeholder. Switching
+to the day view is the other fix, which makes the guard something you can drive
+rather than read about.
 
 **Asking a question is a tool call, and a different mechanism from an approval.**
 `askUser` offers the agent the component's built-in `ask_user`: the browser runs it,

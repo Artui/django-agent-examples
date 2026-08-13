@@ -395,3 +395,53 @@ def _text(events: list[dict[str, Any]]) -> str:
     return "".join(
         event["delta"] for event in events if event["type"] == "TEXT_MESSAGE_CONTENT"
     )
+
+
+def test_the_skill_catalog_publishes_one_prompt_and_withholds_two(api: Client) -> None:
+    """Two kinds of skill, and the catalog is where the difference is visible.
+
+    A skill with no `prompt` sends the bare `/name` token and the wording stays on
+    the server — which is the right default, because this endpoint is a plain GET
+    and anything in it is published. The templated one pays that price on purpose:
+    its `{day}` is filled by the page, and the server does not know which day the
+    user is looking at.
+    """
+    catalog = {skill["name"]: skill for skill in api.get("/agent/skills/").json()}
+
+    assert "prompt" not in catalog["tidy-week"]
+    assert "prompt" not in catalog["what-is-on"]
+    assert catalog["plan-day"]["prompt"] == "What is on {day}?"
+    assert catalog["plan-day"]["sendImmediately"] is True
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_question_naming_a_day_is_answered_for_that_day() -> None:
+    """The page fills `{day}`, so the answer has to honour it.
+
+    Sent as the component sends it: the placeholder already replaced with the
+    page's own label for the day. Answering with the whole week would make the
+    templated skill a demo that reads well and says something false.
+    """
+    await _seed()
+    await Event.objects.acreate(
+        owner=await get_user_model().objects.aget(username="demo"),
+        title="Vendor demo",
+        day="2026-08-13",
+        start_hour=11,
+    )
+
+    events = await _run(_user_message("What is on Thu 13?"))
+
+    answer = _text(events)
+    assert "On Thursday you have 1" in answer
+    assert "Vendor demo at 11:00" in answer
+    assert "Standup" not in answer, "Monday's event is not on Thursday"
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_question_naming_no_day_still_summarises_the_week() -> None:
+    await _seed()
+
+    answer = _text(await _run(_user_message("what is on the board?")))
+
+    assert "scheduled" in answer and "backlog" in answer

@@ -44,6 +44,10 @@ const view = computed<ViewName>(() =>
   route.path.startsWith("/agenda") ? "agenda" : route.path.startsWith("/day") ? "day" : "week",
 );
 const visibleDays = computed(() => (view.value === "day" ? [today] : days));
+// What a templated skill's placeholders are filled from: the day view is looking
+// at one day, the week view is not, and the component refuses to send a prompt
+// with an unfilled hole.
+const skillContext = () => (view.value === "day" ? { day: today.label } : {});
 
 function snapshot() {
   return {
@@ -97,6 +101,7 @@ function snapshot() {
         :navigate="(path: string) => router.push(path)"
         :reload="() => void board.reload()"
         :get-page-map="() => buildPageMap(view, visibleDays, snapshot())"
+        :skill-context="skillContext"
         :read-board-state="
           () => ({
             view,

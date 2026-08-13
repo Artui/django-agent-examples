@@ -371,7 +371,7 @@ def _slot_choices(
         narrowed = _slot_choices(page, str(answer))
         if narrowed:
             return narrowed
-    weekday = next((day for day in WEEKDAYS if day[:3] in prompt.lower()), None)
+    weekday = _named_weekday(prompt)
     hour = _hour(prompt)
     if weekday is None and hour is None:
         return []
@@ -760,7 +760,7 @@ def _overview_script(turn: Turn, available: set[str]) -> list[Any]:
         return [_call("week_overview", {})]
     if turn.round == 0:
         return [_missing_tools("list_events")]
-    return _summarise(turn.last)
+    return _summarise(turn.last, _named_weekday(turn.prompt))
 
 
 # --- helpers ------------------------------------------------------------------
@@ -883,7 +883,7 @@ def _match_slot(page: dict[str, Any], prompt: str) -> dict[str, Any] | None:
     Weekday names are compared against each slot's own date, so the calendar
     lives in the page rather than in this function.
     """
-    weekday = next((day for day in WEEKDAYS if day[:3] in prompt.lower()), None)
+    weekday = _named_weekday(prompt)
     hour = _hour(prompt)
     if weekday is None and hour is None:
         return None
@@ -920,7 +920,7 @@ def _booking(prompt: str) -> tuple[str | None, str | None, int | None]:
     hour = _hour(prompt.replace(iso.group(1), " ") if iso else prompt)
     if iso is not None:
         return title, iso.group(1), hour
-    weekday = next((day for day in WEEKDAYS if day[:3] in prompt.lower()), None)
+    weekday = _named_weekday(prompt)
     if weekday is None:
         return title, None, hour
     return title, _next_weekday(weekday, datetime.date.today()), hour
@@ -935,6 +935,17 @@ def _next_weekday(name: str, today: datetime.date) -> str:
     """
     ahead = (WEEKDAYS.index(name) - today.weekday()) % 7
     return (today + datetime.timedelta(days=ahead)).isoformat()
+
+
+def _named_weekday(prompt: str) -> str | None:
+    """The weekday a phrase names, matched on three letters so "Thu 13" counts.
+
+    Three letters because the page labels a day its own way -- "Thu 13" in the
+    grid header -- and a skill's prompt is filled from that label. Matching the
+    full word would make a templated question unanswerable for the reason that it
+    was answered accurately.
+    """
+    return next((day for day in WEEKDAYS if day[:3] in prompt.lower()), None)
 
 
 def _match_route(prompt: str) -> str | None:
@@ -1024,7 +1035,14 @@ def _refused(turn: Turn) -> bool:
     return any(word in body.lower() for word in ("declin", "denied", "cancel"))
 
 
-def _summarise(content: Any) -> list[str]:
+def _summarise(content: Any, weekday: str | None = None) -> list[str]:
+    """The board, or one day of it when the question named a day.
+
+    The day is why this takes an argument. A templated skill sends *What is on Thu
+    13?* with the day filled in by the page, and answering it with the whole week
+    would be a demo that reads well and lies -- the question would name a day the
+    answer ignored.
+    """
     rows = content
     if isinstance(rows, str):
         try:
@@ -1035,6 +1053,8 @@ def _summarise(content: Any) -> list[str]:
         rows = rows.get("results", rows.get("events", []))
     if not isinstance(rows, list) or not rows:
         return ["The board is empty."]
+    if weekday is not None:
+        return _summarise_day(rows, weekday)
     scheduled = [row for row in rows if isinstance(row, dict) and row.get("day")]
     backlog = [row for row in rows if isinstance(row, dict) and not row.get("day")]
     lines = [f"You have {len(scheduled)} scheduled and {len(backlog)} in the backlog.\n\n"]
@@ -1042,4 +1062,23 @@ def _summarise(content: Any) -> list[str]:
         lines.append(f"- {row.get('title')} on {row.get('day')} at {row.get('start_hour')}:00\n")
     for row in backlog:
         lines.append(f"- {row.get('title')} (backlog)\n")
+    return lines
+
+
+def _summarise_day(rows: list[Any], weekday: str) -> list[str]:
+    """One day of the week, in the order the hours run."""
+    named = weekday.capitalize()
+    on_day = sorted(
+        (
+            row
+            for row in rows
+            if isinstance(row, dict) and _weekday_of(row.get("day")) == weekday
+        ),
+        key=lambda row: row.get("start_hour") or 0,
+    )
+    if not on_day:
+        return [f"Nothing is scheduled on {named}."]
+    lines = [f"On {named} you have {len(on_day)}:\n\n"]
+    for row in on_day:
+        lines.append(f"- {row.get('title')} at {row.get('start_hour')}:00\n")
     return lines

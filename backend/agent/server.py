@@ -34,6 +34,25 @@ skills = SkillRegistry()
 # means, so nothing internal is published to anyone who can reach the catalog.
 skills.add("tidy-week", title="Tidy up my week", chip=True)
 skills.add("what-is-on", title="What is on the board?", chip=True)
+# The other kind, and the trade is the point. This one publishes its wording --
+# the catalog is a plain GET, so anyone who can reach it reads the prompt -- and
+# buys something a server-resolved skill cannot have: a `{day}` the *page* fills
+# in. The server does not know which day the user is looking at, and the browser
+# does.
+#
+# `{day}` is deliberately not always fillable. The apps supply it only in the day
+# view, so in the week view the component refuses to send and says which value is
+# missing, rather than sending a question with a hole in it. Switching views is
+# the fix, which makes the guard something a reader can drive rather than read
+# about.
+skills.add(
+    "plan-day",
+    title="What is on this day?",
+    prompt="What is on {day}?",
+    description="Reads the day the board is showing.",
+    send_immediately=True,
+    chip=True,
+)
 
 agent = AGUIServer(
     tool_registry,

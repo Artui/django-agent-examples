@@ -89,6 +89,7 @@
       navigate={(path) => router.navigate(path)}
       reload={() => void board.reload()}
       getPageMap={() => buildPageMap(view, visibleDays, board.snapshot())}
+      skillContext={() => (view === "day" ? { day: today.label } : {})}
       readBoardState={() => ({
         view,
         filter: board.filter,

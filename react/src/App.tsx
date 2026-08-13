@@ -126,6 +126,12 @@ export function App() {
               backlog: board.backlog,
             })
           }
+          // What a templated skill's `{placeholder}`s are filled from. The day
+          // view is looking at one day and the week view is not, so the value
+          // exists in one and is absent in the other -- and the component
+          // refuses to send a prompt with an unfilled hole rather than sending a
+          // question about nothing.
+          skillContext={() => (view === "day" ? { day: today.label } : {})}
           readBoardState={() => ({
             view,
             filter: board.filter,

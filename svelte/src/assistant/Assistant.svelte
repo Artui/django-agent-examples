@@ -19,6 +19,7 @@
 
   let {
     getPageMap,
+    skillContext,
     readBoardState,
     writeBoardState,
     routeMap,
@@ -26,6 +27,7 @@
     reload,
   }: {
     getPageMap: () => PageMap;
+    skillContext: () => Record<string, unknown>;
     readBoardState: () => unknown;
     writeBoardState: (patch: Record<string, unknown>) => unknown;
     routeMap: RouteMap;
@@ -37,6 +39,7 @@
   type ChatElement = HTMLElement & {
     headers: Record<string, string>;
     askUser: boolean;
+    skillContext: () => Record<string, unknown>;
     getPageMap: () => PageMap;
     resolvePageTarget: (target: string) => HTMLElement | null;
     routeMap: RouteMap;
@@ -82,6 +85,7 @@
     // Read lazily: per request, per run, per tool round. The props are captured by
     // reference, so the element always sees the board as it is now.
     chat.getPageMap = () => getPageMap();
+    chat.skillContext = () => skillContext();
     // Page-map ids are not CSS selectors, so the default resolver cannot find them.
     chat.resolvePageTarget = (target) =>
       document.getElementById(target) ?? document.querySelector<HTMLElement>(target);

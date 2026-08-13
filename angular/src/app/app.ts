@@ -79,6 +79,7 @@ const ROUTE_MAP: RouteMap = [
           [navigate]="navigate"
           [reload]="reloadBoard"
           [getPageMap]="pageMap"
+          [skillContext]="skillContext"
           [readBoardState]="readBoardState"
           [writeBoardState]="writeBoardState"
         />
@@ -124,6 +125,11 @@ export class App {
   };
 
   readonly pageMap = () => buildPageMap(this.view(), this.visibleDays(), this.board.snapshot());
+
+  // What a templated skill's placeholders are filled from: the day view has a day
+  // and the week view does not, so the component blocks rather than sending a
+  // question with a hole in it.
+  readonly skillContext = () => (this.view() === "day" ? { day: this.today.label } : {});
 
   readonly readBoardState = () => ({
     view: this.view(),
