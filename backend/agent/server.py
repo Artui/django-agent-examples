@@ -15,6 +15,7 @@ from django_pydantic_agent.contrib.store.default_attachment_store import (
 from django_pydantic_agent.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
+from django_pydantic_agent.contrib.store.default_step_store import DefaultStepStore
 
 from agent.auth import token_user
 from agent.model import build_demo_model
@@ -57,6 +58,24 @@ agent = AGUIServer(
     # endpoint exists and the composer has no clip. That is the seam a host can
     # replace wholesale (`uploadHandler`) to upload straight to S3 instead.
     attachment_store=DefaultAttachmentStore(),
+    # Step persistence, and the reason it is a *class* rather than an instance:
+    # this argument is a `request -> StepStore` factory. The harness's store
+    # protocol carries no request, so the store binds one and is built fresh per
+    # run -- which is also what makes every row owner-scoped without any tool
+    # knowing about owners.
+    #
+    # A conversation store records what was said. This records how a run got
+    # there: an append-only event log, a snapshot at each provider-valid
+    # boundary, and a ledger of which tool calls started and which finished. That
+    # last one is the part no message history can answer -- a run that died
+    # mid-tool leaves a `started` row with no terminal record, which is the
+    # signal that a side effect may or may not have landed.
+    #
+    # Mounting it adds `runs/`, `resume/<id>/` and `fork/<id>/`, which is what
+    # `data-runs-url` in the apps points at. Resume and fork are one mechanism
+    # under two names: both seed a *new* run from a saved snapshot, and the verb
+    # only says what the user meant by it.
+    step_store=DefaultStepStore,
     # Token in a header, so no ambient cookie authority is involved and CSRF
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.

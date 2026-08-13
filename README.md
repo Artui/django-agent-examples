@@ -79,6 +79,7 @@ also shows what a batch of gated writes looks like.
 | Co-edit one object with the agent | AG-UI shared state, in the React app's week note |
 | Read a file the user attached | `attachment_store=` and the composer's `data-attachments-url` |
 | Ask the user a question mid-run | `askUser`, the component's built-in `ask_user` frontend tool |
+| Resume or fork a past run | `step_store=` and the ⭯ panel's `data-runs-url` |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -276,6 +277,29 @@ original request, which is what makes `allow_custom` more than decoration — ty
 slot the card never offered and it still resolves. The trigger is *ambiguity*, not
 a missing word: "move standup to Friday" names four possible slots, and picking one
 silently is the behaviour the question replaced.
+
+**A resumed run is a new run seeded from a snapshot, not a stream you rejoin.** The
+⭯ panel lists runs the server says have a snapshot; type the next turn, pick
+*Resume* or *Fork*, and the component posts **only that turn** to
+`resume/<id>/` — the prior history comes from the snapshot, so sending it again
+would duplicate it. The two verbs are one mechanism: both branch a new run with a
+fresh id and `parent_run_id` pointing back, so a fork never spends the snapshot it
+came from and the source stays continuable. What you do *not* get is stream
+resumability: if a connection drops mid-run, those events are gone and the run is
+lost — resume is a deliberate action afterwards, not a reconnect.
+
+**Two rough edges in the panel, and neither is the component's fault.** Rows are
+labelled with a relative time and nothing else, because that is all the run index
+sends — so three runs a minute apart are three identical rows. And they arrive
+**oldest first**, while both packages' docs say newest first, which puts the run you
+probably want at the bottom. Both are recorded as findings; if you build your own
+panel, sort it yourself and do not trust `runs[0]` to be the latest.
+
+**An error after the first byte of a stream is an event, not a status code.** The
+run endpoint sends `RUN_STARTED` immediately, which commits the response at `200`.
+Everything that can go wrong afterwards — a colliding run id, a model failure —
+arrives as `RUN_ERROR` in the stream. A client that checks only `response.ok` will
+call those runs successful.
 
 **A batch of gated writes is answered one card at a time, and the cards do not say
 which is which.** Importing three rows defers three `create_event` calls, and the

@@ -88,6 +88,10 @@ export function Assistant(props: AssistantProps) {
     // mounted and the button is not built at all, so uploads are opt-in per host
     // rather than per deployment.
     chat.setAttribute("data-attachments-url", "/agent/attachments/");
+    // The ⭯ panel in the header, which only exists when this is set: it lists the
+    // runs the server says have a snapshot to seed from. Type the next turn, then
+    // pick resume or fork -- the continuation streams into this same transcript.
+    chat.setAttribute("data-runs-url", "/agent/runs/");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     // Opting in to the two built-in page actions. Without this the agent has no

@@ -15,7 +15,12 @@ dependencies = [
     # The AG-UI transport. [spec-tools] is the in-process bridge that turns the
     # same specs into agent tools with no MCP hop. The floor is 0.43 for
     # `approval_prompts`: without it the approval card asks the serialized call.
-    "django-ag-ui[spec-tools]>=0.43",
+    #
+    # [harness] is the one extra in this gallery that costs a dependency rather
+    # than a line: it pulls pydantic-ai-harness, which backs the step store the
+    # checkpoint panel lists runs from. Both extras belong to one requirement --
+    # naming django-ag-ui twice would leave whichever uv resolves last.
+    "django-ag-ui[spec-tools,harness]>=0.43",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path. It
     # arrives transitively through django-ag-ui either way, which is exactly why a

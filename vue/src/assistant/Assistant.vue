@@ -119,6 +119,7 @@ onBeforeUnmount(() => {
       data-skills-url="/agent/skills/"
       data-threads-url="/agent/threads/"
       data-attachments-url="/agent/attachments/"
+      data-runs-url="/agent/runs/"
       data-prompt-chips=""
       data-slash-commands=""
       data-page-actions="scroll,drag"

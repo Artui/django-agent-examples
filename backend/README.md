@@ -44,6 +44,9 @@ ASGI is not optional — the agent endpoint streams.
 | `GET /agent/threads/` | Thread index, for the history drawer. |
 | `POST /agent/attachments/` | Upload a file; answers with a ref, never the bytes. |
 | `GET /agent/attachments/<id>/` | Download one, owner-checked. |
+| `GET /agent/runs/` | Which runs have a snapshot, for the ⭯ checkpoint panel. |
+| `POST /agent/resume/<id>/` | A new run seeded from that run's snapshot. |
+| `POST /agent/fork/<id>/` | The same mechanism, under the verb that says why. |
 | `/admin/` | The board through `django.contrib.admin`, with the agent in its chrome. |
 | `POST /admin-agent/` | The admin's own AG-UI endpoint: session principal, CSRF on. |
 | `GET /demo-login/` | Demo only, DEBUG only: signs the seeded user in. |
