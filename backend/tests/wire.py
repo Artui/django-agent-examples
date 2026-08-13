@@ -22,8 +22,9 @@ from django.test import AsyncClient
 
 AUTH = {"authorization": "Token demo-token-not-a-secret"}
 
-# Deliberately empty in these tests: no page is involved, so the only tools on
-# offer are the server's own.
+# The default: no page is involved, so the only tools on offer are the server's
+# own. A test that drives a page declares its tools with `tools=`, exactly as a
+# browser does — the client's list is what makes a frontend tool exist.
 NO_CLIENT_TOOLS: list[dict[str, Any]] = []
 
 
@@ -44,15 +45,17 @@ async def run(
     *messages: dict[str, Any],
     resume: list[dict[str, Any]] | None = None,
     thread: str = "thread-test",
+    tools: list[dict[str, Any]] | None = None,
+    state: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """POST one `RunAgentInput` and collect the events it streams back."""
     payload: dict[str, Any] = {
         "threadId": thread,
         "runId": f"run-{uuid.uuid4().hex[:8]}",
         "messages": list(messages),
-        "tools": NO_CLIENT_TOOLS,
+        "tools": NO_CLIENT_TOOLS if tools is None else tools,
         "context": [],
-        "state": {},
+        "state": {} if state is None else state,
         "forwardedProps": {},
     }
     if resume is not None:
@@ -201,6 +204,41 @@ def _append_arguments(messages: list[dict[str, Any]], call_id: str, delta: str) 
             if call["id"] == call_id:
                 call["function"]["arguments"] += delta
                 return
+
+
+def answered(
+    history: list[dict[str, Any]], events: list[dict[str, Any]], result: Any
+) -> list[dict[str, Any]]:
+    """`history` plus the run that just happened plus the frontend tool's result.
+
+    A **frontend** tool ends the run rather than suspending it: the server has no
+    way to execute something that lives in a browser, so it streams the call and
+    stops. The client runs it, appends the result as a tool message, and posts the
+    whole conversation again. Nothing is deferred and no interrupt is involved —
+    the contrast with `resume` is worth keeping straight, because both look like
+    "the run paused and came back" from the outside.
+
+    Takes the previous messages and returns the whole conversation, so a multi-round
+    turn accumulates rather than being reassembled: the client is the only thing
+    holding the conversation, and forgetting the user's own turn is the easiest way
+    to prove it (the run starts over against an empty prompt).
+
+    `result` is whatever the browser would report: a page map, a string, a
+    declined-action sentence.
+    """
+    pending = calls(events)
+    assert pending, "no frontend tool was called, so there is nothing to answer"
+    last = pending[-1]
+    return [
+        *history,
+        *transcript(events),
+        {
+            "id": f"t-{last.id}",
+            "role": "tool",
+            "toolCallId": last.id,
+            "content": result if isinstance(result, str) else json.dumps(result),
+        },
+    ]
 
 
 def approve(events: list[dict[str, Any]]) -> list[dict[str, Any]]:

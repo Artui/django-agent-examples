@@ -41,6 +41,7 @@ export interface AssistantProps {
 /** The element's typed shape, as far as this host uses it. */
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
+  askUser: boolean;
   sharedState: Record<string, unknown>;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
@@ -98,6 +99,13 @@ export function Assistant(props: AssistantProps) {
     chat.setAttribute("data-text-animation", "fade");
 
     // --- read per request or per round: these may be set at any time --------
+    // The agent may ask a question and wait for the answer. This offers it a
+    // *frontend* tool -- the model calls `ask_user`, the component renders a card
+    // in the transcript, and the answer comes back as that call's result. Nothing
+    // is configured server-side and no new protocol is involved: it is an ordinary
+    // client tool whose handler happens to be a person.
+    chat.askUser = true;
+
     chat.headers = authHeaders();
     chat.getPageMap = () => latest.current.getPageMap();
     // Page-map ids are not CSS selectors, so the default `querySelector`

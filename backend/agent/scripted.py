@@ -70,6 +70,9 @@ class Turn:
     # "denied" or "interrupted". A denied approval is the only refusal in this
     # gallery that says so in a field rather than in prose.
     outcomes: tuple[str, ...] = ()
+    # One per return: which tool answered. Only the branches that have to tell
+    # their own steps apart from an inserted one read it.
+    names: tuple[str, ...] = ()
     # The files this conversation carries. Not read from the messages like
     # everything else above -- see `_attached`.
     attached: tuple[Attached, ...] = field(default_factory=tuple)
@@ -85,6 +88,32 @@ class Turn:
     @property
     def last_outcome(self) -> str:
         return self.outcomes[-1] if self.outcomes else "success"
+
+    def answer_to(self, name: str) -> Any:
+        """What `name` last returned this turn, or `None` if it was never called."""
+        for index in reversed(range(len(self.returns))):
+            if self.names[index] == name:
+                return self.returns[index]
+        return None
+
+    def without(self, name: str) -> Turn:
+        """This turn as if `name` had never been called.
+
+        Every script here reads its position from the number of returns so far, so
+        a step inserted in the middle would renumber everything after it — asking a
+        question would make the drag think it was the verification read. Lifting the
+        inserted step out is what keeps the rest of a branch counting what it always
+        counted, and the alternative (name-based state everywhere) is a lot of
+        machinery for one optional question.
+        """
+        keep = [index for index, called in enumerate(self.names) if called != name]
+        return Turn(
+            prompt=self.prompt,
+            returns=tuple(self.returns[index] for index in keep),
+            outcomes=tuple(self.outcomes[index] for index in keep),
+            names=tuple(self.names[index] for index in keep),
+            attached=self.attached,
+        )
 
 
 def build_scripted_model() -> FunctionModel:
@@ -268,20 +297,39 @@ def _move_script(turn: Turn, available: set[str]) -> list[Any]:
     second time is how the claim gets checked before it is made. An agent that
     drives a page instead of calling the operation trades the server's answer for
     the visible action, and this is the price of that trade.
+
+    One step is optional, and finding out why is what put it here. "Move standup to
+    Friday" names a day and not an hour, and the board has four Friday slots — this
+    used to take the first one, silently. So the ambiguity is the trigger: when more
+    than one slot fits what the user said, ask which, using `ask_user`.
+
+    That is a *frontend* tool, offered by the component when the host sets
+    `askUser`. The agent calls it, the browser renders a card, and the answer comes
+    back as that call's result — an ordinary client tool whose handler is a person.
+    Nothing is configured server-side, and the options are the slots the page
+    reported rather than a list held here, so the user is offered what exists.
     """
     if not {"read_page", "drag_and_drop"} <= available:
         return [_missing_tools("read_page and drag_and_drop")]
     if turn.round == 0:
         return [_call("read_page", {})]
+    # Lifted out before the rounds below are counted -- see `Turn.without`.
+    answer = turn.answer_to("ask_user")
+    turn = turn.without("ask_user")
     if turn.round == 1:
         page = _as_page(turn.last)
         card = _match_card(page, turn.prompt)
-        slot = _match_slot(page, turn.prompt)
         if card is None:
             return [f"I could not find an event matching that on the board. {_names(page)}"]
-        if slot is None:
-            return ["Tell me which day and hour to move it to, for example *Friday at 11:00*."]
-        return [_call("drag_and_drop", {"from": card["id"], "to": slot["id"]})]
+        choices = _slot_choices(page, turn.prompt, answer)
+        if len(choices) == 1:
+            return [_call("drag_and_drop", {"from": card["id"], "to": choices[0]["id"]})]
+        # More than one slot fits, or none does. Both are questions, and only one of
+        # them is worth asking twice: having already asked and still not got a slot,
+        # say how to phrase it rather than showing another card.
+        if answer is None and "ask_user" in available:
+            return [_ask_which_slot(page, card, choices)]
+        return ["Tell me which day and hour to move it to, for example *Friday at 11:00*."]
     if turn.round == 2:
         if _refused(turn):
             return ["I left it where it was."]
@@ -291,13 +339,87 @@ def _move_script(turn: Turn, available: set[str]) -> list[Any]:
     # a page stuck saving is itself the answer.
     if _as_page(turn.last).get("saving") is True and turn.round < 6:
         return [_call("read_page", {})]
-    return [_verdict(turn)]
+    return [_verdict(turn, answer)]
 
 
-def _verdict(turn: Turn) -> str:
-    """Did the move actually take? Compare the page before and after."""
+def _slot_choices(
+    page: dict[str, Any], prompt: str, answer: Any = None
+) -> list[dict[str, Any]]:
+    """The slots consistent with the day and hour that were mentioned.
+
+    Cardinality is the whole reason this exists rather than a first-match lookup:
+    one slot means go, several mean ask, none means the utterance said nothing
+    about where. An occupied slot is still a choice here — naming one outright is
+    allowed to fail, and it failing visibly is what the verification read is for.
+    The question offers only free ones, which is `_ask_which_slot`'s job.
+
+    An answer is matched to a label first and only then parsed, because the options
+    came from the page: a chosen one is that slot, whatever its label happens to
+    read like, and a host free to label a slot "Friday morning" should not need the
+    parser to understand it.
+
+    Text that matches no label is parsed, and that is what makes `allow_custom`
+    real: type *Friday at 17:00* and it resolves even if the card showed four other
+    slots. An answer that narrows to nothing falls back to what was already known,
+    so "wherever you like" leaves the original ambiguity in place instead of
+    replacing it with silence.
+    """
+    if answer is not None:
+        named = _slot_labelled(page, str(answer))
+        if named is not None:
+            return [named]
+        narrowed = _slot_choices(page, str(answer))
+        if narrowed:
+            return narrowed
+    weekday = next((day for day in WEEKDAYS if day[:3] in prompt.lower()), None)
+    hour = _hour(prompt)
+    if weekday is None and hour is None:
+        return []
+    return [
+        slot
+        for slot in page.get("slots") or []
+        if (hour is None or slot.get("hour") == hour)
+        and (weekday is None or _weekday_of(slot.get("day")) == weekday)
+    ]
+
+
+def _ask_which_slot(
+    page: dict[str, Any], card: dict[str, Any], choices: list[dict[str, Any]]
+) -> dict[int, DeltaToolCall]:
+    """Ask which slot, offering the free ones among the candidates.
+
+    Occupied slots are dropped here and only here: offering a cell that is already
+    held would be inviting the user to pick a move the board will refuse.
+    """
+    taken = {(event.get("day"), event.get("hour")) for event in _events(page)}
+    free = [slot for slot in choices if (slot.get("day"), slot.get("hour")) not in taken]
+    label = card.get("label", "it")
+    if not free:
+        # Nothing worth offering, so ask in words rather than showing an empty card.
+        return _call(
+            "ask_user",
+            {"question": f"Where should {label} go?", "allow_custom": True},
+        )
+    return _call(
+        "ask_user",
+        {
+            "question": f"Which slot should {label} move to?",
+            "options": [str(slot.get("label")) for slot in free[:4]],
+            "allow_custom": True,
+        },
+    )
+
+
+def _verdict(turn: Turn, answer: Any = None) -> str:
+    """Did the move actually take? Compare the page before and after.
+
+    The target is resolved from the first page read, the same way the drag resolved
+    it — including the answer to any question — so the claim is checked against the
+    slot the drag actually aimed at rather than a re-reading of the utterance.
+    """
     before, after = _as_page(turn.returns[0]), _as_page(turn.last)
-    slot = _match_slot(before, turn.prompt)
+    choices = _slot_choices(before, turn.prompt, answer)
+    slot = choices[0] if len(choices) == 1 else None
     card = _match_card(before, turn.prompt)
     if slot is None or card is None:
         return "The board has moved on since I looked; ask me again."
@@ -693,6 +815,7 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
     prompt = ""
     returns: list[Any] = []
     outcomes: list[str] = []
+    names: list[str] = []
     for message in messages:
         if not isinstance(message, ModelRequest):
             continue
@@ -703,13 +826,16 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
                 # A new utterance resets the round count.
                 returns = []
                 outcomes = []
+                names = []
             elif isinstance(part, ToolReturnPart):
                 returns.append(part.content)
                 outcomes.append(part.outcome)
+                names.append(part.tool_name)
     return Turn(
         prompt=prompt,
         returns=tuple(returns),
         outcomes=tuple(outcomes),
+        names=tuple(names),
         attached=attached,
     )
 
@@ -726,6 +852,15 @@ def _as_page(content: Any) -> dict[str, Any]:
         except json.JSONDecodeError:
             return {}
     return content if isinstance(content, dict) else {}
+
+
+def _slot_labelled(page: dict[str, Any], answer: str) -> dict[str, Any] | None:
+    """The slot whose own label the answer repeats, ignoring case and spacing."""
+    wanted = " ".join(answer.split()).casefold()
+    for slot in page.get("slots") or []:
+        if " ".join(str(slot.get("label", "")).split()).casefold() == wanted:
+            return slot
+    return None
 
 
 def _match_card(
@@ -810,7 +945,18 @@ def _match_route(prompt: str) -> str | None:
 
 
 def _hour(prompt: str) -> int | None:
-    match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", prompt.lower())
+    """The hour a phrase names, preferring one written as a time.
+
+    Two patterns, tried in order, because a bare number is the loosest possible
+    reading: "Fri 14 10:00" carries a day of the month before it carries an hour,
+    and 14 is a perfectly plausible hour. An explicit `10:00` or `10am` says what it
+    is, so it wins; a bare number is still accepted, since *move it to 11* is a
+    reasonable thing to type.
+    """
+    lowered = prompt.lower()
+    match = re.search(r"\b(\d{1,2})(?::(\d{2})|\s*(?=am|pm))\s*(am|pm)?\b", lowered)
+    if match is None:
+        match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", lowered)
     if match is None:
         return None
     hour = int(match.group(1))

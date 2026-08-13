@@ -56,6 +56,7 @@ Ask the assistant:
 - *switch to the agenda view*
 - *put the onboarding doc first in the backlog*
 - *show only the Basalt room*
+- *move standup to Friday* — a day and no hour, so it asks which slot
 
 Or attach [`samples/week.csv`](samples/week.csv) with the clip in the composer and
 say *import these events*. The file uploads out of band, the agent reads it
@@ -77,6 +78,7 @@ also shows what a batch of gated writes looks like.
 | Refetch after a write the page did not make | the component's `ag-ui-run-finished` event |
 | Co-edit one object with the agent | AG-UI shared state, in the React app's week note |
 | Read a file the user attached | `attachment_store=` and the composer's `data-attachments-url` |
+| Ask the user a question mid-run | `askUser`, the component's built-in `ask_user` frontend tool |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -259,6 +261,21 @@ large file costs one upload rather than a payload on every turn, and — because
 manifest is derived from the *messages* — it rides every later turn of the
 conversation, which is durable across a reload and therefore not a signal that the
 current question is about the file.
+
+**Asking a question is a tool call, and a different mechanism from an approval.**
+`askUser` offers the agent the component's built-in `ask_user`: the browser runs it,
+renders a card, and returns the answer as that call's result. Nothing is configured
+server-side and no interrupt is involved — unlike a gated write, where the call is
+*deferred* and answered through `resume`. Both look like "the run paused" from the
+outside, and only one of them has anything waiting on the server.
+
+Two things this gallery does with it are worth copying. The options are the slots
+the **page** reported, so the user is offered what exists rather than a list the
+backend guessed at; and the free-text answer goes through the same matcher as the
+original request, which is what makes `allow_custom` more than decoration — type a
+slot the card never offered and it still resolves. The trigger is *ambiguity*, not
+a missing word: "move standup to Friday" names four possible slots, and picking one
+silently is the behaviour the question replaced.
 
 **A batch of gated writes is answered one card at a time, and the cards do not say
 which is which.** Importing three rows defers three `create_event` calls, and the

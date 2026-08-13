@@ -31,6 +31,7 @@ const props = defineProps<{
 
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
+  askUser: boolean;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
   routeMap: RouteMap;
@@ -55,6 +56,9 @@ defineAgUiChat();
 const vConfigure = {
   beforeMount(element: ChatElement) {
     chat.value = element;
+    // A frontend tool whose handler is a person: the agent calls `ask_user`,
+    // the component renders the card, the answer returns as the tool result.
+    element.askUser = true;
     element.headers = authHeaders();
     element.getPageMap = () => props.getPageMap();
     // Page-map ids are not CSS selectors, so the default resolver cannot find

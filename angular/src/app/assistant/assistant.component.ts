@@ -27,6 +27,7 @@ import { authHeaders } from "../api";
 
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
+  askUser: boolean;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
   routeMap: RouteMap;
@@ -82,6 +83,9 @@ export class AssistantComponent implements OnInit, OnDestroy {
     chat.setAttribute("title-text", "Board assistant");
     chat.setAttribute("data-answer-well", "");
     chat.setAttribute("data-text-animation", "fade");
+    // A frontend tool whose handler is a person: the agent calls `ask_user`,
+    // the component renders the card, the answer returns as the tool result.
+    chat.askUser = true;
     chat.headers = authHeaders();
 
     chat.getPageMap = () => this.getPageMap()();
