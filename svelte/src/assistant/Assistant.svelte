@@ -71,6 +71,7 @@
     chat.setAttribute("data-threads-url", "/agent/threads/");
     chat.setAttribute("data-attachments-url", "/agent/attachments/");
     chat.setAttribute("data-runs-url", "/agent/runs/");
+    chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     chat.setAttribute("data-page-actions", "scroll,drag");

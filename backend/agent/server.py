@@ -20,6 +20,7 @@ from django_pydantic_agent.contrib.store.default_step_store import DefaultStepSt
 from agent.auth import token_user
 from agent.model import build_demo_model
 from agent.tools import registry as tool_registry
+from agent.transcribe import ScriptedTranscriptionBackend
 from board.specs import registry as spec_registry
 
 INSTRUCTIONS = """
@@ -95,6 +96,15 @@ agent = AGUIServer(
     # under two names: both seed a *new* run from a saved snapshot, and the verb
     # only says what the user meant by it.
     step_store=DefaultStepStore,
+    # Voice input, and the last of the gallery's offline stand-ins. Setting this
+    # mounts `transcribe/` and turns the composer's mic on; leaving it unset is why
+    # the mic does not exist at all rather than existing and failing -- the same
+    # shape as the clip and the checkpoint control.
+    #
+    # A real deployment passes `OpenAITranscriptionBackend()` and nothing else
+    # changes. This one is scripted for the same reason the model is: no provider,
+    # no key, and CI can drive it.
+    transcription_backend=ScriptedTranscriptionBackend(),
     # Token in a header, so no ambient cookie authority is involved and CSRF
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.

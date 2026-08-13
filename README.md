@@ -87,6 +87,7 @@ also shows what a batch of gated writes looks like.
 | Launch a prompt the page completes | a skill with a `{placeholder}`, filled from `skillContext` |
 | Make the widget look like the host | four different mechanisms, one per app (below) |
 | Run the whole thing in another language | the component's `strings`, in the Svelte app |
+| Dictate instead of typing | `transcription_backend=` and the composer's `data-transcribe-url` |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -303,6 +304,19 @@ the partly-filled prompt in the composer with `{day}` **selected**, focuses it, 
 says which value it wanted. The next keystroke replaces the placeholder. Switching
 to the day view is the other fix, which makes the guard something you can drive
 rather than read about.
+
+**Voice is one method, and the gallery's is scripted like the model.** The mic posts
+a clip to `transcribe/`, the backend answers with text, and the text lands in the
+composer — not sent, so you read it first. A `TranscriptionBackend` is a single async
+method with no store and no artefact behind it, which is why swapping in a real
+provider is one argument on the mount:
+`transcription_backend=OpenAITranscriptionBackend()`.
+
+This one maps the clip's **byte length** onto a fixed list of phrases the board
+already answers. That keeps it a function of the audio rather than of a counter: the
+same recording always transcribes the same way, nothing is held between requests,
+and every test stays independent of the order it ran in. A dictated sentence is an
+ordinary one from there — it reaches the same approval gate a typed one does.
 
 **Asking a question is a tool call, and a different mechanism from an approval.**
 `askUser` offers the agent the component's built-in `ask_user`: the browser runs it,

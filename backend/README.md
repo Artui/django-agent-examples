@@ -28,6 +28,7 @@ ASGI is not optional — the agent endpoint streams.
 | `demo/demo_login.py` | A demo-only one-click sign-in, so no password is typed anywhere. |
 | `agent/tools.py` | Server-side tools that are not board operations. |
 | `agent/scripted.py` | The offline model. |
+| `agent/transcribe.py` | The offline speech-to-text, on the same terms. |
 | `agent/auth.py` | Who is acting, on the agent endpoint. |
 
 ## Endpoints
@@ -47,6 +48,7 @@ ASGI is not optional — the agent endpoint streams.
 | `GET /agent/runs/` | Which runs have a snapshot, for the ⭯ checkpoint panel. |
 | `POST /agent/resume/<id>/` | A new run seeded from that run's snapshot. |
 | `POST /agent/fork/<id>/` | The same mechanism, under the verb that says why. |
+| `POST /agent/transcribe/` | A clip in, a transcript out; scripted, so no provider. |
 | `/admin/` | The board through `django.contrib.admin`, with the agent in its chrome. |
 | `POST /admin-agent/` | The admin's own AG-UI endpoint: session principal, CSRF on. |
 | `GET /demo-login/` | Demo only, DEBUG only: signs the seeded user in. |

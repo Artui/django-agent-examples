@@ -98,6 +98,9 @@ export function Assistant(props: AssistantProps) {
     // runs the server says have a snapshot to seed from. Type the next turn, then
     // pick resume or fork -- the continuation streams into this same transcript.
     chat.setAttribute("data-runs-url", "/agent/runs/");
+    // The mic, on the same terms as the clip: built only when a host points at
+    // an endpoint, so an app that says nothing gets no dead control.
+    chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     // Opting in to the two built-in page actions. Without this the agent has no

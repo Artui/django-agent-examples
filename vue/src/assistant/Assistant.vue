@@ -128,6 +128,7 @@ onBeforeUnmount(() => {
       data-threads-url="/agent/threads/"
       data-attachments-url="/agent/attachments/"
       data-runs-url="/agent/runs/"
+      data-transcribe-url="/agent/transcribe/"
       data-prompt-chips=""
       data-slash-commands=""
       data-page-actions="scroll,drag"
