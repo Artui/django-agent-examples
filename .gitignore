@@ -7,9 +7,14 @@ __pycache__/
 # The demo database is seeded, never committed.
 db.sqlite3
 
+# Uploaded attachments. MEDIA_ROOT points here; the bytes are whatever you dragged
+# into the composer.
+media/
+
 # Node
 node_modules/
 dist/
+*.tsbuildinfo
 
 # Editors and OS
 .DS_Store

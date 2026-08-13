@@ -52,6 +52,10 @@ reorder_event_spec = ServiceSpec(
 create_event_spec = ServiceSpec(
     service=create_event,
     input_serializer=CreateEventInputSerializer,
+    # The same precondition as the move, and one object is why: the rule is the
+    # board's, so declaring it here is all it takes for a create to obey it on
+    # both transports.
+    preconditions=[slot_is_free],
     output_selector_spec=_rendered_event,
     permission_classes=[IsAuthenticated],
 )

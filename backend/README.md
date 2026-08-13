@@ -17,7 +17,7 @@ ASGI is not optional — the agent endpoint streams.
 | File | What it holds |
 | --- | --- |
 | `board/models.py` | One model. An event is either in a grid cell or in the backlog. |
-| `board/services.py` | The write side: plain callables, plus the state rule that guards a move. |
+| `board/services.py` | The write side: plain callables, plus the state rule that guards both writes. |
 | `board/selectors.py` | The read side. |
 | `board/serializers.py` | Input dataclasses and the output serializer. |
 | `board/specs.py` | The four operations, declared once, in a `SpecRegistry`. |
@@ -42,6 +42,8 @@ ASGI is not optional — the agent endpoint streams.
 | `GET /agent/tools/` | Tool label catalog, for the chat element's cards. |
 | `GET /agent/skills/` | Skill catalog, for the prompt chips. |
 | `GET /agent/threads/` | Thread index, for the history drawer. |
+| `POST /agent/attachments/` | Upload a file; answers with a ref, never the bytes. |
+| `GET /agent/attachments/<id>/` | Download one, owner-checked. |
 | `/admin/` | The board through `django.contrib.admin`, with the agent in its chrome. |
 | `POST /admin-agent/` | The admin's own AG-UI endpoint: session principal, CSRF on. |
 | `GET /demo-login/` | Demo only, DEBUG only: signs the seeded user in. |

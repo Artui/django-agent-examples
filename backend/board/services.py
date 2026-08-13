@@ -51,22 +51,29 @@ def owned_event(user: Any, event_id: int) -> Event:
         raise UnknownEvent(f"No event {event_id} belongs to you.") from None
 
 
-def slot_is_free(*, user: Any, data: MoveEventInput) -> None:
+def slot_is_free(*, user: Any, data: MoveEventInput | CreateEventInput) -> None:
     """A precondition: raise to abort, and note that returning False would not.
 
     This is a state rule — it needs the database, not the payload — so it lives
     on the spec and travels to both transports rather than sitting in a view.
+
+    One rule over *both* writes, because the rule belongs to the board rather than
+    to an operation. It guarded only `move_event` until a CSV import created three
+    events at once against a week nobody could see all of, and put two cards in one
+    cell: the grid draws one, and the other is simply gone. A rule enforced on one
+    write and not the other is not the board's rule.
     """
     if data.day is None or data.start_hour is None:
         return
-    clash = (
-        Event.objects.filter(owner=user, day=data.day, start_hour=data.start_hour)
-        .exclude(pk=data.event_id)
-        .first()
-    )
-    if clash is not None:
+    clash = Event.objects.filter(owner=user, day=data.day, start_hour=data.start_hour)
+    if isinstance(data, MoveEventInput):
+        # A move has to ignore the slot the event is already in. A create has no
+        # self to exclude, which is the whole difference between the two cases.
+        clash = clash.exclude(pk=data.event_id)
+    held = clash.first()
+    if held is not None:
         raise SlotTaken(
-            f"{data.day} at {data.start_hour}:00 is already held by {clash.title!r}."
+            f"{data.day} at {data.start_hour}:00 is already held by {held.title!r}."
         )
 
 

@@ -93,6 +93,15 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Uploaded files. `DefaultAttachmentStore` writes bytes through Django's storage
+# API, so with no `MEDIA_ROOT` set they land relative to the working directory —
+# which for `manage.py`/uvicorn means *inside* this checkout, and the first upload
+# puts opaque blobs in `git status`. Naming a directory is the whole fix, and it is
+# also the seam that makes the store deployable: point `STORAGES` at S3 or GCS and
+# the same store uploads there with nothing else changed.
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "media/"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Demo only, and only honoured while DEBUG is on: `/demo-login/` signs the seeded

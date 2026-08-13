@@ -132,6 +132,29 @@ def test_move_persists_and_the_precondition_holds_the_slot(api: Client, demo_use
     assert "already held by" in clash.json()["detail"]
 
 
+def test_create_obeys_the_same_slot_rule_as_move(api: Client, demo_user: Any) -> None:
+    """One precondition on two specs, so the board cannot be double-booked either way.
+
+    It guarded the move alone until a CSV import created three events at once and
+    put two of them in one cell. The grid draws one card per slot, so the second was
+    written and invisible — a rule enforced on one write and not the other is not a
+    rule.
+    """
+    Event.objects.filter(owner=demo_user, day="2026-08-12", start_hour=15).delete()
+    taken = {"title": "First", "day": "2026-08-12", "start_hour": 15}
+    assert api.post("/api/events/", taken, content_type="application/json").status_code == 201
+
+    clash = api.post(
+        "/api/events/",
+        {"title": "Second", "day": "2026-08-12", "start_hour": 15},
+        content_type="application/json",
+    )
+
+    assert clash.status_code == 409
+    assert "already held by" in clash.json()["detail"]
+    assert not Event.objects.filter(owner=demo_user, title="Second").exists()
+
+
 def test_move_rejects_a_day_without_an_hour(api: Client, demo_user: Any) -> None:
     event = Event.objects.get(owner=demo_user, title="Standup")
     response = api.post(

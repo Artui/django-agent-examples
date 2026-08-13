@@ -57,6 +57,11 @@ Ask the assistant:
 - *put the onboarding doc first in the backlog*
 - *show only the Basalt room*
 
+Or attach [`samples/week.csv`](samples/week.csv) with the clip in the composer and
+say *import these events*. The file uploads out of band, the agent reads it
+server-side, and each row it finds asks before it is written — so that one sentence
+also shows what a batch of gated writes looks like.
+
 ## What the gallery demonstrates
 
 | Interaction | How |
@@ -71,6 +76,7 @@ Ask the assistant:
 | Gate a server-side write behind an approval | the agent's own tool guard, over the wire |
 | Refetch after a write the page did not make | the component's `ag-ui-run-finished` event |
 | Co-edit one object with the agent | AG-UI shared state, in the React app's week note |
+| Read a file the user attached | `attachment_store=` and the composer's `data-attachments-url` |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -240,6 +246,27 @@ the page map into every run's `context`, but the Pydantic-AI AG-UI adapter does
 not read that field, so on this backend it goes nowhere. The `read_page` tool is
 the channel that works, and it is the one these apps rely on. Nothing to
 configure; just do not expect the injected copy to be visible server-side.
+
+**An attached file never travels on the wire, and the model is told about it in
+its instructions.** The composer uploads to `attachments/` and keeps a ref — an
+id, a name, a type, a size — which rides the message it sends. The server collects
+the refs off the posted messages, renders them as a fenced manifest, and hands
+that to the model as *additional run instructions*: not a message, not part of the
+prompt, never stored on the thread. The model reaches the content by passing an id
+to `read_attachment`, which exists only for that request and only for that user, so
+an id the client invents resolves to nothing. Two consequences worth knowing: a
+large file costs one upload rather than a payload on every turn, and — because the
+manifest is derived from the *messages* — it rides every later turn of the
+conversation, which is durable across a reload and therefore not a signal that the
+current question is about the file.
+
+**A batch of gated writes is answered one card at a time, and the cards do not say
+which is which.** Importing three rows defers three `create_event` calls, and the
+component asks about them in sequence, each card appended below the tool calls
+rather than beside the one it gates. The wire lets you answer each one differently
+and the demo does exactly that in its tests — but on screen the three questions are
+identical, so tell them apart by the order they appear in until the component names
+them. Recorded as a finding against the web component.
 
 **Both ends of a two-axis scroll are not centred.** `scroll_to` centres the
 target vertically and brings it into view horizontally (`inline: "nearest"`), so

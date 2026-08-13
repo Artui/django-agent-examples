@@ -20,11 +20,13 @@ page stays the authority on what exists and what it is called.
 
 from __future__ import annotations
 
+import csv
 import datetime
+import io
 import json
 import re
 from collections.abc import AsyncIterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from pydantic_ai.messages import (
@@ -43,10 +45,19 @@ HELP = (
     "- *what is on the board?*\n"
     "- *put the onboarding doc first in the backlog*\n"
     "- *book a design sync on Friday at 14:00*\n"
-    "- *note: ship the gallery this week*"
+    "- *note: ship the gallery this week*\n"
+    "- attach `samples/week.csv` and say *import these events*"
 )
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+@dataclass(frozen=True)
+class Attached:
+    """One file the user uploaded, as the run instructions describe it."""
+
+    id: str
+    name: str
 
 
 @dataclass(frozen=True)
@@ -59,6 +70,9 @@ class Turn:
     # "denied" or "interrupted". A denied approval is the only refusal in this
     # gallery that says so in a field rather than in prose.
     outcomes: tuple[str, ...] = ()
+    # The files this conversation carries. Not read from the messages like
+    # everything else above -- see `_attached`.
+    attached: tuple[Attached, ...] = field(default_factory=tuple)
 
     @property
     def round(self) -> int:
@@ -78,7 +92,7 @@ def build_scripted_model() -> FunctionModel:
 
 
 async def _stream(messages: list[ModelMessage], info: AgentInfo) -> AsyncIterator[Any]:
-    turn = _read_turn(messages)
+    turn = _read_turn(messages, _attached(info.instructions))
     available = {definition.name for definition in info.function_tools}
     for chunk in _respond(turn, available):
         yield chunk
@@ -94,6 +108,17 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     # one model serves both.
     if "open_changelist" in available:
         return _admin_respond(turn, available, text)
+
+    # Before every verb below, because with a file in hand the verb is about the
+    # file: "add these to the board" is an import, not a booking.
+    #
+    # Both halves of the condition are load-bearing. The manifest is derived from
+    # the message history rather than from this run, so it rides *every* later
+    # turn of the conversation -- deliberately, so the ids survive a reload. A
+    # branch that keyed on the attachment alone would therefore hijack the next
+    # "move standup to Friday" for as long as the thread lived.
+    if turn.attached and _ABOUT_THE_FILE.search(text):
+        return _attachment_script(turn, available)
 
     # Before the move branch: "book" and "schedule" are both scheduling verbs, and
     # this one writes through the server rather than through the page.
@@ -408,6 +433,161 @@ def _book_script(turn: Turn, available: set[str]) -> list[Any]:
     return [f"Added {title} to the backlog."]
 
 
+# --- the file the user attached -----------------------------------------------
+
+# What makes an utterance about the attachment rather than about the board. Kept
+# narrow on purpose: see the routing comment in `_respond`.
+_ABOUT_THE_FILE = re.compile(r"\b(import|csv|file|attachment|attached|upload(?:ed)?|these)\b")
+
+_ASKING_WHAT_IT_SAYS = re.compile(r"\b(what|read|says?|show|summar|contain)\b")
+
+
+def _attachment_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Read the uploaded file, and put what it says on the board.
+
+    The bytes never came through the conversation. The composer uploaded them to
+    `attachments/` and sent an id, the server turned the ids into a manifest this
+    model reads in its own instructions, and the content is fetched here, in a
+    tool call, from the store. So a 2 MB file costs one upload rather than a
+    base64 payload on every turn of the thread.
+
+    A real model needs none of this spelled out; the manifest already names the
+    tool to call. The parsing below is what an LLM would do with the CSV text once
+    it had it, written out longhand because this stand-in cannot read.
+    """
+    if "read_attachment" not in available:
+        # The tool is per-request and only exists when a store is configured, so
+        # this is the reply a mount without `attachment_store=` would give.
+        return [_missing_tools("read_attachment")]
+    attached = turn.attached[-1]
+    if turn.round == 0:
+        return [_call("read_attachment", {"attachment_id": attached.id})]
+    content = str(turn.returns[0])
+    if _ASKING_WHAT_IT_SAYS.search(turn.prompt.lower()):
+        return [f"{attached.name} says:\n\n{content}"]
+    if "create_event" not in available:
+        return [_missing_tools("create_event")]
+    rows = _csv_rows(content)
+    if not rows:
+        return [
+            f"I read {attached.name} and found no events in it. I can import a CSV "
+            "with a title, day, start_hour, duration_hours and room column."
+        ]
+    if turn.round == 1:
+        # One round, one call per row -- which is how a model that has just read
+        # three rows actually behaves. Each call is gated independently, so the
+        # component renders three cards and the run resumes once they are all
+        # answered. Approving two and denying one is a supported outcome, and the
+        # report below is written to describe it.
+        return [_calls([("create_event", row) for row in rows])]
+    return [_import_verdict(turn, attached.name)]
+
+
+def _csv_rows(content: str) -> list[dict[str, Any]]:
+    """The CSV as `create_event` arguments, one dict per usable row.
+
+    Weekday names are resolved here rather than shipped as dates, so the sample
+    file does not go stale — a fixed `2026-08-19` in the repository would import
+    into the past a month later. A row with only one of day and hour lands in the
+    backlog rather than half-scheduled, which is the service's own rule for an
+    event with no slot.
+    """
+    rows: list[dict[str, Any]] = []
+    for raw in csv.DictReader(io.StringIO(content)):
+        title = (raw.get("title") or "").strip()
+        if not title:
+            continue
+        arguments: dict[str, Any] = {"title": title}
+        room = (raw.get("room") or "").strip()
+        if room:
+            arguments["room"] = room
+        duration = _positive_int(raw.get("duration_hours"))
+        if duration is not None:
+            arguments["duration_hours"] = duration
+        day, hour = _day(raw.get("day")), _positive_int(raw.get("start_hour"))
+        if day is not None and hour is not None:
+            arguments |= {"day": day, "start_hour": hour}
+        rows.append(arguments)
+    return rows
+
+
+def _day(value: str | None) -> str | None:
+    """An ISO date as itself, a weekday name as that day of the week on screen.
+
+    Deliberately not `_next_weekday`, which is what a spoken booking uses. A file
+    listing "Wednesday" is describing the week the board is showing, so resolving
+    it forwards would put half an import into next week — correct by the letter
+    and invisible in a grid that displays one week. A booking is a request about
+    the future and does resolve forwards. The two readings differ because the
+    utterances do.
+    """
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.date.fromisoformat(text).isoformat()
+    except ValueError:
+        pass
+    lowered = text.lower()
+    weekday = next((day for day in WEEKDAYS if day.startswith(lowered[:3])), None)
+    return None if weekday is None else _this_week(weekday, datetime.date.today())
+
+
+def _this_week(name: str, today: datetime.date) -> str:
+    """That weekday of the week `today` falls in, counting from Monday."""
+    monday = today - datetime.timedelta(days=today.weekday())
+    return (monday + datetime.timedelta(days=WEEKDAYS.index(name))).isoformat()
+
+
+def _positive_int(value: str | None) -> int | None:
+    text = (value or "").strip()
+    return int(text) if text.isdigit() else None
+
+
+def _import_verdict(turn: Turn, filename: str) -> str:
+    """Report the import from the returns, not from the calls that were made.
+
+    Three rows can end three ways and every one of them is a tool *return*, so the
+    calls say nothing: counting them would report three imports for one approval.
+    Each return is read instead, and the three are told apart by what came back —
+
+    - the created event, so the row landed;
+    - `outcome == "denied"`, so the person said no to that card;
+    - an `error`, so the board itself refused. That is the service's own
+      `ServiceConflict` reaching the model as text, which is what a slot already
+      taken looks like from here.
+
+    A demo that reported only the first of those would call a refused import a
+    success, which is the failure mode worth writing out.
+    """
+    added: list[str] = []
+    refused: list[str] = []
+    declined = 0
+    for content, outcome in zip(turn.returns[1:], turn.outcomes[1:]):
+        row = _as_page(content)
+        if row.get("title") is not None:
+            added.append(str(row["title"]))
+        elif outcome == "denied":
+            declined += 1
+        else:
+            refused.append(str(row.get("error") or content))
+    parts = [
+        f"Added {_join(added)} from {filename}."
+        if added
+        else f"Nothing from {filename} reached the board."
+    ]
+    if declined:
+        parts.append(f"You turned down {declined} of them.")
+    parts.extend(f"The board refused a row: {reason}" for reason in refused)
+    return " ".join(parts)
+
+
+def _join(titles: list[str]) -> str:
+    if len(titles) == 1:
+        return titles[0]
+    return ", ".join(titles[:-1]) + f" and {titles[-1]}"
+
+
 def _note_script(turn: Turn, available: set[str]) -> list[Any]:
     """The week note, which lives in AG-UI shared state rather than in the board.
 
@@ -468,6 +648,14 @@ def _call(name: str, arguments: dict[str, Any]) -> dict[int, DeltaToolCall]:
     return {0: DeltaToolCall(name=name, json_args=json.dumps(arguments))}
 
 
+def _calls(requested: list[tuple[str, dict[str, Any]]]) -> dict[int, DeltaToolCall]:
+    """Several calls in one response, which the index of each keeps apart."""
+    return {
+        index: DeltaToolCall(name=name, json_args=json.dumps(arguments))
+        for index, (name, arguments) in enumerate(requested)
+    }
+
+
 def _missing_tools(names: str) -> str:
     return (
         f"This page has not registered {names}, so I cannot do that here. "
@@ -475,7 +663,32 @@ def _missing_tools(names: str) -> str:
     )
 
 
-def _read_turn(messages: Sequence[ModelMessage]) -> Turn:
+_MANIFEST_LABEL = "Files the user has attached to this conversation"
+_MANIFEST_LINE = re.compile(r"^- (?P<name>.+?) \(id: (?P<id>[^,)]+)[,)]", re.M)
+
+
+def _attached(instructions: str | None) -> tuple[Attached, ...]:
+    """The uploaded files, read out of this run's own instructions.
+
+    The one place this script reads its instructions instead of its messages, and
+    that is where the manifest is: the server delivers it as additional run
+    instructions, fenced and labelled as client-supplied data, so it is never
+    merged into the operator's prompt, never stored on the thread, and never
+    echoed back to the browser. A real model reads it the same way — as a list of
+    ids it may pass to `read_attachment` — and this parses the lines it would read.
+
+    The label is checked before the lines are matched, so a page that described
+    itself in the same shape could not be mistaken for a file.
+    """
+    if not instructions or _MANIFEST_LABEL not in instructions:
+        return ()
+    return tuple(
+        Attached(id=match.group("id").strip(), name=match.group("name").strip())
+        for match in _MANIFEST_LINE.finditer(instructions)
+    )
+
+
+def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...]) -> Turn:
     """Pull the current utterance and the tool returns recorded after it."""
     prompt = ""
     returns: list[Any] = []
@@ -493,7 +706,12 @@ def _read_turn(messages: Sequence[ModelMessage]) -> Turn:
             elif isinstance(part, ToolReturnPart):
                 returns.append(part.content)
                 outcomes.append(part.outcome)
-    return Turn(prompt=prompt, returns=tuple(returns), outcomes=tuple(outcomes))
+    return Turn(
+        prompt=prompt,
+        returns=tuple(returns),
+        outcomes=tuple(outcomes),
+        attached=attached,
+    )
 
 
 def _flatten(content: Sequence[Any]) -> str:

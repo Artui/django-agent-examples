@@ -74,6 +74,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
     chat.setAttribute("data-tools-url", "/agent/tools/");
     chat.setAttribute("data-skills-url", "/agent/skills/");
     chat.setAttribute("data-threads-url", "/agent/threads/");
+    chat.setAttribute("data-attachments-url", "/agent/attachments/");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     chat.setAttribute("data-page-actions", "scroll,drag");

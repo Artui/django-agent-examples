@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from django_ag_ui import AGUIServer, SkillRegistry, build_ag_ui_config
 from django_pydantic_agent import ToolGuardConfig
+from django_pydantic_agent.contrib.store.default_attachment_store import (
+    DefaultAttachmentStore,
+)
 from django_pydantic_agent.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
@@ -40,6 +43,20 @@ agent = AGUIServer(
     service_specs=spec_registry,
     skills=skills,
     conversation_store=DefaultConversationStore(),
+    # Uploads. One argument turns on three things at once: the composer grows a
+    # clip, `attachments/` is mounted beside the run endpoint, and the agent gains
+    # a per-request `read_attachment` tool scoped to the acting user.
+    #
+    # What travels on the wire is a *ref* -- an id, a name, a type and a size --
+    # so the bytes go up once, out of band, and every later turn resends four
+    # short fields instead of a base64 file. The model is told a file exists
+    # through the manifest the server derives from those refs, and it reaches the
+    # content by asking, server-side, for the id.
+    #
+    # The frontends still have to point at it: without `data-attachments-url` the
+    # endpoint exists and the composer has no clip. That is the seam a host can
+    # replace wholesale (`uploadHandler`) to upload straight to S3 instead.
+    attachment_store=DefaultAttachmentStore(),
     # Token in a header, so no ambient cookie authority is involved and CSRF
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.
