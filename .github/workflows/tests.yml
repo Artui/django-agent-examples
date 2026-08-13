@@ -1,0 +1,102 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# These are apps, not libraries. The gate is "it builds, it type-checks, it boots,
+# and the agent still drives it" — not a coverage number.
+jobs:
+  backend:
+    name: backend and both agent endpoints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+      - name: Install
+        working-directory: backend
+        run: uv sync --all-groups
+      - name: Django checks
+        working-directory: backend
+        run: uv run python manage.py check
+      - name: Migrations are complete
+        working-directory: backend
+        run: uv run python manage.py makemigrations --check --dry-run
+      # Drives the real endpoints the way a client does: a token in a header, a
+      # RunAgentInput body, SSE parsed off the wire, the multi-round tool loop, a
+      # declined confirmation, and the admin's navigating tools.
+      - name: Suite
+        working-directory: backend
+        run: uv run python -m pytest -q
+
+  boots:
+    name: the gallery boots and answers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+      - name: Install and seed
+        working-directory: backend
+        run: |
+          uv sync
+          uv run python manage.py migrate
+          uv run python manage.py seed_board
+      - name: Serve under ASGI
+        working-directory: backend
+        run: uv run uvicorn demo.asgi:application --port 8000 &
+      - name: Wait for it
+        run: |
+          for _ in $(seq 1 30); do
+            curl -sf -H 'Authorization: Token demo-token-not-a-secret' \
+              http://127.0.0.1:8000/api/events/ > /dev/null && exit 0
+            sleep 1
+          done
+          echo "backend did not come up" >&2
+          exit 1
+      - name: The board answers
+        run: |
+          curl -sf -H 'Authorization: Token demo-token-not-a-secret' \
+            http://127.0.0.1:8000/api/events/ | grep -q Standup
+      - name: The tool catalog carries both kinds of tool
+        run: |
+          catalog=$(curl -sf -H 'Authorization: Token demo-token-not-a-secret' \
+            http://127.0.0.1:8000/agent/tools/)
+          echo "$catalog" | grep -q week_overview
+          echo "$catalog" | grep -q list_events
+      - name: An agent run streams
+        run: |
+          curl -sf -X POST http://127.0.0.1:8000/agent/ \
+            -H 'Authorization: Token demo-token-not-a-secret' \
+            -H 'Content-Type: application/json' \
+            -d '{"threadId":"ci","runId":"ci-1","messages":[{"id":"m1","role":"user","content":"what is on the board?"}],"tools":[],"context":[],"state":{},"forwardedProps":{}}' \
+            | tee /tmp/run.txt | grep -q RUN_FINISHED
+          grep -q list_events /tmp/run.txt
+
+  apps:
+    name: ${{ matrix.app }} builds and type-checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [react, vue, svelte, angular]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ${{ matrix.app }}/pnpm-lock.yaml
+      - name: Install
+        working-directory: ${{ matrix.app }}
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        working-directory: ${{ matrix.app }}
+        run: pnpm build

@@ -11,13 +11,13 @@ host page.
 Every package here is installed **from PyPI and npm**, the way a stranger would
 install it. Nothing is linked to a local checkout.
 
-| Directory | What it is | Status |
+| Directory | What it is | Port |
 | --- | --- | --- |
-| [`backend/`](backend/) | The shared Django backend: board API, two agent mounts, the admin, an offline model | Runs |
-| [`react/`](react/) | React 19 + Vite + React Router | Runs |
-| `angular/` | Angular | Not built yet |
-| `vue/` | Vue | Not built yet |
-| `svelte/` | Svelte | Not built yet |
+| [`backend/`](backend/) | The shared Django backend: board API, two agent mounts, the admin, an offline model | 8000 |
+| [`react/`](react/) | React 19, Vite, React Router | 5173 |
+| [`vue/`](vue/) | Vue 3 (`<script setup>`), Vite, Vue Router | 5174 |
+| [`svelte/`](svelte/) | Svelte 5 runes, Vite, a twenty-line router | 5175 |
+| [`angular/`](angular/) | Angular 22, standalone components, signals, zoneless | 4200 |
 
 There is a fifth surface with no directory of its own: **the Django admin**, served
 by the same backend at `/admin/`. It is the one place in this gallery where the
@@ -33,7 +33,8 @@ Two terminals. The backend first:
 cd backend && uv sync && uv run python manage.py migrate && uv run python manage.py seed_board && uv run uvicorn demo.asgi:application --port 8000
 ```
 
-Then the app:
+Then any of the apps — they are interchangeable, and all four talk to that one
+backend:
 
 ```bash
 cd react && pnpm install && pnpm dev
@@ -57,18 +58,39 @@ Ask the assistant:
 
 ## What the gallery demonstrates
 
-| Interaction | How | React |
-| --- | --- | --- |
-| Scroll a target into view, vertically | built-in `scroll_to` plus the page map | yes |
-| Scroll a target into view, horizontally | the same call, two-axis scroll container | yes |
-| Move an event to a new slot | built-in `drag_and_drop`, the page's own drop handler saves | yes |
-| Reorder within a list | the same call, list drop targets | yes |
-| Navigate between views | `routeMap` plus the host's `navigate` seam | yes |
-| Read the board's state | `read_page`, `read_board`, and the server's own `list_events` | yes |
-| Gate a saving move behind a confirmation | `confirmPredicate` | yes |
+| Interaction | How |
+| --- | --- |
+| Scroll a target into view, vertically | built-in `scroll_to` plus the page map |
+| Scroll a target into view, horizontally | the same call, two-axis scroll container |
+| Move an event to a new slot | built-in `drag_and_drop`, the page's own drop handler saves |
+| Reorder within a list | the same call, list drop targets |
+| Navigate between views | `routeMap` plus the host's `navigate` seam |
+| Read the board's state | `read_page`, `read_board`, and the server's own `list_events` |
+| Gate a saving move behind a confirmation | `confirmPredicate` |
 
-The column fills in as the other three apps land. An interaction that needs a new
-built-in tool belongs upstream in the web component, not here.
+All four apps implement all seven, and every one of them has been driven
+agent-side in a browser rather than only compiled. The admin surface adds two more
+that no single-page app can show — filling a form field and saving it, across full
+page reloads. An interaction that needs a *new* built-in tool belongs upstream in
+the web component, not here.
+
+## What each framework taught us
+
+The board copies across cleanly. What does not is the one boundary that matters:
+several of the element's inputs are read once, while it connects, and the thread
+history is fetched at that same moment. Each framework reaches that window
+differently — and only one of them reaches it declaratively.
+
+| App | Pre-insertion window | What it does |
+| --- | --- | --- |
+| React | None; refs attach after insertion | `createElement`, configure, `appendChild` |
+| **Vue** | **Yes** — a directive's `beforeMount` | Attributes in the template, properties in the directive |
+| Svelte | None; `use:` actions and `$effect` run after insertion | Same as React |
+| Angular | None; bindings apply during change detection | Same as React, in `ngOnInit` with `@ViewChild({static: true})` |
+
+Each app's README has the worked version, plus that framework's own surprise —
+Vue's `isCustomElement`, Angular's `:host { display: contents }`, Svelte's runes.
+The fallback in every framework is `element.reload()` once configuration lands.
 
 ## The admin surface
 
