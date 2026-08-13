@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { BOARD } from "../i18n";
   import type { Board } from "./board.svelte";
   import EventCard from "./EventCard.svelte";
   import { parseEventElementId } from "./calendar";
@@ -40,7 +41,7 @@
   ondrop={unschedule}
   role="list"
 >
-  <h2>Backlog</h2>
+  <h2>{BOARD.backlog}</h2>
   <ol class="backlog-list">
     {#each board.backlog as event (event.id)}
       <li
@@ -59,5 +60,5 @@
   {#if board.backlog.length === 0}
     <p class="muted">Nothing waiting.</p>
   {/if}
-  <p class="muted backlog-hint">Drop a card here to take it out of the week.</p>
+  <p class="muted backlog-hint">{BOARD.backlogHint}</p>
 </section>

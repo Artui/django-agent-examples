@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { BOARD } from "../i18n";
   import type { EventRow } from "../api";
   import { eventElementId, formatHour } from "./calendar";
   import { beginDrag, endDrag } from "./dragging";
@@ -33,7 +34,7 @@
 >
   <span class="card-title">{event.title}</span>
   <span class="card-meta">
-    {event.start_hour === null ? "unscheduled" : formatHour(event.start_hour)}{event.room === ""
+    {event.start_hour === null ? BOARD.unscheduled : formatHour(event.start_hour)}{event.room === ""
       ? ""
       : ` · ${event.room}`}
   </span>

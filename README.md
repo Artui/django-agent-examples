@@ -85,6 +85,8 @@ also shows what a batch of gated writes looks like.
 | Ask the user a question mid-run | `askUser`, the component's built-in `ask_user` frontend tool |
 | Resume or fork a past run | `step_store=` and the ⭯ panel's `data-runs-url` |
 | Launch a prompt the page completes | a skill with a `{placeholder}`, filled from `skillContext` |
+| Make the widget look like the host | four different mechanisms, one per app (below) |
+| Run the whole thing in another language | the component's `strings`, in the Svelte app |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -109,6 +111,24 @@ differently — and only one of them reaches it declaratively.
 Each app's README has the worked version, plus that framework's own surprise —
 Vue's `isCustomElement`, Angular's `:host { display: contents }`, Svelte's runes.
 The fallback in every framework is `element.reload()` once configuration lands.
+
+## Four ways to make it look like yours
+
+The widget is a shadow DOM, which is a wall with named doors in it. Each app opens a
+different one, so the four together are the whole surface rather than one recipe
+copied four times.
+
+| App | Mechanism | Reaches | Cannot reach |
+| --- | --- | --- | --- |
+| [React](react/) | `--ag-ui-*` custom properties | any colour, radius or font the component parameterised — and they inherit, so dark mode comes free | anything it did not parameterise |
+| [Vue](vue/) | `::part()` | any element the component named, structurally: the header is a plain bar and the bubbles are square | elements without a part; names are looked up, and a wrong one fails silently |
+| [Angular](angular/) | named slots | *content* — this app projects its own SVG icons into the header buttons | layout, which is the shadow root's |
+| [Svelte](svelte/) | `strings` | every word the component composes at runtime, in German | text the **server** sends: skills, tool labels, what the model says |
+
+The last row is the one worth reading twice. Localizing the component does not
+localize the conversation: the Svelte app's chips still read *Tidy up my week*
+because that catalog comes from `/agent/skills/`, and localizing it is the server's
+job, per request. `strings` covers what the component says about itself.
 
 ## The admin surface
 

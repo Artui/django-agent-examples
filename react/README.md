@@ -86,6 +86,30 @@ real interaction rather than a page scroll.
 | `strings` | `Assistant.tsx` | The confirmation prompt, in this board's words. |
 | `headers` | `src/api.ts` | The same token the app's own fetches send — the element authenticates every request it makes, not just the run. |
 
+## How this app themes the widget: custom properties
+
+The cheapest of the gallery's four mechanisms, and the one to reach for first. The
+component declares every colour, radius and font as `var(--ag-ui-x, fallback)`, so
+setting the outer name anywhere up the tree retints the shadow DOM without
+reaching into it:
+
+```css
+:root {
+  --ag-ui-bg: var(--card);
+  --ag-ui-assistant-bg: var(--paper);
+  --ag-ui-user-bg: var(--accent-soft);
+  --ag-ui-msg-radius: var(--radius);
+}
+```
+
+Custom properties inherit, so the widget follows this app's own dark-mode block
+with no second declaration — and the `--ag-ui-*` names point at the page's tokens
+rather than at literals, which is what keeps one palette instead of two.
+
+The limit is that a property can only say what the component asked to be told. For
+anything it never parameterised, see [the Vue app](../vue/README.md), which reaches
+the same shadow DOM with `::part()`.
+
 ## Notes
 
 - The production bundle is around 640 kB unsplit, most of it the chat element and

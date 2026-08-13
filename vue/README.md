@@ -81,6 +81,34 @@ see it, and the agent's drag would silently do nothing.
 copied rather than shared on purpose: each app has to stand alone as something you
 can read start to finish and lift into your own project.
 
+## How this app themes the widget: `::part()`
+
+The gallery themes each app a different way, and this one uses parts. Custom
+properties (see [the React app](../react/README.md)) can only change what the
+component chose to expose as a variable; a part is a stable name on an element,
+so a host can restyle things the component never parameterised. Here the header
+stops being a filled accent bar and becomes a plain one in the page's colours,
+and the bubbles go square:
+
+```css
+ag-ui-chat::part(header) {
+  background: var(--card);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+
+ag-ui-chat::part(message) {
+  border-radius: 2px;
+}
+```
+
+Two things worth knowing. **Part names are looked up, not guessed** — the bubble's
+part is `message`, not `bubble`, and a wrong name fails silently with no warning
+anywhere. And a part rule competes with the component's own shadow CSS, where the
+outer stylesheet wins at equal specificity, so no `!important` is needed — but the
+properties do have to be spelled out, because the rule being overridden is still
+there.
+
 ## Notes
 
 - State is a composable (`useBoard`), so the board's refs are passed to components

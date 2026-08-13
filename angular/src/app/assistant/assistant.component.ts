@@ -25,6 +25,34 @@ import {
 import { type PageMap, type RouteMap, defineAgUiChat } from "@artooi/ag-ui-web-component";
 import { authHeaders } from "../api";
 
+/** This app's own marks, in place of the component's text glyphs. */
+const HISTORY_PATH = "M4 6h16M4 12h16M4 18h10";
+const PLUS_PATH = "M12 5v14M5 12h14";
+
+/**
+ * One icon, projected into a named slot in the component's header.
+ *
+ * Built with `createElementNS`: an `<svg>` created through `createElement` lands
+ * in the HTML namespace, where it renders as nothing at all and gives no error to
+ * explain itself.
+ */
+function icon(slot: string, path: string): SVGSVGElement {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("slot", slot);
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "16");
+  svg.setAttribute("height", "16");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2");
+  svg.setAttribute("stroke-linecap", "round");
+  const line = document.createElementNS(ns, "path");
+  line.setAttribute("d", path);
+  svg.append(line);
+  return svg;
+}
+
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
   askUser: boolean;
@@ -90,6 +118,23 @@ export class AssistantComponent implements OnInit, OnDestroy {
     // the component renders the card, the answer returns as the tool result.
     chat.askUser = true;
     chat.headers = authHeaders();
+
+    // This app's theming mechanism, and the third of four in the gallery: slots.
+    // React retints with custom properties and Vue restyles with `::part()`, and
+    // neither can replace *content* -- a design system that ships its own icon set
+    // needs to put its own mark in the button, not recolour a glyph the component
+    // chose. Each header button renders a named slot with the built-in glyph as
+    // its fallback, so projecting a child claims one and leaves the rest alone.
+    //
+    // Light-DOM children, which is what makes this framework-neutral: they are
+    // ordinary elements this component owns and Angular renders, and the shadow
+    // root pulls them into place.
+    chat.append(icon("icon-history", HISTORY_PATH), icon("icon-new", PLUS_PATH));
+    // The built-in toggle, which is a different opt-in from theming: it flips the
+    // component between its own light and dark palettes and does not touch the
+    // page. Off unless asked for, so it never competes with a host's own switch in
+    // the `header-actions` slot.
+    chat.setAttribute("data-theme-toggle", "");
 
     chat.getPageMap = () => this.getPageMap()();
     chat.skillContext = () => this.skillContext()();

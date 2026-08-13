@@ -8,25 +8,26 @@
   import { isoDate, labelForIso, weekDays } from "./board/calendar";
   import { buildPageMap, type ViewName } from "./board/pageMap";
   import { router } from "./router.svelte";
+  import { BOARD } from "./i18n";
 
   /** The routes the agent may navigate to, matching the router. */
   const ROUTE_MAP: RouteMap = [
     {
       id: "week",
       path: "/week",
-      title: "Week grid",
+      title: BOARD.week,
       description: "Five days across, hours down the side. Drop targets for scheduling.",
     },
     {
       id: "day",
       path: "/day",
-      title: "Day column",
+      title: BOARD.day,
       description: "One day of the grid, for a close look at a single day.",
     },
     {
       id: "agenda",
       path: "/agenda",
-      title: "Agenda list",
+      title: BOARD.agenda,
       description: "Everything scheduled as a flat list, grouped by day. No drop targets.",
     },
   ];
@@ -47,7 +48,7 @@
 
 <div class="layout">
   <header class="topbar">
-    <h1>Scheduling board</h1>
+    <h1>{BOARD.title}</h1>
     <nav>
       {#each ROUTE_MAP as entry (entry.id)}
         <button
@@ -60,9 +61,9 @@
       {/each}
     </nav>
     <label class="filter">
-      Room
+      {BOARD.room}
       <select value={board.filter} onchange={(e) => board.setFilter(e.currentTarget.value)}>
-        <option value="all">all</option>
+        <option value="all">{BOARD.allRooms}</option>
         {#each board.rooms as room (room)}
           <option value={room}>{room}</option>
         {/each}

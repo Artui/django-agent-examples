@@ -4,9 +4,10 @@
  *
  * 1. `.grid-scroller` has a bounded height and `overflow: auto` on both axes.
  *    That is what makes scrolling an internal container a real interaction.
- * 2. `--ag-ui-accent` is set on the page, and the chat element inherits it — so
- *    the widget, and the ring it draws around whatever it touches, come out in
- *    this app's colour rather than the component's default.
+ * 2. This app themes the chat with `::part()` — see the block at the end of the
+ *    file. Each app in the gallery uses a different mechanism: custom properties
+ *    in React, parts here, host-supplied slots in Angular, a translated string
+ *    map in Svelte.
  */
 
 :root {
@@ -314,4 +315,57 @@ body {
 .assistant ag-ui-chat {
   flex: 1;
   min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Theming the chat with `::part()`.
+   ---------------------------------------------------------------------------
+   Custom properties can only say what the component already asked to be told:
+   a colour, a radius, a font. Parts are how a host reaches something the
+   component never parameterised — here, a header that is a plain bar in the
+   page's own colours instead of a filled accent block, and square bubbles
+   instead of rounded ones. The component exposes them by putting a `part`
+   attribute on every element it renders; nothing else about its internals is
+   reachable, which is the trade: a stable name, and only where one exists.
+
+   Note the specificity floor. A part rule competes with the component's own
+   shadow CSS, and the outside wins on equal specificity, so these need no
+   `!important` — but they do need the properties spelled out rather than
+   inherited, because the rule they override is still there. */
+
+ag-ui-chat::part(header) {
+  background: var(--card);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+
+ag-ui-chat::part(title) {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* The controls sat on an accent bar and now sit on the page's own surface, so
+   they have to take the page's ink rather than the white they were given. */
+ag-ui-chat::part(header-button) {
+  color: var(--ink-muted);
+}
+
+ag-ui-chat::part(header-button):hover {
+  color: var(--ink);
+}
+
+/* Square, because this app's cards are square. A radius token could have done
+   this one; the header above could not.
+
+   The part is `message`, not `bubble` -- worth stating because it is not
+   guessable: the component sets it from a template literal, so a part named in a
+   host stylesheet is a name to look up rather than infer, and a wrong one fails
+   silently. Every bubble also carries `message-user` or `message-assistant` for
+   styling one side only. */
+ag-ui-chat::part(message) {
+  border-radius: 2px;
+}
+
+ag-ui-chat::part(composer-surface) {
+  border-radius: 2px;
 }

@@ -16,6 +16,7 @@
    */
   import { type PageMap, type RouteMap, defineAgUiChat } from "@artooi/ag-ui-web-component";
   import { authHeaders } from "../api";
+  import { BOARD, CHAT } from "../i18n";
 
   let {
     getPageMap,
@@ -74,7 +75,7 @@
     chat.setAttribute("data-slash-commands", "");
     chat.setAttribute("data-page-actions", "scroll,drag");
     chat.setAttribute("placement", "embedded");
-    chat.setAttribute("title-text", "Board assistant");
+    chat.setAttribute("title-text", BOARD.assistant);
     chat.setAttribute("data-answer-well", "");
     chat.setAttribute("data-text-animation", "fade");
     // A frontend tool whose handler is a person: the agent calls `ask_user`,
@@ -96,9 +97,16 @@
     // stamps destructive — is un-gated by the same predicate.
     chat.confirmPredicate = (name, args) =>
       name === "drag_and_drop" && String(args["to"] ?? "").startsWith("slot-");
-    chat.strings = {
-      confirmRun: "Move this on the board? The change is saved immediately.",
-    };
+    // This app is the gallery's localized one. Everything the component says comes
+    // from here -- its buttons, its placeholders, the sentence it uses when a call
+    // is declined -- because that text is composed inside the shadow DOM at
+    // runtime, where no stylesheet or slot reaches it. The map is merged over the
+    // English defaults, so the keys this file omits stay English rather than
+    // blank.
+    //
+    // Read once, at connect, like the other inputs here: a language switch would
+    // reassign `strings`, which re-localizes the chrome in place.
+    chat.strings = CHAT;
     chat.registerPageState({
       name: "board",
       read: () => readBoardState(),

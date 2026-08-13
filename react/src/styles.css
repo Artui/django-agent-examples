@@ -4,9 +4,11 @@
  *
  * 1. `.grid-scroller` has a bounded height and `overflow: auto` on both axes.
  *    That is what makes scrolling an internal container a real interaction.
- * 2. `--ag-ui-accent` is set on the page, and the chat element inherits it — so
- *    the widget, and the ring it draws around whatever it touches, come out in
- *    this app's colour rather than the component's default.
+ * 2. The `--ag-ui-*` block below is this app's theming mechanism, and each app in
+ *    the gallery uses a different one: custom properties here, `::part()` in Vue,
+ *    host-supplied slots in Angular, and a translated string map in Svelte. All
+ *    four reach the same shadow DOM from outside it, and only the first is a
+ *    matter of colour.
  */
 
 :root {
@@ -19,8 +21,27 @@
   --accent: #3d5afe;
   --accent-soft: #e8ecff;
   --danger: #b3261e;
-  --ag-ui-accent: var(--accent);
   --radius: 10px;
+
+  /* Custom properties, the cheapest of the four mechanisms: the component
+     declares every colour as `var(--ag-ui-x, fallback)`, so setting the outer
+     name from the page retints the shadow DOM without reaching into it. The
+     widget ends up wearing the board's palette rather than the component's,
+     including the ring it draws around whatever it touches. Inherited, so the
+     dark-mode block below retints it too with no second declaration. */
+  --ag-ui-accent: var(--accent);
+  --ag-ui-bg: var(--card);
+  --ag-ui-fg: var(--ink);
+  --ag-ui-muted: var(--ink-muted);
+  --ag-ui-border: var(--line);
+  --ag-ui-assistant-bg: var(--paper);
+  --ag-ui-user-bg: var(--accent-soft);
+  --ag-ui-user-fg: var(--ink);
+  --ag-ui-input-bg: var(--card);
+  --ag-ui-hover: var(--accent-soft);
+  --ag-ui-msg-radius: var(--radius);
+  --ag-ui-composer-radius: var(--radius);
+  --ag-ui-font: inherit;
 }
 
 @media (prefers-color-scheme: dark) {

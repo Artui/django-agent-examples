@@ -63,6 +63,36 @@ see it, and the agent's drag would silently do nothing.
 copied rather than shared on purpose: each app has to stand alone as something you
 can read start to finish and lift into your own project.
 
+## This is the gallery's localized app
+
+Everything on screen is German, and it comes from two places that are worth
+keeping apart. [`src/i18n.ts`](src/i18n.ts) holds both.
+
+**The board's own text** is translated the way any app translates itself — a map
+this app reads when it renders.
+
+**The component's text** cannot be reached that way. Its buttons, placeholders,
+relative timestamps and the sentence it uses when a tool call is declined are all
+composed inside the shadow DOM at runtime, so no stylesheet and no slot touches
+them. It takes them from the `strings` property (or a `data-strings` JSON
+attribute), merged over its English defaults:
+
+```ts
+chat.strings = CHAT; // 30-odd keys; the rest stay English
+```
+
+A partial map is legitimate, and that is the useful part: keys you omit keep the
+English default rather than going blank, so this file does not have to be revisited
+every time the component gains a string. Keys are looked up from `UiStrings` — an
+invented one is ignored in silence, which is how `placeholder` and `confirmYes`
+sat in this file doing nothing until they were checked against the real list.
+
+**What stays English, and why that is correct.** The skill chips read *Tidy up my
+week*, because they come from the **server's** catalog, and so do tool labels and
+anything the model says. `strings` localizes what the component composes; content
+the server sends is the server's to localize, per request. The board's event titles
+are in the same category: they are data.
+
 ## Notes
 
 - The router is `src/router.svelte.ts`: the History API plus one rune. Three routes

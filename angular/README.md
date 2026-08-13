@@ -68,6 +68,34 @@ are identical across the apps in this gallery. They are copied rather than share
 purpose: each app has to stand alone as something you can read start to finish and
 lift into your own project.
 
+## How this app themes the widget: slots
+
+The gallery themes each app a different way — custom properties in
+[React](../react/README.md), `::part()` in [Vue](../vue/README.md), and slots
+here. Neither of the other two can replace *content*: a design system that ships
+its own icon set needs its own mark inside the button, not a recolouring of a
+glyph the component picked.
+
+Every header button renders a named slot with the built-in glyph as its fallback,
+so projecting one child claims one button and leaves the rest alone:
+
+```ts
+chat.append(icon("icon-history", HISTORY_PATH), icon("icon-new", PLUS_PATH));
+```
+
+These are **light-DOM children** of the element, which is what makes the mechanism
+framework-neutral: ordinary elements this component owns and Angular renders, that
+the shadow root pulls into place.
+
+⚠ **Build an `<svg>` with `createElementNS`.** Created through `createElement` it
+lands in the HTML namespace, where it renders as nothing at all and reports no
+error to explain itself.
+
+This app also opts into the component's own light/dark switch with
+`data-theme-toggle`, which is a different thing from theming: it flips the
+component between its two palettes and does not touch the page. It is off by
+default so it never competes with a host's own switch in the `header-actions` slot.
+
 ## Notes
 
 - `pnpm-workspace.yaml` records which package build scripts are allowed. pnpm 11
