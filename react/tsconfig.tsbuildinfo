@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/assistant/assistant.tsx","./src/board/agendaview.tsx","./src/board/backlog.tsx","./src/board/dayview.tsx","./src/board/eventcard.tsx","./src/board/weekgrid.tsx","./src/board/calendar.ts","./src/board/dragging.ts","./src/board/pagemap.ts","./src/board/useboard.ts","./vite.config.ts"],"version":"5.9.3"}

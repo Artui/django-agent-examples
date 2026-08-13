@@ -1,0 +1,34 @@
+[project]
+name = "ag-ui-gallery-backend"
+version = "0.1.0"
+description = "Shared demo backend for the AG-UI framework integration gallery."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.2",
+    "djangorestframework>=3.15",
+    # The service/selector layer. One spec set, declared once in a SpecRegistry,
+    # projected to HTTP (viewsets) and to the agent (spec tools).
+    "djangorestframework-services>=0.39",
+    # The AG-UI transport. [spec-tools] is the in-process bridge that turns the
+    # same specs into agent tools with no MCP hop.
+    "django-ag-ui[spec-tools]>=0.42",
+    # ASGI is required: the agent endpoint streams.
+    "uvicorn>=0.34",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=1.4.0",
+    "pytest-django>=4.9",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "demo.settings"
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"

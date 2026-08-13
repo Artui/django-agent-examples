@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# The demo database is seeded, never committed.
+db.sqlite3
+
+# Node
+node_modules/
+dist/
+
+# Editors and OS
+.DS_Store
+.idea/
