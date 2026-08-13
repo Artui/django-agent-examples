@@ -77,6 +77,7 @@ const ROUTE_MAP: RouteMap = [
         <app-assistant
           [routeMap]="routeMap"
           [navigate]="navigate"
+          [reload]="reloadBoard"
           [getPageMap]="pageMap"
           [readBoardState]="readBoardState"
           [writeBoardState]="writeBoardState"
@@ -114,6 +115,10 @@ export class App {
   }
 
   /** Passed to the assistant: the single seam that makes this host a single-page app. */
+  readonly reloadBoard = (): void => {
+    void this.board.reload();
+  };
+
   readonly navigate = (path: string): void => {
     void this.router.navigateByUrl(path);
   };

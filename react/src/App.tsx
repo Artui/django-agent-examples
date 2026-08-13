@@ -1,5 +1,5 @@
 import type { RouteMap } from "@artooi/ag-ui-web-component";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Navigate,
   Route,
@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Assistant } from "./assistant/Assistant";
+import { WeekNote } from "./board/WeekNote";
 import { AgendaView } from "./board/AgendaView";
 import { Backlog } from "./board/Backlog";
 import { DayView } from "./board/DayView";
@@ -44,6 +45,10 @@ const ROUTE_MAP: RouteMap = [
 
 export function App() {
   const board = useBoard();
+  // The one piece of page state that is *not* exposed as a tool: it rides AG-UI
+  // shared state instead, so the agent and the page hold the same object. See
+  // `board/WeekNote.tsx` for why that distinction is the point.
+  const [note, setNote] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
   const days = useMemo(() => weekDays(), []);
@@ -103,11 +108,15 @@ export function App() {
             <Route path="/agenda" element={<AgendaView board={board} />} />
           </Routes>
           <Backlog board={board} />
+          <WeekNote note={note} onEdit={setNote} />
         </div>
 
         <Assistant
           routeMap={ROUTE_MAP}
           navigate={(path) => navigate(path)}
+          reload={() => void board.reload()}
+          note={note}
+          onNoteChanged={setNote}
           getPageMap={() =>
             buildPageMap(view, visibleDays, {
               saving: board.saving,

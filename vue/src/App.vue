@@ -95,6 +95,7 @@ function snapshot() {
       <Assistant
         :route-map="ROUTE_MAP"
         :navigate="(path: string) => router.push(path)"
+        :reload="() => void board.reload()"
         :get-page-map="() => buildPageMap(view, visibleDays, snapshot())"
         :read-board-state="
           () => ({

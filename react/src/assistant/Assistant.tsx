@@ -27,11 +27,21 @@ export interface AssistantProps {
   routeMap: RouteMap;
   /** Client-side routing: this single seam is what makes the app an SPA. */
   navigate: (path: string) => void;
+  /**
+   * Refetch the board. Called when a run finishes having used a *server* tool,
+   * which is a write this page had no other way to learn about.
+   */
+  reload: () => void;
+  /** The shared week note, as the page currently holds it. */
+  note: string;
+  /** The agent rewrote the note: adopt it. */
+  onNoteChanged: (note: string) => void;
 }
 
 /** The element's typed shape, as far as this host uses it. */
 type ChatElement = HTMLElement & {
   headers: Record<string, string>;
+  sharedState: Record<string, unknown>;
   getPageMap: () => PageMap;
   resolvePageTarget: (target: string) => HTMLElement | null;
   routeMap: RouteMap;
@@ -48,8 +58,18 @@ type ChatElement = HTMLElement & {
 
 export function Assistant(props: AssistantProps) {
   const host = useRef<HTMLDivElement | null>(null);
+  const element = useRef<ChatElement | null>(null);
   const latest = useRef(props);
   latest.current = props;
+
+  // The page's own edits go the other way. Assigning `sharedState` is the seam for
+  // it, and unlike the connect-time inputs it can be written at any time -- the
+  // element carries whatever it holds into the next run.
+  useEffect(() => {
+    if (element.current !== null && element.current.sharedState["note"] !== props.note) {
+      element.current.sharedState = { ...element.current.sharedState, note: props.note };
+    }
+  }, [props.note]);
 
   useEffect(() => {
     // Registering the custom element is an explicit call, not an import side
@@ -96,6 +116,19 @@ export function Assistant(props: AssistantProps) {
       confirmRun: "Move this on the board? The change is saved immediately.",
     };
 
+    // AG-UI shared state, seeded before insertion like everything else read at
+    // connect. The element sends it as `RunAgentInput.state` on every run.
+    chat.sharedState = { note: latest.current.note };
+
+    // The agent rewrote it. That is the whole inbound half: no tool result, no
+    // transcript entry, just the object both ends hold.
+    chat.addEventListener("ag-ui-state", (event) => {
+      const state = (event as CustomEvent<{ state: Record<string, unknown> }>).detail.state;
+      if (typeof state["note"] === "string") {
+        latest.current.onNoteChanged(state["note"]);
+      }
+    });
+
     chat.registerPageState({
       name: "board",
       read: () => latest.current.readBoardState(),
@@ -109,8 +142,27 @@ export function Assistant(props: AssistantProps) {
       },
     });
 
+    // A server-side tool writes without this page's knowledge: approve a booking
+    // and the row exists while the board keeps showing what it fetched on mount.
+    // Nothing else the element dispatches implies "something may have moved
+    // underneath you" -- so this event is the signal, and a host that renders
+    // agent-touchable data wants it.
+    //
+    // Only `side === "server"` matters. A `client` tool ran in this app's own
+    // handler, which already refetched if it needed to.
+    chat.addEventListener("ag-ui-run-finished", (event) => {
+      const detail = (event as CustomEvent<{ tools: { name: string; side: string }[] }>).detail;
+      if (detail.tools.some((tool) => tool.side === "server")) {
+        latest.current.reload();
+      }
+    });
+
     host.current?.appendChild(chat);
-    return () => chat.remove();
+    element.current = chat;
+    return () => {
+      element.current = null;
+      chat.remove();
+    };
     // Configured once, on mount, on purpose: recreating the element would throw
     // the conversation away. Everything that varies is read through `latest`.
     // eslint-disable-next-line react-hooks/exhaustive-deps

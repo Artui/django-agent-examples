@@ -25,6 +25,8 @@ const props = defineProps<{
   writeBoardState: (patch: Record<string, unknown>) => unknown;
   routeMap: RouteMap;
   navigate: (path: string) => void;
+  /** Refetch the board after a run that used a server tool. */
+  reload: () => void;
 }>();
 
 type ChatElement = HTMLElement & {
@@ -69,6 +71,18 @@ const vConfigure = {
     element.strings = {
       confirmRun: "Move this on the board? The change is saved immediately.",
     };
+    // A server-side tool writes without this page's knowledge: approve a booking
+    // and the row exists while the board keeps showing what it fetched on mount.
+    // Nothing else the element dispatches implies "something may have moved
+    // underneath you", so this event is the signal. Only `side === "server"`
+    // matters -- a client tool ran in this app's own handler.
+    element.addEventListener("ag-ui-run-finished", (event) => {
+      const detail = (event as CustomEvent<{ tools: { name: string; side: string }[] }>).detail;
+      if (detail.tools.some((tool) => tool.side === "server")) {
+        props.reload();
+      }
+    });
+
     element.registerPageState({
       name: "board",
       read: () => props.readBoardState(),

@@ -42,7 +42,8 @@ HELP = (
     "- *switch to the agenda view*\n"
     "- *what is on the board?*\n"
     "- *put the onboarding doc first in the backlog*\n"
-    "- *book a design sync on Friday at 14:00*"
+    "- *book a design sync on Friday at 14:00*\n"
+    "- *note: ship the gallery this week*"
 )
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -108,6 +109,8 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
         return _reorder_script(turn, available)
     if re.search(r"\b(filter|only|hide|room)\b", text):
         return _filter_script(turn, available)
+    if re.search(r"\bnote\b", text):
+        return _note_script(turn, available)
     if re.search(r"\b(what|which|list|how many|summar|overview|busy)\b", text):
         return _overview_script(turn, available)
     return [HELP]
@@ -403,6 +406,48 @@ def _book_script(turn: Turn, available: set[str]) -> list[Any]:
     if event.get("day"):
         return [f"Booked {title} for {event['day']} at {event.get('start_hour')}:00."]
     return [f"Added {title} to the backlog."]
+
+
+def _note_script(turn: Turn, available: set[str]) -> list[Any]:
+    """The week note, which lives in AG-UI shared state rather than in the board.
+
+    Two shapes, and the second is the interesting one. Given a body, this writes it
+    straight through. Told to summarise the week into the note, it reads the board
+    first and writes what it found — two tools, the second's argument coming from
+    the first's result, with the page re-rendering off the state snapshot rather
+    than off either tool's return value.
+    """
+    if "write_week_note" not in available:
+        return [_missing_tools("write_week_note, read_week_note")]
+    text = turn.prompt.lower()
+    body = _note_body(turn.prompt)
+    if body is None and re.search(r"\b(what|read|say|says|show|does)\b", text):
+        if turn.round == 0:
+            return [_call("read_week_note", {})]
+        return [str(turn.last)]
+    if body is None:
+        # No body given: read the week, then write what it says.
+        if turn.round == 0:
+            return [_call("week_overview", {})]
+        if turn.round == 1:
+            return [_call("write_week_note", {"body": str(turn.last)})]
+        return ["Written to the week note."]
+    if turn.round == 0:
+        return [_call("write_week_note", {"body": body})]
+    return [f"The week note now reads: {body}"]
+
+
+def _note_body(prompt: str) -> str | None:
+    """The text to write, when the utterance carries one."""
+    for pattern in (
+        r"note\s*:\s*(.+)$",
+        r"note\s+(?:that\s+says|to\s+say|to\s+read)\s+(.+)$",
+        r"note\s+to\s+(.+)$",
+    ):
+        match = re.search(pattern, prompt, re.I)
+        if match is not None:
+            return match.group(1).strip().strip("\"'")
+    return None
 
 
 def _overview_script(turn: Turn, available: set[str]) -> list[Any]:

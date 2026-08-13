@@ -87,6 +87,7 @@
     <Assistant
       routeMap={ROUTE_MAP}
       navigate={(path) => router.navigate(path)}
+      reload={() => void board.reload()}
       getPageMap={() => buildPageMap(view, visibleDays, board.snapshot())}
       readBoardState={() => ({
         view,

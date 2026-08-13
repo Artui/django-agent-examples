@@ -69,8 +69,10 @@ Ask the assistant:
 | Read the board's state | `read_page`, `read_board`, and the server's own `list_events` |
 | Gate a saving move behind a confirmation | `confirmPredicate`, in the browser |
 | Gate a server-side write behind an approval | the agent's own tool guard, over the wire |
+| Refetch after a write the page did not make | the component's `ag-ui-run-finished` event |
+| Co-edit one object with the agent | AG-UI shared state, in the React app's week note |
 
-All four apps implement all eight, and every one of them has been driven
+All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
 that no single-page app can show — filling a form field and saving it, across full
 page reloads. An interaction that needs a *new* built-in tool belongs upstream in
@@ -186,13 +188,33 @@ to be taught. And a *refusal* is a tool return, not an error: a denied approval
 carries `outcome == "denied"`, while a cancelled page action is an ordinary
 successful result whose text happens to say so. Read the outcome, not the wording.
 
-**A server-side write is invisible to the page that is showing the data.** Approve
-the booking and the row exists; the board keeps showing what it fetched on mount,
-because nothing told it otherwise. That gap is what produced the component's
-`ag-ui-run-finished` event (0.24.0): it fires once per interaction with the tools that
-ran and which side ran them, so a host can refetch when any of them was a server tool.
-This gallery does not listen for it yet — that is the shared-state slice — so for now,
-reload to see a server-side booking land.
+**A server-side write is invisible to the page that is showing the data**, and
+closing that is three lines. Approving a booking writes the row while the board keeps
+showing what it fetched on mount, because nothing told it otherwise. That gap is what
+produced the component's `ag-ui-run-finished` event (0.24.0), and all four apps now
+listen for it:
+
+```js
+chat.addEventListener("ag-ui-run-finished", (event) => {
+  if (event.detail.tools.some((tool) => tool.side === "server")) void board.reload();
+});
+```
+
+Only `side === "server"` matters — a client tool ran in the app's own handler, which
+already knows what it did.
+
+**Shared state is the other channel, and it is not a substitute.** The React app's
+**week note** rides `RunAgentInput.state`: the page sends it with every run, a
+server-side tool rewrites it, and the snapshot streams back, so the page re-renders
+having executed nothing. `registerPageState` is the opposite arrangement — the agent
+calls back into the page's own writer. Ask for *summarise the week into the note* and
+you can watch both halves at once: two server tools in **one** request, the second's
+argument composed from the first's result, and the note appearing on the page from the
+state event rather than from either tool's return value.
+
+Worth being precise about, because it is easy to overstate: the write is still a tool
+call, so it still renders a card and could still be gated. What differs is who holds
+the value and who changes it.
 
 **A page action reports that it fired, not that it worked.** `drag_and_drop`
 returns as soon as it has dispatched the drag. Whether the page's own save

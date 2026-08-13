@@ -57,6 +57,8 @@ export class AssistantComponent implements OnInit, OnDestroy {
   readonly writeBoardState = input.required<(patch: Record<string, unknown>) => unknown>();
   readonly routeMap = input.required<RouteMap>();
   readonly navigate = input.required<(path: string) => void>();
+  /** Refetch the board after a run that used a server tool. */
+  readonly reload = input.required<() => void>();
 
   @ViewChild("host", { static: true }) private host!: ElementRef<HTMLDivElement>;
 
@@ -106,6 +108,18 @@ export class AssistantComponent implements OnInit, OnDestroy {
           selection: { type: ["integer", "null"], description: "Selected event id." },
         },
       },
+    });
+
+    // A server-side tool writes without this page's knowledge: approve a booking
+    // and the row exists while the board keeps showing what it fetched on mount.
+    // Nothing else the element dispatches implies "something may have moved
+    // underneath you", so this event is the signal. Only `side === "server"`
+    // matters -- a client tool ran in this app's own handler.
+    chat.addEventListener("ag-ui-run-finished", (event) => {
+      const detail = (event as CustomEvent<{ tools: { name: string; side: string }[] }>).detail;
+      if (detail.tools.some((tool) => tool.side === "server")) {
+        this.reload()();
+      }
     });
 
     this.host.nativeElement.appendChild(chat);
