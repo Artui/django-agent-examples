@@ -24,10 +24,11 @@ dependencies = [
     "django-pydantic-agent>=0.15.1",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle. The floor
-    # is 0.23: earlier bundles abandon a sidebar run at its first navigating tool
-    # once the thread has any stored history, which is most of what the admin
-    # surface demonstrates.
-    "django-admin-agent>=0.23",
+    # is 0.24, which vendors web component 0.24.0: earlier bundles abandon a
+    # sidebar run at its first navigating tool once the thread has stored history
+    # (fixed in 0.23), and earlier still than that the approved call's card breaks
+    # its own name across three lines in a panel this width.
+    "django-admin-agent>=0.24",
     # ASGI is required: the agent endpoint streams.
     "uvicorn>=0.34",
 ]
