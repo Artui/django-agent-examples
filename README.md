@@ -51,6 +51,7 @@ Ask the assistant:
 
 - *what is on the board?*
 - *move standup to Friday at 11:00*
+- *book a design sync on Friday at 14:00*
 - *scroll to Friday 17:00*
 - *switch to the agenda view*
 - *put the onboarding doc first in the backlog*
@@ -66,9 +67,10 @@ Ask the assistant:
 | Reorder within a list | the same call, list drop targets |
 | Navigate between views | `routeMap` plus the host's `navigate` seam |
 | Read the board's state | `read_page`, `read_board`, and the server's own `list_events` |
-| Gate a saving move behind a confirmation | `confirmPredicate` |
+| Gate a saving move behind a confirmation | `confirmPredicate`, in the browser |
+| Gate a server-side write behind an approval | the agent's own tool guard, over the wire |
 
-All four apps implement all seven, and every one of them has been driven
+All four apps implement all eight, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
 that no single-page app can show — filling a form field and saving it, across full
 page reloads. An interaction that needs a *new* built-in tool belongs upstream in
@@ -156,6 +158,30 @@ and will not react at all: the agent's drag becomes a silent no-op. Pick a libra
 that listens to drag events, or use the native API as these apps do. React's
 synthetic `onDrop` does receive the dispatched sequence, including the
 `DataTransfer`.
+
+**There are two confirmation mechanisms here, and they are not variants of each
+other.** `confirmPredicate` gates a *page action* inside the browser: the element
+asks before it dispatches, and if you refuse, the server never hears about it. The
+agent's tool guard gates a *service tool* inside the run: the call is deferred rather
+than executed, the run finishes carrying an interrupt, the component renders the
+approval card, and the loop resumes with your answer. Nothing runs until it does,
+which is the difference that matters for a write. The board's writes are gated the
+second way, per endpoint (`config=`), so the admin mount next door keeps its own
+policy.
+
+Two consequences worth knowing before you copy the pattern. A gated call is
+invisible to the model — the tool stays in its list and the resumed round looks like
+any other round, so gating is a deployment decision rather than something a model has
+to be taught. And a *refusal* is a tool return, not an error: a denied approval
+carries `outcome == "denied"`, while a cancelled page action is an ordinary
+successful result whose text happens to say so. Read the outcome, not the wording.
+
+**A server-side write is invisible to the page that is showing the data.** Approve
+the booking and the row exists; the board keeps showing what it fetched on mount,
+because nothing told it otherwise. The component's events (toggle, unread, submit,
+attachments, state) do not include "a run finished", so the channel back to the page
+is AG-UI shared state, which both ends have to opt into. Until this gallery wires
+that up, reload to see a server-side booking land.
 
 **A page action reports that it fired, not that it worked.** `drag_and_drop`
 returns as soon as it has dispatched the drag. Whether the page's own save

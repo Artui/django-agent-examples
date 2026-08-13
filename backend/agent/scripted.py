@@ -41,7 +41,8 @@ HELP = (
     "- *scroll to Friday 17:00*\n"
     "- *switch to the agenda view*\n"
     "- *what is on the board?*\n"
-    "- *put the onboarding doc first in the backlog*"
+    "- *put the onboarding doc first in the backlog*\n"
+    "- *book a design sync on Friday at 14:00*"
 )
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -53,6 +54,10 @@ class Turn:
 
     prompt: str
     returns: tuple[Any, ...]
+    # One per return, from `ToolReturnPart.outcome`: "success", "failed",
+    # "denied" or "interrupted". A denied approval is the only refusal in this
+    # gallery that says so in a field rather than in prose.
+    outcomes: tuple[str, ...] = ()
 
     @property
     def round(self) -> int:
@@ -61,6 +66,10 @@ class Turn:
     @property
     def last(self) -> Any:
         return self.returns[-1] if self.returns else None
+
+    @property
+    def last_outcome(self) -> str:
+        return self.outcomes[-1] if self.outcomes else "success"
 
 
 def build_scripted_model() -> FunctionModel:
@@ -85,6 +94,10 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if "open_changelist" in available:
         return _admin_respond(turn, available, text)
 
+    # Before the move branch: "book" and "schedule" are both scheduling verbs, and
+    # this one writes through the server rather than through the page.
+    if re.search(r"\b(book|schedule|create)\b", text) or re.search(r"^add\b", text):
+        return _book_script(turn, available)
     if re.search(r"\b(move|reschedule|drag|shift)\b", text) and "backlog" not in text:
         return _move_script(turn, available)
     if re.search(r"\b(scroll|jump|show me|find|where is)\b", text):
@@ -190,10 +203,10 @@ def _rename_script(turn: Turn, available: set[str]) -> list[Any]:
     if turn.round == 2:
         return [_call("fill_field", {"field_name": "title", "value": new})]
     if turn.round == 3:
-        if _declined(turn.last):
+        if _refused(turn):
             return ["I left the title alone."]
         return [_call("submit_form", {"action": "save"})]
-    if _declined(turn.last):
+    if _refused(turn):
         return ["I typed it but did not save, so nothing changed."]
     landed = _as_page(turn.last)
     errors = landed.get("errors") or landed.get("errorlist")
@@ -242,7 +255,7 @@ def _move_script(turn: Turn, available: set[str]) -> list[Any]:
             return ["Tell me which day and hour to move it to, for example *Friday at 11:00*."]
         return [_call("drag_and_drop", {"from": card["id"], "to": slot["id"]})]
     if turn.round == 2:
-        if _declined(turn.last):
+        if _refused(turn):
             return ["I left it where it was."]
         return [_call("read_page", {})]
     # The page reports when it is mid-save, so the verification waits for it
@@ -360,6 +373,38 @@ def _match_room(prompt: str) -> str:
     return "all"
 
 
+def _book_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Write through the server, which is where the approval gate lives.
+
+    Nothing in this script mentions the gate, and that is the point. A gated call
+    is deferred rather than executed: the run finishes on an interrupt, the
+    component asks, and the resumed run delivers the tool return this script is
+    already waiting for. So the round it sees is the round it would have seen
+    unguarded, which is what makes gating a deployment decision rather than
+    something a model has to be taught.
+
+    The denial is the exception it does have to read, because a denied call also
+    comes back as a tool return.
+    """
+    if "create_event" not in available:
+        return [_missing_tools("create_event")]
+    if turn.round == 0:
+        title, day, hour = _booking(turn.prompt)
+        if title is None:
+            return ["Say it as *book a design sync on Friday at 14:00*."]
+        arguments: dict[str, Any] = {"title": title}
+        if day is not None and hour is not None:
+            arguments |= {"day": day, "start_hour": hour}
+        return [_call("create_event", arguments)]
+    if _refused(turn):
+        return ["Nothing was booked."]
+    event = _as_page(turn.last)
+    title = event.get("title") or "it"
+    if event.get("day"):
+        return [f"Booked {title} for {event['day']} at {event.get('start_hour')}:00."]
+    return [f"Added {title} to the backlog."]
+
+
 def _overview_script(turn: Turn, available: set[str]) -> list[Any]:
     """Answer from the server, through the spec tool the board declares."""
     if turn.round == 0 and "list_events" in available:
@@ -389,6 +434,7 @@ def _read_turn(messages: Sequence[ModelMessage]) -> Turn:
     """Pull the current utterance and the tool returns recorded after it."""
     prompt = ""
     returns: list[Any] = []
+    outcomes: list[str] = []
     for message in messages:
         if not isinstance(message, ModelRequest):
             continue
@@ -398,9 +444,11 @@ def _read_turn(messages: Sequence[ModelMessage]) -> Turn:
                 prompt = content if isinstance(content, str) else _flatten(content)
                 # A new utterance resets the round count.
                 returns = []
+                outcomes = []
             elif isinstance(part, ToolReturnPart):
                 returns.append(part.content)
-    return Turn(prompt=prompt, returns=tuple(returns))
+                outcomes.append(part.outcome)
+    return Turn(prompt=prompt, returns=tuple(returns), outcomes=tuple(outcomes))
 
 
 def _flatten(content: Sequence[Any]) -> str:
@@ -450,6 +498,47 @@ def _match_slot(page: dict[str, Any], prompt: str) -> dict[str, Any] | None:
     return None
 
 
+_BOOKING = re.compile(
+    r"\b(?:book|schedule|create|add)\s+(?:a|an|the)?\s*(.+?)(?:\s+(?:on|for|at|to)\s+.*)?$",
+    re.I,
+)
+
+
+def _booking(prompt: str) -> tuple[str | None, str | None, int | None]:
+    """Pull a title, and a day and hour if the utterance carries both.
+
+    With no day and hour the event lands in the backlog, which is the service's
+    own rule rather than something this script decides.
+    """
+    match = _BOOKING.search(prompt.strip())
+    if match is None:
+        return None, None, None
+    title = match.group(1).strip(" .!?").capitalize()
+    if not title:
+        return None, None, None
+    iso = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", prompt)
+    # `_hour` reads the first small number it finds, and an ISO date is full of
+    # them, so the date is removed before the time is read rather than after.
+    hour = _hour(prompt.replace(iso.group(1), " ") if iso else prompt)
+    if iso is not None:
+        return title, iso.group(1), hour
+    weekday = next((day for day in WEEKDAYS if day[:3] in prompt.lower()), None)
+    if weekday is None:
+        return title, None, hour
+    return title, _next_weekday(weekday, datetime.date.today()), hour
+
+
+def _next_weekday(name: str, today: datetime.date) -> str:
+    """The next occurrence of a weekday, today included.
+
+    A page-driven move resolves a weekday against the slots the page reported, so
+    the page stays the authority. A server-side booking has no page in the path,
+    so this is the one place the script picks a date itself.
+    """
+    ahead = (WEEKDAYS.index(name) - today.weekday()) % 7
+    return (today + datetime.timedelta(days=ahead)).isoformat()
+
+
 def _match_route(prompt: str) -> str | None:
     for route in ("agenda", "day", "week"):
         if route in prompt.lower():
@@ -494,17 +583,36 @@ def _names(page: dict[str, Any]) -> str:
 
 def _settled(turn: Turn, done: str, declined: str) -> str:
     """Report what the last tool actually returned, decline included."""
-    return declined if _declined(turn.last) else done
+    return declined if _refused(turn) else done
 
 
-def _declined(content: Any) -> bool:
-    """A confirmation card the user cancels comes back as a declined result.
+def _refused(turn: Turn) -> bool:
+    """Whether the last tool return was a refusal rather than a result.
 
-    Which is why an answer reads the result rather than assuming the action
-    happened: the tool call is identical either way.
+    A refused action is a tool *return*, not an error, which is why an answer
+    reads the result instead of assuming the action happened: the tool call looks
+    identical either way.
+
+    The two mechanisms this gallery shows refuse differently, and only one of them
+    is structured:
+
+    - A **server-side** approval the user denies comes back with
+      ``ToolReturnPart.outcome == "denied"``. That flag is the reliable signal, and
+      it is checked first.
+    - A **client-side** confirmation the user cancels is an ordinary successful
+      tool result whose *content* happens to say so, because the browser executed
+      the tool and reported a string. There is nothing structured to read.
+
+    The prose check is therefore for the client-side case only, and it is
+    deliberately loose: the wording is not ours and it is not stable. Three
+    phrasings already reach here for one idea — the component's "User declined the
+    action.", django-ag-ui's "Cancelled by user." for a denied approval, and
+    pydantic-ai's own "The tool call was denied." default underneath it.
     """
-    body = content if isinstance(content, str) else json.dumps(content)
-    return "declin" in body.lower()
+    if turn.last_outcome == "denied":
+        return True
+    body = turn.last if isinstance(turn.last, str) else json.dumps(turn.last)
+    return any(word in body.lower() for word in ("declin", "denied", "cancel"))
 
 
 def _summarise(content: Any) -> list[str]:
