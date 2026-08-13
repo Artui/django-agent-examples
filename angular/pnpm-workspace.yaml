@@ -1,16 +1,17 @@
-# pnpm blocks package build scripts by default and, since pnpm 11, fails the
-# install rather than warning. The Angular CLI needs these native postinstalls
-# (esbuild's binary, lmdb for the build cache), so the allowance is recorded here
-# instead of answered at an interactive prompt.
 allowBuilds:
-  "@parcel/watcher": true
-  esbuild: true
-  lmdb: true
-  msgpackr-extract: true
-
+  '@parcel/watcher': set this to true or false
+  esbuild: set this to true or false
+  lmdb: set this to true or false
+  msgpackr-extract: set this to true or false
 # pnpm can enforce a minimum release age, refusing a version published within the
-# last day. These two are newer than that window and are wanted anyway: the web
-# component release is the fix this gallery exists to have found. Both entries can
-# be deleted once the versions age past whatever window you run.
+# last day. Both of these are newer than that window and are wanted anyway: the
+# component releases are the fixes this gallery exists to have found.
+#
+# Two entries, not one, and the outgoing version matters as much as the incoming
+# one: the policy checks every entry already in the lockfile before it resolves
+# anything, so dropping 0.23.1 from this list while the lock still held it failed
+# the install outright rather than upgrading past it. Both can go once the versions
+# age past whatever window you run.
 minimumReleaseAgeExclude:
   - "@artooi/ag-ui-web-component@0.23.1"
+  - "@artooi/ag-ui-web-component@0.24.0"
