@@ -8,11 +8,20 @@ dependencies = [
     "django>=5.2",
     "djangorestframework>=3.15",
     # The service/selector layer. One spec set, declared once in a SpecRegistry,
-    # projected to HTTP (viewsets) and to the agent (spec tools).
-    "djangorestframework-services>=0.39",
+    # projected to HTTP (viewsets) and to the agent (spec tools). The floor is 0.40
+    # because the board raises `ServiceNotFound` and `ServiceConflict`, which is
+    # where they arrived.
+    "djangorestframework-services>=0.40",
     # The AG-UI transport. [spec-tools] is the in-process bridge that turns the
-    # same specs into agent tools with no MCP hop.
-    "django-ag-ui[spec-tools]>=0.42",
+    # same specs into agent tools with no MCP hop. The floor is 0.43 for
+    # `approval_prompts`: without it the approval card asks the serialized call.
+    "django-ag-ui[spec-tools]>=0.43",
+    # Declared because this backend imports it directly -- `ToolGuardConfig`,
+    # `AgentDeps`, and `contrib.store` both as an app and as an import path. It
+    # arrives transitively through django-ag-ui either way, which is exactly why a
+    # direct import of it has to be declared: a transitive floor is somebody
+    # else's promise.
+    "django-pydantic-agent>=0.15.1",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle. The floor
     # is 0.23: earlier bundles abandon a sidebar run at its first navigating tool

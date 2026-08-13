@@ -116,16 +116,19 @@ def test_move_persists_and_the_precondition_holds_the_slot(api: Client, demo_use
     event.refresh_from_db()
     assert (str(event.day), event.start_hour) == ("2026-08-12", 15)
 
-    # A second event onto the same cell is a state rule, declared on the spec,
-    # so it answers the same way on both transports. Over HTTP that is a 422:
-    # every non-validation ServiceError maps there, whatever the subclass says.
+    # A second event onto the same cell is a state rule, declared on the spec, so
+    # it answers the same way on both transports. Over HTTP that is now a 409,
+    # because `SlotTaken` is a `ServiceConflict` -- and this test used to assert
+    # 422 with a comment explaining that every non-validation error mapped there
+    # "whatever the subclass says". Writing that comment is what produced the
+    # typed members in drf-services 0.40.0.
     other = Event.objects.create(owner=demo_user, title="Elsewhere")
     clash = api.post(
         "/api/events/move/",
         {"event_id": other.pk, "day": "2026-08-12", "start_hour": 15},
         content_type="application/json",
     )
-    assert clash.status_code == 422
+    assert clash.status_code == 409
     assert "already held by" in clash.json()["detail"]
 
 
@@ -140,6 +143,12 @@ def test_move_rejects_a_day_without_an_hour(api: Client, demo_user: Any) -> None
 
 
 def test_move_refuses_an_event_owned_by_someone_else(api: Client, demo_user: Any) -> None:
+    """A row you cannot see answers 404, not 403, and that is deliberate.
+
+    `UnknownEvent` is a `ServiceNotFound`, and the lookup that raises it is scoped
+    to the owner, so "no such event" and "not yours" are indistinguishable from
+    outside. Answering 403 here would confirm that somebody else's row exists.
+    """
     stranger = get_user_model().objects.create(username="stranger")
     theirs = Event.objects.create(owner=stranger, title="Not yours")
 
@@ -149,7 +158,7 @@ def test_move_refuses_an_event_owned_by_someone_else(api: Client, demo_user: Any
         content_type="application/json",
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 404
 
 
 def test_the_tool_catalog_carries_both_kinds_of_tool(api: Client) -> None:

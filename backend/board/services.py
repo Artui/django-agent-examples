@@ -9,26 +9,34 @@ from __future__ import annotations
 
 from typing import Any
 
-from rest_framework_services import ServiceError
+from rest_framework_services import ServiceConflict, ServiceError, ServiceNotFound
 
 from board.models import Event
 from board.serializers import CreateEventInput, MoveEventInput, ReorderEventInput
 
 
-class SlotTaken(ServiceError):
+class SlotTaken(ServiceConflict):
     """Two events cannot hold the same cell of the grid."""
 
 
-class UnknownEvent(ServiceError):
+class UnknownEvent(ServiceNotFound):
     """No such event, or not this user's."""
 
 
-# Both of these reach a client as `422 Unprocessable Content` over HTTP and as a
-# readable tool error under the agent. That is the whole point of raising the
-# framework-agnostic error rather than a DRF one: a DRF `APIException` would be
-# correct over HTTP and an unhandled 500 everywhere else. Note that a
-# `status_code` attribute on the subclass would *not* change the HTTP status —
-# every non-validation `ServiceError` maps to 422.
+# The member says *what kind* of failure it is, and every transport gets the
+# distinction: `409` and `404` over HTTP, a readable tool error under the agent.
+# That is the whole point of raising the framework-agnostic error rather than a
+# DRF one — a DRF `APIException` would be correct over HTTP and an unhandled 500
+# everywhere else.
+#
+# These were both plain `ServiceError` subclasses when this gallery was built,
+# because there was nothing else to raise: every non-validation error mapped to a
+# fixed `422` and a `status_code` attribute on the subclass was read by nobody.
+# Writing that attribute here, watching a 422 come back, and going to look is what
+# produced the two members — they arrived in drf-services 0.40.0.
+#
+# `UnknownEvent` answers the same way for "no such event" and "not yours", which is
+# `owned_event` below: a `403` on a row you cannot see confirms that it exists.
 
 
 def owned_event(user: Any, event_id: int) -> Event:
@@ -86,6 +94,10 @@ def reorder_event(*, user: Any, data: ReorderEventInput) -> Event:
     """Renumber the backlog so `event_id` sits directly before `before_event_id`."""
     event = owned_event(user, data.event_id)
     if event.day is not None:
+        # Deliberately the generic member, and the contrast is the point: a
+        # scheduled event is not *colliding* with anything, and re-reading the
+        # board will not make this call work. "Understood, and still not allowed"
+        # is a 422. Not every rule is a conflict.
         raise ServiceError("Only backlog events can be reordered.")
     backlog = [
         candidate

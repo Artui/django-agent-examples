@@ -159,6 +159,16 @@ that listens to drag events, or use the native API as these apps do. React's
 synthetic `onDrop` does receive the dispatched sequence, including the
 `DataTransfer`.
 
+**A refused write says which kind of refusal it is.** The board raises
+`ServiceConflict` for a taken slot and `ServiceNotFound` for an event that is absent
+*or not yours* — the same answer for both, deliberately, since a 403 on a row you
+cannot see confirms that it exists. Over HTTP that is `409` and `404`; under the
+agent it is a readable tool error either way. These were plain `ServiceError`
+subclasses when this gallery was built, because there was nothing else to raise:
+everything non-validation mapped to a fixed `422`. Writing a `status_code` attribute
+here, watching the 422 come back, and going to look is what produced the two members
+upstream.
+
 **There are two confirmation mechanisms here, and they are not variants of each
 other.** `confirmPredicate` gates a *page action* inside the browser: the element
 asks before it dispatches, and if you refuse, the server never hears about it. The
@@ -178,10 +188,11 @@ successful result whose text happens to say so. Read the outcome, not the wordin
 
 **A server-side write is invisible to the page that is showing the data.** Approve
 the booking and the row exists; the board keeps showing what it fetched on mount,
-because nothing told it otherwise. The component's events (toggle, unread, submit,
-attachments, state) do not include "a run finished", so the channel back to the page
-is AG-UI shared state, which both ends have to opt into. Until this gallery wires
-that up, reload to see a server-side booking land.
+because nothing told it otherwise. That gap is what produced the component's
+`ag-ui-run-finished` event (0.24.0): it fires once per interaction with the tools that
+ran and which side ran them, so a host can refetch when any of them was a server tool.
+This gallery does not listen for it yet — that is the shared-state slice — so for now,
+reload to see a server-side booking land.
 
 **A page action reports that it fired, not that it worked.** `drag_and_drop`
 returns as soon as it has dispatched the drag. Whether the page's own save

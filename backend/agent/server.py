@@ -66,5 +66,15 @@ agent = AGUIServer(
             enabled=True,
             require_approval=frozenset({"move_event", "reorder_event", "create_event"}),
         ),
+        # What the card actually asks. Without these the question is the call
+        # spelled out -- `Approve create_event({"title": "Design sync", ...})?` --
+        # which is accurate and not something to put in front of a person. A
+        # registry tool would carry its own `confirm=`; a spec tool has no such
+        # field, so the wording lives here, beside the policy that gates it.
+        approval_prompts={
+            "create_event": "Add this event to the board?",
+            "move_event": "Move this event, saving straight away?",
+            "reorder_event": "Reorder the backlog?",
+        },
     ),
 )
