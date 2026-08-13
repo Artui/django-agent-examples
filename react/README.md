@@ -93,6 +93,11 @@ real interaction rather than a page scroll.
 - The element requests the current thread's messages on mount, which is a `404`
   for a thread that has never been saved. Harmless, and visible in the console on
   a first visit.
+- **Reloading truncates the restored transcript**, as of web component 0.23.0.
+  The server sends `"toolCalls": null` on an assistant turn that called no tool,
+  the replay guards only against the key being absent, and the resulting
+  `TypeError` stops the replay at the first plain answer. The conversation is
+  intact in the database — only the restored view is short. Reported upstream.
 - Dark mode comes from `prefers-color-scheme` on the page. The element inherits
   `--ag-ui-accent` from it, so the ring it draws on the page is the board's accent
   colour rather than the component's default.
