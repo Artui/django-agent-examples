@@ -108,7 +108,15 @@ export function App() {
         <Assistant
           routeMap={ROUTE_MAP}
           navigate={(path) => navigate(path)}
-          getPageMap={() => buildPageMap(view, visibleDays, board)}
+          getPageMap={() =>
+            buildPageMap(view, visibleDays, {
+              saving: board.saving,
+              filter: board.filter,
+              selection: board.selection,
+              scheduled: board.scheduled,
+              backlog: board.backlog,
+            })
+          }
           readBoardState={() => ({
             view,
             filter: board.filter,
