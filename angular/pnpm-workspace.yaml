@@ -1,0 +1,9 @@
+# pnpm blocks package build scripts by default and, since pnpm 11, fails the
+# install rather than warning. The Angular CLI needs these native postinstalls
+# (esbuild's binary, lmdb for the build cache), so the allowance is recorded here
+# instead of answered at an interactive prompt.
+allowBuilds:
+  "@parcel/watcher": true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true

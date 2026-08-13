@@ -18,7 +18,14 @@ export interface EventRow {
 }
 
 /** The demo token seeded by `manage.py seed_board`. Not a secret, by design. */
-export const DEMO_TOKEN = import.meta.env["VITE_DEMO_TOKEN"] ?? "demo-token-not-a-secret";
+export const DEMO_TOKEN = readToken();
+
+function readToken(): string {
+  // Vite exposes build-time env on `import.meta.env`; the Angular CLI does not.
+  // Written to compile under both so this file stays identical in every app.
+  const meta = import.meta as ImportMeta & { env?: Record<string, string | undefined> };
+  return meta.env?.["VITE_DEMO_TOKEN"] ?? "demo-token-not-a-secret";
+}
 
 export function authHeaders(): Record<string, string> {
   return { Authorization: `Token ${DEMO_TOKEN}` };

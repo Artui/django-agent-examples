@@ -1,0 +1,26 @@
+{
+  "name": "ag-ui-gallery-angular",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "ng serve",
+    "build": "ng build",
+    "type-check": "ng build --configuration development --output-path dist/type-check"
+  },
+  "dependencies": {
+    "@artooi/ag-ui-web-component": "^0.23.0",
+    "@angular/common": "^22.1.0",
+    "@angular/compiler": "^22.1.0",
+    "@angular/core": "^22.1.0",
+    "@angular/platform-browser": "^22.1.0",
+    "@angular/router": "^22.1.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.1.3",
+    "@angular/cli": "^22.1.3",
+    "@angular/compiler-cli": "^22.1.0",
+    "typescript": "~6.0.2"
+  }
+}
