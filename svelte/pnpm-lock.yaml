@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@artooi/ag-ui-web-component':
-        specifier: ^0.23.0
-        version: 0.23.0
+        specifier: ^0.23.1
+        version: 0.23.1
       svelte:
         specifier: ^5.56.9
         version: 5.56.9
@@ -42,8 +42,8 @@ packages:
   '@ag-ui/proto@0.0.57':
     resolution: {integrity: sha512-pPENOZt0P6ibH8sCTgq05wLYXi5t3P9B5r/1bWYehXjUxtyOdnukSlWM++SsCIwUXsQdm/b3aBgGjEeTF7RenA==}
 
-  '@artooi/ag-ui-web-component@0.23.0':
-    resolution: {integrity: sha512-Q25XM8yDn8T87UOQTsTqyVVH8V09+gRs7IClmLga2X4+1YASKnHODSMD6ycc7Gu2hDqe0ARcxGE3tDFe8KVufw==}
+  '@artooi/ag-ui-web-component@0.23.1':
+    resolution: {integrity: sha512-Kt5eREviWPmXyczMOVV42F+0cbY9uvX16HHZIXyGsQh0WtGzQ09WP90boou7Y6uorSIjFdCcpDrrhIohfUnMIA==}
     engines: {node: '>=22'}
 
   '@bufbuild/protobuf@2.13.0':
@@ -509,7 +509,7 @@ snapshots:
       '@bufbuild/protobuf': 2.13.0
       '@protobuf-ts/protoc': 2.11.1
 
-  '@artooi/ag-ui-web-component@0.23.0':
+  '@artooi/ag-ui-web-component@0.23.1':
     dependencies:
       '@ag-ui/client': 0.0.57
       '@ag-ui/core': 0.0.57

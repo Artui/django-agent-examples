@@ -4,4 +4,3 @@
 # be deleted once the versions age past whatever window you run.
 minimumReleaseAgeExclude:
   - "@artooi/ag-ui-web-component@0.23.1"
-  - "svelte@5.56.9"

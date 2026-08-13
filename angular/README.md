@@ -76,8 +76,8 @@ lift into your own project.
   prompt.
 - The production budget is raised to 800 kB. Most of the bundle is the chat element
   and `@ag-ui/client`; a real app would code-split them.
-- **Reloading truncates the restored transcript**, as of web component 0.23.0. The
-  server sends `"toolCalls": null` on an assistant turn that called no tool, the
-  replay guards only against the key being absent, and the resulting `TypeError`
-  stops the replay at the first plain answer. Reported upstream; the conversation
-  itself is intact in the database.
+- Reloading used to truncate the restored transcript: the server sends
+  `"toolCalls": null` on an assistant turn that called no tool, and the replay
+  guarded only against the key being absent, so a `TypeError` stopped it at the
+  first plain answer. **Found by this gallery and fixed upstream in web component
+  0.23.1**, which is what these apps now install.

@@ -89,8 +89,8 @@ can read start to finish and lift into your own project.
 - The three routes render nothing themselves — `App.vue` owns the board state and
   picks the view from the current path. That keeps the state in one place without
   a store, at the cost of one small oddity in `main.ts`.
-- **Reloading truncates the restored transcript**, as of web component 0.23.0. The
-  server sends `"toolCalls": null` on an assistant turn that called no tool, the
-  replay guards only against the key being absent, and the resulting `TypeError`
-  stops the replay at the first plain answer. Reported upstream; the conversation
-  itself is intact in the database.
+- Reloading used to truncate the restored transcript: the server sends
+  `"toolCalls": null` on an assistant turn that called no tool, and the replay
+  guarded only against the key being absent, so a `TypeError` stopped it at the
+  first plain answer. **Found by this gallery and fixed upstream in web component
+  0.23.1**, which is what these apps now install.

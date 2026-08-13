@@ -7,3 +7,10 @@ allowBuilds:
   esbuild: true
   lmdb: true
   msgpackr-extract: true
+
+# pnpm can enforce a minimum release age, refusing a version published within the
+# last day. These two are newer than that window and are wanted anyway: the web
+# component release is the fix this gallery exists to have found. Both entries can
+# be deleted once the versions age past whatever window you run.
+minimumReleaseAgeExclude:
+  - "@artooi/ag-ui-web-component@0.23.1"

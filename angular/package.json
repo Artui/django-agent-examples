@@ -8,12 +8,12 @@
     "type-check": "ng build --configuration development --output-path dist/type-check"
   },
   "dependencies": {
-    "@artooi/ag-ui-web-component": "^0.23.0",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@artooi/ag-ui-web-component": "^0.23.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

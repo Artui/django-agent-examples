@@ -69,8 +69,8 @@ can read start to finish and lift into your own project.
   do not need a dependency, and it makes the seam the agent uses obvious —
   `navigate()` is what the chat element calls and what the header buttons call.
 - `tsconfig.json` targets `ES2023` because the board uses `toSorted()`.
-- **Reloading truncates the restored transcript**, as of web component 0.23.0. The
-  server sends `"toolCalls": null` on an assistant turn that called no tool, the
-  replay guards only against the key being absent, and the resulting `TypeError`
-  stops the replay at the first plain answer. Reported upstream; the conversation
-  itself is intact in the database.
+- Reloading used to truncate the restored transcript: the server sends
+  `"toolCalls": null` on an assistant turn that called no tool, and the replay
+  guarded only against the key being absent, so a `TypeError` stopped it at the
+  first plain answer. **Found by this gallery and fixed upstream in web component
+  0.23.1**, which is what these apps now install.
