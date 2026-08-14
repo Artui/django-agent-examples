@@ -187,47 +187,89 @@ again afterwards rather than assuming (see the notes below).
 
 ## Things that are not obvious
 
-**The board must use native HTML5 drag and drop.** `drag_and_drop` dispatches the
-standard sequence — `dragstart`, `dragenter`, `dragover`, `drop`, `dragend` —
-with one shared `DataTransfer`. A board built on a pointer-event drag library
-(dnd-kit, most "modern" React DnD packages) listens to `pointerdown`/`pointermove`
-and will not react at all: the agent's drag becomes a silent no-op. Pick a library
-that listens to drag events, or use the native API as these apps do. React's
-synthetic `onDrop` does receive the dispatched sequence, including the
-`DataTransfer`.
+Eighteen things that cost us time, each one its own heading so you can skim the
+outline and read only what is about to bite you. Nothing here is a workaround for a
+broken package — most of it is a seam that behaves correctly and differently from
+how it reads.
 
-**A refused write says which kind of refusal it is.** The board raises
-`ServiceConflict` for a taken slot and `ServiceNotFound` for an event that is absent
-*or not yours* — the same answer for both, deliberately, since a 403 on a row you
-cannot see confirms that it exists. Over HTTP that is `409` and `404`; under the
-agent it is a readable tool error either way. These were plain `ServiceError`
-subclasses when this gallery was built, because there was nothing else to raise:
-everything non-validation mapped to a fixed `422`. Writing a `status_code` attribute
-here, watching the 422 come back, and going to look is what produced the two members
-upstream.
+- **Driving a page** — [native drag and drop](#the-board-must-use-native-html5-drag-and-drop) · [dispatch is not outcome](#a-page-action-reports-that-it-fired-not-that-it-worked) · [a page that saves late](#a-page-that-saves-asynchronously-should-say-so) · [the context field goes nowhere](#runagentinputcontext-does-not-reach-the-model) · [embedded needs a bounded box](#placementembedded-fills-the-box-the-host-gives-it) · [scrolling](#both-ends-of-a-two-axis-scroll-are-not-centred)
+- **Approvals and writes** — [two confirmation mechanisms](#there-are-two-confirmation-mechanisms-and-they-are-not-variants-of-each-other) · [a server write the page cannot see](#a-server-side-write-is-invisible-to-the-page-showing-the-data) · [which refusal it is](#a-refused-write-says-which-kind-of-refusal-it-is) · [a batch of gated writes](#a-batch-of-gated-writes-asks-once-per-call-in-that-calls-own-card)
+- **Channels to and from the model** — [shared state](#shared-state-is-the-other-channel-and-it-is-not-a-substitute) · [attachments](#an-attached-file-never-travels-on-the-wire) · [skills](#a-skill-either-publishes-its-prompt-or-keeps-it) · [voice](#voice-is-one-method-and-the-gallerys-is-scripted-like-the-model) · [asking a question](#asking-a-question-is-a-tool-call-not-an-interrupt)
+- **Runs that outlive a page** — [resuming](#a-resumed-run-is-a-new-run-seeded-from-a-snapshot) · [reading the run list](#the-run-list-is-readable-and-has-one-rough-edge-left) · [errors after the first byte](#an-error-after-the-first-byte-of-a-stream-is-an-event-not-a-status-code)
 
-**There are two confirmation mechanisms here, and they are not variants of each
-other.** `confirmPredicate` gates a *page action* inside the browser: the element
-asks before it dispatches, and if you refuse, the server never hears about it. The
-agent's tool guard gates a *service tool* inside the run: the call is deferred rather
-than executed, the run finishes carrying an interrupt, the component renders the
-approval card, and the loop resumes with your answer. Nothing runs until it does,
-which is the difference that matters for a write. The board's writes are gated the
-second way, per endpoint (`config=`), so the admin mount next door keeps its own
-policy.
+### The board must use native HTML5 drag and drop
 
-Two consequences worth knowing before you copy the pattern. A gated call is
-invisible to the model — the tool stays in its list and the resumed round looks like
-any other round, so gating is a deployment decision rather than something a model has
-to be taught. And a *refusal* is a tool return, not an error: a denied approval
-carries `outcome == "denied"`, while a cancelled page action is an ordinary
-successful result whose text happens to say so. Read the outcome, not the wording.
+`drag_and_drop` dispatches the standard sequence — `dragstart`, `dragenter`,
+`dragover`, `drop`, `dragend` — with one shared `DataTransfer`. A board built on a
+pointer-event drag library (dnd-kit, most "modern" React DnD packages) listens to
+`pointerdown`/`pointermove` and will not react at all: the agent's drag becomes a
+silent no-op. Pick a library that listens to drag events, or use the native API as
+these apps do. React's synthetic `onDrop` does receive the dispatched sequence,
+including the `DataTransfer`.
 
-**A server-side write is invisible to the page that is showing the data**, and
-closing that is three lines. Approving a booking writes the row while the board keeps
+### A page action reports that it fired, not that it worked
+
+`drag_and_drop` returns as soon as it has dispatched the drag. Whether the page's own
+save succeeded is invisible to it, so a refused move still looks like a successful
+tool call. Two things follow, and both are in these apps: the page reports its own
+refusals (the banner), and the agent reads the page again before claiming anything.
+Where the truth matters more than the visible action, call the operation as a server
+tool instead — `move_event` returns the real error.
+
+### A page that saves asynchronously should say so
+
+The page map carries a `saving` flag, because a verification read straight after a
+drag can outrun the page's own save and conclude that nothing happened. An agent can
+wait for a page that tells it when it is busy; it cannot wait for one that does not.
+
+### `RunAgentInput.context` does not reach the model
+
+The element can auto-inject the page map into every run's `context`, but the
+Pydantic-AI AG-UI adapter does not read that field, so on this backend it goes
+nowhere. The `read_page` tool is the channel that works, and it is the one these apps
+rely on. Nothing to configure; just do not expect the injected copy to be visible
+server-side.
+
+### `placement="embedded"` fills the box the host gives it
+
+So give it one. A grid or flex item defaults to `min-height: auto`, which lets a
+growing transcript push the composer off the bottom of the window instead of
+scrolling inside the panel. `min-height: 0` plus `overflow: hidden` on the containing
+element is the fix, and it belongs to the page.
+
+### Both ends of a two-axis scroll are not centred
+
+`scroll_to` centres the target vertically and brings it into view horizontally
+(`inline: "nearest"`), so on a wide board the target lands at the near edge rather
+than the middle. It is in view, which is the contract.
+
+Related, if you drive these apps with an automated browser and `scroll_to` appears to
+do nothing: check whether a plain `scrollTo({behavior: "smooth"})` works there at all.
+Under `prefers-reduced-motion` the component scrolls instantly instead, which is the
+path that always works.
+
+### There are two confirmation mechanisms, and they are not variants of each other
+
+`confirmPredicate` gates a *page action* inside the browser: the element asks before
+it dispatches, and if you refuse, the server never hears about it. The agent's tool
+guard gates a *service tool* inside the run: the call is deferred rather than
+executed, the run finishes carrying an interrupt, the component renders the approval
+card, and the loop resumes with your answer. Nothing runs until it does, which is the
+difference that matters for a write. The board's writes are gated the second way, per
+endpoint (`config=`), so the admin mount next door keeps its own policy.
+
+Two consequences worth knowing before you copy the pattern. A gated call is invisible
+to the model — the tool stays in its list and the resumed round looks like any other
+round, so gating is a deployment decision rather than something a model has to be
+taught. And a *refusal* is a tool return, not an error: a denied approval carries
+`outcome == "denied"`, while a cancelled page action is an ordinary successful result
+whose text happens to say so. Read the outcome, not the wording.
+
+### A server-side write is invisible to the page showing the data
+
+Closing that is three lines. Approving a booking writes the row while the board keeps
 showing what it fetched on mount, because nothing told it otherwise. That gap is what
-produced the component's `ag-ui-run-finished` event (0.24.0), and all four apps now
-listen for it:
+produced the component's `ag-ui-run-finished` event, and all four apps listen for it:
 
 ```js
 chat.addEventListener("ag-ui-run-finished", (event) => {
@@ -238,142 +280,141 @@ chat.addEventListener("ag-ui-run-finished", (event) => {
 Only `side === "server"` matters — a client tool ran in the app's own handler, which
 already knows what it did.
 
-**Shared state is the other channel, and it is not a substitute.** The React app's
-**week note** rides `RunAgentInput.state`: the page sends it with every run, a
-server-side tool rewrites it, and the snapshot streams back, so the page re-renders
-having executed nothing. `registerPageState` is the opposite arrangement — the agent
-calls back into the page's own writer. Ask for *summarise the week into the note* and
-you can watch both halves at once: two server tools in **one** request, the second's
-argument composed from the first's result, and the note appearing on the page from the
-state event rather than from either tool's return value.
+### A refused write says which kind of refusal it is
+
+The board raises `ServiceConflict` for a taken slot and `ServiceNotFound` for an
+event that is absent *or not yours* — the same answer for both, deliberately, since a
+403 on a row you cannot see confirms that it exists. Over HTTP that is `409` and
+`404`; under the agent it is a readable tool error either way. These were plain
+`ServiceError` subclasses when this gallery was built, because there was nothing else
+to raise: everything non-validation mapped to a fixed `422`. Writing a `status_code`
+attribute here, watching the 422 come back, and going to look is what produced the
+two members upstream.
+
+### A batch of gated writes asks once per call, in that call's own card
+
+Importing three rows defers three `create_event` calls, and the wire takes a
+different answer for each. Each question renders **inside the tool card of the call it
+gates**, above that call's arguments, and all of them appear at once — so a batch is
+answered per row rather than in the order the cards happen to arrive.
+
+The reason the card matters is that the *question* cannot tell them apart: prompt text
+comes from the tool, so all three read "Add this event to the board?". What
+distinguishes them is the arguments displayed above each one. While the run waits,
+those cards read **`waiting for you`** rather than "running…", because nothing is
+running — the stream is over and the server is idle. A frontend tool like `ask_user`
+does keep saying "running…", correctly: the browser is executing it.
+
+### Shared state is the other channel, and it is not a substitute
+
+The React app's **week note** rides `RunAgentInput.state`: the page sends it with
+every run, a server-side tool rewrites it, and the snapshot streams back, so the page
+re-renders having executed nothing. `registerPageState` is the opposite arrangement —
+the agent calls back into the page's own writer. Ask for *summarise the week into the
+note* and you can watch both halves at once: two server tools in **one** request, the
+second's argument composed from the first's result, and the note appearing on the page
+from the state event rather than from either tool's return value.
 
 Worth being precise about, because it is easy to overstate: the write is still a tool
 call, so it still renders a card and could still be gated. What differs is who holds
 the value and who changes it.
 
-**A page action reports that it fired, not that it worked.** `drag_and_drop`
-returns as soon as it has dispatched the drag. Whether the page's own save
-succeeded is invisible to it, so a refused move still looks like a successful tool
-call. Two things follow, and both are in these apps: the page reports its own
-refusals (the banner), and the agent reads the page again before claiming
-anything. Where the truth matters more than the visible action, call the operation
-as a server tool instead — `move_event` returns the real error.
+### An attached file never travels on the wire
 
-**A page that saves asynchronously should say so.** The page map carries a
-`saving` flag, because a verification read straight after a drag can outrun the
-page's own save and conclude that nothing happened. An agent can wait for a page
-that tells it when it is busy; it cannot wait for one that does not.
+And the model is told about it in its instructions. The composer uploads to
+`attachments/` and keeps a ref — an id, a name, a type, a size — which rides the
+message it sends. The server collects the refs off the posted messages, renders them
+as a fenced manifest, and hands that to the model as *additional run instructions*:
+not a message, not part of the prompt, never stored on the thread. The model reaches
+the content by passing an id to `read_attachment`, which exists only for that request
+and only for that user, so an id the client invents resolves to nothing.
 
-**`placement="embedded"` fills the box the host gives it — so give it one.** A
-grid or flex item defaults to `min-height: auto`, which lets a growing transcript
-push the composer off the bottom of the window instead of scrolling inside the
-panel. `min-height: 0` plus `overflow: hidden` on the containing element is the
-fix, and it belongs to the page.
+Two consequences worth knowing: a large file costs one upload rather than a payload on
+every turn, and — because the manifest is derived from the *messages* — it rides every
+later turn of the conversation, which is durable across a reload and therefore not a
+signal that the current question is about the file.
 
-**`RunAgentInput.context` does not reach the model.** The element can auto-inject
-the page map into every run's `context`, but the Pydantic-AI AG-UI adapter does
-not read that field, so on this backend it goes nowhere. The `read_page` tool is
-the channel that works, and it is the one these apps rely on. Nothing to
-configure; just do not expect the injected copy to be visible server-side.
+### A skill either publishes its prompt or keeps it
 
-**An attached file never travels on the wire, and the model is told about it in
-its instructions.** The composer uploads to `attachments/` and keeps a ref — an
-id, a name, a type, a size — which rides the message it sends. The server collects
-the refs off the posted messages, renders them as a fenced manifest, and hands
-that to the model as *additional run instructions*: not a message, not part of the
-prompt, never stored on the thread. The model reaches the content by passing an id
-to `read_attachment`, which exists only for that request and only for that user, so
-an id the client invents resolves to nothing. Two consequences worth knowing: a
-large file costs one upload rather than a payload on every turn, and — because the
-manifest is derived from the *messages* — it rides every later turn of the
-conversation, which is durable across a reload and therefore not a signal that the
-current question is about the file.
+And the choice is a real one. Two of the three chips carry no prompt text: the client
+sends the bare `/name` token and the agent decides what it means, so nothing internal
+reaches anyone who can read the catalog — and `/agent/skills/` is a plain GET. The
+third publishes *What is on {day}?* on purpose, because it buys something the other
+kind cannot have: a placeholder **the page fills in**. The server does not know which
+day you are looking at, and the browser does.
 
-**A skill either publishes its prompt or keeps it, and the choice is a real one.**
-Two of the three chips carry no prompt text: the client sends the bare `/name`
-token and the agent decides what it means, so nothing internal reaches anyone who
-can read the catalog — and `/agent/skills/` is a plain GET. The third publishes
-*What is on {day}?* on purpose, because it buys something the other kind cannot
-have: a placeholder **the page fills in**. The server does not know which day you
-are looking at, and the browser does.
+`skillContext` is that seam — a callback read at the moment the chip is pressed. The
+apps return a day only in the day view, so in the week view the placeholder cannot be
+filled, and the component does something better than refusing: it puts the
+partly-filled prompt in the composer with `{day}` **selected**, focuses it, and says
+which value it wanted. The next keystroke replaces the placeholder. Switching to the
+day view is the other fix, which makes the guard something you can drive rather than
+read about.
 
-`skillContext` is that seam — a callback read at the moment the chip is pressed.
-The apps return a day only in the day view, so in the week view the placeholder
-cannot be filled, and the component does something better than refusing: it puts
-the partly-filled prompt in the composer with `{day}` **selected**, focuses it, and
-says which value it wanted. The next keystroke replaces the placeholder. Switching
-to the day view is the other fix, which makes the guard something you can drive
-rather than read about.
+### Voice is one method, and the gallery's is scripted like the model
 
-**Voice is one method, and the gallery's is scripted like the model.** The mic posts
-a clip to `transcribe/`, the backend answers with text, and the text lands in the
-composer — not sent, so you read it first. A `TranscriptionBackend` is a single async
-method with no store and no artefact behind it, which is why swapping in a real
-provider is one argument on the mount:
+The mic posts a clip to `transcribe/`, the backend answers with text, and the text
+lands in the composer — not sent, so you read it first. A `TranscriptionBackend` is a
+single async method with no store and no artefact behind it, which is why swapping in
+a real provider is one argument on the mount:
 `transcription_backend=OpenAITranscriptionBackend()`.
 
 This one maps the clip's **byte length** onto a fixed list of phrases the board
 already answers. That keeps it a function of the audio rather than of a counter: the
-same recording always transcribes the same way, nothing is held between requests,
-and every test stays independent of the order it ran in. A dictated sentence is an
+same recording always transcribes the same way, nothing is held between requests, and
+every test stays independent of the order it ran in. A dictated sentence is an
 ordinary one from there — it reaches the same approval gate a typed one does.
 
-**Asking a question is a tool call, and a different mechanism from an approval.**
+### Asking a question is a tool call, not an interrupt
+
 `askUser` offers the agent the component's built-in `ask_user`: the browser runs it,
 renders a card, and returns the answer as that call's result. Nothing is configured
 server-side and no interrupt is involved — unlike a gated write, where the call is
 *deferred* and answered through `resume`. Both look like "the run paused" from the
 outside, and only one of them has anything waiting on the server.
 
-Two things this gallery does with it are worth copying. The options are the slots
-the **page** reported, so the user is offered what exists rather than a list the
-backend guessed at; and the free-text answer goes through the same matcher as the
-original request, which is what makes `allow_custom` more than decoration — type a
-slot the card never offered and it still resolves. The trigger is *ambiguity*, not
-a missing word: "move standup to Friday" names four possible slots, and picking one
-silently is the behaviour the question replaced.
+Two things this gallery does with it are worth copying. The options are the slots the
+**page** reported, so the user is offered what exists rather than a list the backend
+guessed at; and the free-text answer goes through the same matcher as the original
+request, which is what makes `allow_custom` more than decoration — type a slot the
+card never offered and it still resolves. The trigger is *ambiguity*, not a missing
+word: "move standup to Friday" names four possible slots, and picking one silently is
+the behaviour the question replaced.
 
-**A resumed run is a new run seeded from a snapshot, not a stream you rejoin.** The
-⭯ panel lists runs the server says have a snapshot; type the next turn, pick
-*Resume* or *Fork*, and the component posts **only that turn** to
-`resume/<id>/` — the prior history comes from the snapshot, so sending it again
-would duplicate it. The two verbs are one mechanism: both branch a new run with a
-fresh id and `parent_run_id` pointing back, so a fork never spends the snapshot it
-came from and the source stays continuable. What you do *not* get is stream
-resumability: if a connection drops mid-run, those events are gone and the run is
-lost — resume is a deliberate action afterwards, not a reconnect.
+### A resumed run is a new run seeded from a snapshot
 
-**Two rough edges in the panel, and neither is the component's fault.** Rows are
-labelled with a relative time and nothing else, because that is all the run index
-sends — so three runs a minute apart are three identical rows. And they arrive
-**oldest first**, while both packages' docs say newest first, which puts the run you
-probably want at the bottom. Both are recorded as findings; if you build your own
-panel, sort it yourself and do not trust `runs[0]` to be the latest.
+Not a stream you rejoin. The ↺ panel lists runs the server says have a snapshot; type
+the next turn, pick *Resume* or *Fork*, and the component posts **only that turn** to
+`resume/<id>/` — the prior history comes from the snapshot, so sending it again would
+duplicate it. The two verbs are one mechanism: both branch a new run with a fresh id
+and `parent_run_id` pointing back, so a fork never spends the snapshot it came from
+and the source stays continuable.
 
-**An error after the first byte of a stream is an event, not a status code.** The
-run endpoint sends `RUN_STARTED` immediately, which commits the response at `200`.
-Everything that can go wrong afterwards — a colliding run id, a model failure —
-arrives as `RUN_ERROR` in the stream. A client that checks only `response.ok` will
+What you do *not* get is stream resumability: if a connection drops mid-run, those
+events are gone and the run is lost — resume is a deliberate action afterwards, not a
+reconnect.
+
+### The run list is readable, and has one rough edge left
+
+Each row leads with the run's **first user message**, from the index's `preview`
+field, with the time beside it — so the panel reads as a list of conversations rather
+than of timestamps. Rows arrive newest first.
+
+The edge: two runs that opened on the *same sentence* still read alike, because the
+words are the row's identity and those words are identical. Recorded as a finding
+against the component.
+
+⚠ **If you build your own panel over a `StepStore` rather than over this endpoint,
+sort it yourself.** The store answers **oldest first** — that is the harness
+protocol's documented order, so callers can take the most recent with `[-1]` — and
+newest-first is this endpoint's presentation choice, not the store's.
+
+### An error after the first byte of a stream is an event, not a status code
+
+The run endpoint sends `RUN_STARTED` immediately, which commits the response at
+`200`. Everything that can go wrong afterwards — a colliding run id, a model failure
+— arrives as `RUN_ERROR` in the stream. A client that checks only `response.ok` will
 call those runs successful.
-
-**A batch of gated writes is answered one card at a time, and the cards do not say
-which is which.** Importing three rows defers three `create_event` calls, and the
-component asks about them in sequence, each card appended below the tool calls
-rather than beside the one it gates. The wire lets you answer each one differently
-and the demo does exactly that in its tests — but on screen the three questions are
-identical, so tell them apart by the order they appear in until the component names
-them. Recorded as a finding against the web component.
-
-**Both ends of a two-axis scroll are not centred.** `scroll_to` centres the
-target vertically and brings it into view horizontally (`inline: "nearest"`), so
-on a wide board the target lands at the near edge rather than the middle. It is in
-view, which is the contract.
-
-**Smooth scrolling can be disabled in automation browsers.** If you drive these
-apps with an automated browser and `scroll_to` appears to do nothing, check
-whether a plain `scrollTo({behavior: "smooth"})` works there at all. Under
-`prefers-reduced-motion` the component scrolls instantly instead, which is the
-path that always works.
 
 ## Conventions across the apps
 
