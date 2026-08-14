@@ -394,3 +394,9 @@ These are runnable apps, not something you install. The gate is that each one
 builds, type-checks and boots against the backend, and that the agent can perform
 every interaction in the table. The backend carries a small test suite that drives
 the agent endpoint the way a client does; run it with `cd backend && uv run pytest`.
+
+## License
+
+MIT, the same as the packages it demonstrates — see [LICENSE](LICENSE). Copy what
+is useful: that is the point of the repo, and the reason it carries a license at
+all rather than being readable but unusable.
