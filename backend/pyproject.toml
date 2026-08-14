@@ -33,7 +33,7 @@ dependencies = [
     # sidebar run at its first navigating tool once the thread has stored history
     # (fixed in 0.23), and earlier still than that the approved call's card breaks
     # its own name across three lines in a panel this width.
-    "django-admin-agent>=0.24",
+    "django-admin-agent>=0.25",
     # ASGI is required: the agent endpoint streams.
     "uvicorn>=0.34",
 ]
