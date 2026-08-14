@@ -1,8 +1,18 @@
+# pnpm 11 refuses to run a dependency's install scripts until each is answered
+# here, and the answer is per package rather than a blanket allow. It writes this
+# block itself with "set this to true or false" as the value and then **fails the
+# install** on the next run, which reads as a lockfile problem and is not one.
+#
+# esbuild is the only true: its install script fetches the platform binary the
+# Angular build shells out to, so skipping it breaks the build outright. The other
+# three are native accelerators with working fallbacks -- lmdb and msgpackr-extract
+# back the on-disk build cache, and @parcel/watcher is only reached in watch mode --
+# so they stay off, and both `build` and `watch` were run against these values.
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  esbuild: set this to true or false
-  lmdb: set this to true or false
-  msgpackr-extract: set this to true or false
+  '@parcel/watcher': false
+  esbuild: true
+  lmdb: false
+  msgpackr-extract: false
 # pnpm can enforce a minimum release age, refusing a version published within the
 # last day. Both of these are newer than that window and are wanted anyway: the
 # component releases are the fixes this gallery exists to have found.
