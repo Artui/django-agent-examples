@@ -9,9 +9,10 @@ allowBuilds:
 #
 # Two entries, not one, and the outgoing version matters as much as the incoming
 # one: the policy checks every entry already in the lockfile before it resolves
-# anything, so dropping 0.23.1 from this list while the lock still held it failed
-# the install outright rather than upgrading past it. Both can go once the versions
+# anything, so listing only the version you are upgrading *to* fails the install
+# outright rather than upgrading past the one you are on. A version drops off this
+# list once no lockfile mentions it, and the whole list can go once the versions
 # age past whatever window you run.
 minimumReleaseAgeExclude:
-  - "@artooi/ag-ui-web-component@0.23.1"
   - "@artooi/ag-ui-web-component@0.24.0"
+  - "@artooi/ag-ui-web-component@0.25.0"

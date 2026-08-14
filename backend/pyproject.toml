@@ -20,7 +20,7 @@ dependencies = [
     # than a line: it pulls pydantic-ai-harness, which backs the step store the
     # checkpoint panel lists runs from. Both extras belong to one requirement --
     # naming django-ag-ui twice would leave whichever uv resolves last.
-    "django-ag-ui[spec-tools,harness]>=0.43",
+    "django-ag-ui[spec-tools,harness]>=0.44",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path. It
     # arrives transitively through django-ag-ui either way, which is exactly why a
