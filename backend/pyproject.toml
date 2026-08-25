@@ -27,7 +27,11 @@ dependencies = [
     # arrives transitively through django-ag-ui either way, which is exactly why a
     # direct import of it has to be declared: a transitive floor is somebody
     # else's promise.
-    "django-pydantic-agent>=0.15.1",
+    # 0.16 for the attachment store, which this gallery exercises directly:
+    # below it, an attachment whose bytes had left storage raised instead of
+    # reporting itself unavailable, and re-uploading the file adopted the same
+    # missing blob rather than repairing it.
+    "django-pydantic-agent>=0.16",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle. The floor
     # is 0.24, which vendors web component 0.24.0: earlier bundles abandon a
