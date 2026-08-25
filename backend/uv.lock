@@ -33,7 +33,7 @@ requires-dist = [
     { name = "django", specifier = ">=5.2" },
     { name = "django-admin-agent", specifier = ">=0.25" },
     { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.44" },
-    { name = "django-pydantic-agent", specifier = ">=0.15.1" },
+    { name = "django-pydantic-agent", specifier = ">=0.16" },
     { name = "djangorestframework", specifier = ">=3.15" },
     { name = "djangorestframework-services", specifier = ">=0.40" },
     { name = "uvicorn", specifier = ">=0.34" },
@@ -127,9 +127,9 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 dependencies = [
-    { name = "asgiref" },
-    { name = "sqlparse" },
-    { name = "tzdata", marker = "sys_platform == 'win32'" },
+    { name = "asgiref", marker = "python_full_version < '3.12'" },
+    { name = "sqlparse", marker = "python_full_version < '3.12'" },
+    { name = "tzdata", marker = "python_full_version < '3.12' and sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d5/d8/43e9d000519adceb189620b6869ff88031e046df91c2e9da72f8f6918399/django-5.2.17.tar.gz", hash = "sha256:9d4d93be539a18ab80d058eb515900e10951e04c537c5a6b394fc49528d3251f", size = 10889740, upload-time = "2026-08-04T15:04:03.173Z" }
 wheels = [
@@ -144,9 +144,9 @@ resolution-markers = [
     "python_full_version >= '3.12'",
 ]
 dependencies = [
-    { name = "asgiref" },
-    { name = "sqlparse" },
-    { name = "tzdata", marker = "sys_platform == 'win32'" },
+    { name = "asgiref", marker = "python_full_version >= '3.12'" },
+    { name = "sqlparse", marker = "python_full_version >= '3.12'" },
+    { name = "tzdata", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e2/42/6cb20996733984c1f6661daeda3877990836c76c633c6c8879d39f7120eb/django-6.1.tar.gz", hash = "sha256:86a2aacd59b817e4d6ac2ebfe22356c58f66f7b24e503f71b7c2fead677ee48b", size = 11223034, upload-time = "2026-08-05T19:21:53.789Z" }
 wheels = [
@@ -193,16 +193,16 @@ spec-tools = [
 
 [[package]]
 name = "django-pydantic-agent"
-version = "0.15.2"
+version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django", version = "6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pydantic-ai-slim" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/5d/e051d0a20ccebe61b6ded85ba5f64f8dc29a51b51d2a798a4947cd287a61/django_pydantic_agent-0.15.2.tar.gz", hash = "sha256:d2d11d3043946f84364a6c60b0c18013a8ffc715dc0891aa55f9eb5d8f860a6d", size = 285462, upload-time = "2026-08-14T08:25:28.872Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/29/6bc78ca0cf1d3d928439ce7b8b48f56b241e652f1fccb2056c4e3c09f77e/django_pydantic_agent-0.16.0.tar.gz", hash = "sha256:3aa8b5b9ef4664bf55e86cddd4f7c2aa3e18758b07125c85995f54298f5d6ccf", size = 293275, upload-time = "2026-08-25T11:08:42.727Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/b3/52a4e3512dd255d92064533564aa8ecb57b81c115514c39be5695c3e7647/django_pydantic_agent-0.15.2-py3-none-any.whl", hash = "sha256:a7adf5f07d6b6eab393d0d81a906e9a76fecc3418e233172333328b40f64657e", size = 86815, upload-time = "2026-08-14T08:25:27.373Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/35/3202c11c1a451065f48b49e6391e455bf2946d13a6a193c8d372e0d69a32/django_pydantic_agent-0.16.0-py3-none-any.whl", hash = "sha256:12c625c3bd71fd9f65737567887c81814d0db1b26bfeff0ffe1e9820ebf6d562", size = 90627, upload-time = "2026-08-25T11:08:41.124Z" },
 ]
 
 [[package]]
