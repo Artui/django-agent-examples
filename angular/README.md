@@ -87,7 +87,7 @@ These are **light-DOM children** of the element, which is what makes the mechani
 framework-neutral: ordinary elements this component owns and Angular renders, that
 the shadow root pulls into place.
 
-⚠ **Build an `<svg>` with `createElementNS`.** Created through `createElement` it
+**Build an `<svg>` with `createElementNS`.** Created through `createElement` it
 lands in the HTML namespace, where it renders as nothing at all and reports no
 error to explain itself.
 

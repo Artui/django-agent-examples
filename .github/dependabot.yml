@@ -1,0 +1,75 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]
+    # A version published minutes ago is the one most likely to be a compromised
+    # release or a broken first cut, and a bot that proposes it the same day is
+    # how that reaches a lockfile. Waiting a week lets a bad release be yanked
+    # before anything here asks for it. Security updates ignore the cooldown, so
+    # a known vulnerability is still fixed the day it is published.
+    cooldown:
+      default-days: 7
+
+  # The backend is not at the repository root: the four apps are siblings of it,
+  # each with its own manifest, so every ecosystem below names its directory.
+  - package-ecosystem: "uv"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    groups:
+      python:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
+
+  # One entry per app rather than one with four directories, because these are
+  # four independent installs: separate lockfiles, separate node_modules, and a
+  # CI matrix that builds each on its own. A grouped update that touched all four
+  # would fail as one PR when a single framework's upgrade needs source changes.
+  #
+  # "npm" is the ecosystem for pnpm too. Dependabot reads pnpm-lock.yaml under
+  # that name; there is no separate "pnpm" value.
+  - package-ecosystem: "npm"
+    directory: "/react"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: "npm"
+    directory: "/vue"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: "npm"
+    directory: "/svelte"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: "npm"
+    directory: "/angular"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7

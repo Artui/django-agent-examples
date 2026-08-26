@@ -1,0 +1,53 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      # No check-json, unlike the frontend-only sibling. The Angular apps ship
+      # tsconfig.json and tsconfig.app.json with comments in them, which is what
+      # the Angular CLI generates and what its own toolchain reads; a strict JSON
+      # parser rejects both. Stripping the comments to satisfy a hook would make
+      # the generated files diverge from every Angular project a reader has seen.
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      # No lint / format / type-check hooks here, which is where this config
+      # departs from the libraries. Those hooks shell out to Makefile targets
+      # backed by a ruff and ty configuration, and this repo has neither: it is
+      # four demo apps and a backend that exists to drive them, and its gate is
+      # that everything builds, boots and still answers. Adding a linter is a
+      # change to make on its own terms, not a side effect of turning on secret
+      # scanning.
+
+      - id: forbid-local-paths
+        name: "forbid local filesystem paths / personal handles"
+        entry: "/Users/|arturveres"
+        language: pygrep
+        types: [text]
+        exclude: '^\.pre-commit-config\.yaml$'
+
+      - id: forbid-plan-labels
+        name: "forbid internal plan-step labels"
+        entry: '(?<![A-Za-z0-9])(SPEC|SURF|DISP|KEY|FILT|BULK|NEST|NAME|THINK|VOICE|THEME|WELL|PAGE|CARD|REST|I18N|CUST|TOOL|PAI|AUTHZ|CONF|AGH|OAS|WCH|HYG|ADOPT|ANNO|ASYNC|ERR|DUP|PROTO|SEC|VER|GATE|STATE|SESS|CTX|AUDIT|HITL|CODE|STEP|SHARE|SKILL|CAP|MOUNT|SAN|PF|PROV|SCH|LIFE|SUB|CI|DOC|EX|HOST|WIN|REL|CONV|COMM|LINT|PURGE|MCPX|A2A|ATT|ADMIN|MULTI|OFFK|QP|DEPS|CORE|NAV|TSET|MRTR|BOUND|CHAT|NICE|PRE|PIPE|EMIT|SEED|POOL)-\d|(?<![A-Za-z0-9])(Phase|Wave)\s\d'
+        language: pygrep
+        types: [text]
+        exclude: '^\.pre-commit-config\.yaml$'
+
+      # Repo-wide, with no exemption for the apps. The frontend-only sibling has
+      # to spare its src/ because it renders glyphs as product content; nothing
+      # here does. The four apps draw their own icons as inline SVG, so a glyph
+      # in this tree is decoration in prose, and prose that needs a marker to
+      # land is better off saying so in words.
+      - id: forbid-marker-glyphs
+        name: "forbid emoji / marker glyphs in code and docs"
+        entry: '⚠|⭐|⛔|✅|❌|❗|❓|⭕|⚡|☑|✔|✖|✨|❤|⏸|⏰|⌛|⁉|‼|️|\xf0\x9f[\x80-\xbf][\x80-\xbf]'
+        language: pygrep
+        types: [text]
+        exclude: '^\.pre-commit-config\.yaml$'

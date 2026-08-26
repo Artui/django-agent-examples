@@ -404,7 +404,7 @@ The edge: two runs that opened on the *same sentence* still read alike, because 
 words are the row's identity and those words are identical. Recorded as a finding
 against the component.
 
-⚠ **If you build your own panel over a `StepStore` rather than over this endpoint,
+**If you build your own panel over a `StepStore` rather than over this endpoint,
 sort it yourself.** The store answers **oldest first** — that is the harness
 protocol's documented order, so callers can take the most recent with `[-1]` — and
 newest-first is this endpoint's presentation choice, not the store's.
