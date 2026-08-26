@@ -192,6 +192,25 @@ def test_the_tool_catalog_carries_both_kinds_of_tool(api: Client) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
+async def test_the_help_says_where_the_week_note_is_drawn() -> None:
+    """One help text is read in four apps, and one suggestion works in only one.
+
+    `read_week_note` / `write_week_note` are mounted for every frontend, and the
+    run's shared state does not reach the model, so nothing here can tell a Vue
+    reader from a React one. Offering the note unqualified means three of the four
+    are told to try something their board has nowhere to show -- the tool runs, the
+    snapshot streams back, and the screen does not change. Naming the app is what
+    keeps that from reading as a broken assistant.
+    """
+    await _seed()
+    events = await _run(_user_message("hello"))
+
+    reply = _text(events)
+    assert "week note" in reply.lower(), "the note is still worth suggesting"
+    assert "React" in reply, "but not without saying which app draws it"
+
+
+@pytest.mark.django_db(transaction=True)
 async def test_the_agent_answers_from_the_server_side_spec_tool() -> None:
     await _seed()
     events = await _run(_user_message("what is on the board?"))
@@ -213,19 +232,60 @@ async def test_the_agent_reads_the_page_then_drags_the_card_the_page_named() -> 
     assert _arguments(second) == {"from": "event-1", "to": "slot-2026-08-13-15"}
 
 
+# A client-side decline is reported as the component's `declinedAction` string,
+# which is one of `strings` and therefore the host's to replace. These are the
+# three spellings this repo can actually produce: the component's own default,
+# the Svelte app's German override (`svelte/src/i18n.ts`), and the sentence
+# django-ag-ui returns when a server-side approval is denied.
+DECLINE_WORDINGS = [
+    "User declined the action.",
+    "Vom Benutzer abgelehnt.",
+    "Cancelled by user.",
+]
+
+
 @pytest.mark.django_db(transaction=True)
-async def test_a_declined_confirmation_is_reported_as_a_decline() -> None:
-    """The card the user cancels comes back as a declined result, not a failure."""
+@pytest.mark.parametrize("wording", DECLINE_WORDINGS)
+async def test_a_declined_confirmation_is_reported_as_a_decline(wording: str) -> None:
+    """The card the user cancels comes back as a declined result, not a failure.
+
+    Parametrized over the wording because the scripted model must not depend on
+    it. The gallery ships a localized frontend on purpose, so a decline detected
+    by English keywords is a decline missed in the one app built to translate the
+    component -- and the move is then reported as the board refusing it, which is
+    not what happened.
+    """
     await _seed()
     messages = [_user_message("move standup to Thursday at 15:00")]
     first = await _run(*messages)
     with_page = [*messages, *_answered(first, PAGE)]
     dragged = await _run(*with_page)
 
-    settled = await _run(*with_page, *_answered(dragged, "User declined the action."))
+    settled = await _run(*with_page, *_answered(dragged, wording))
 
     assert _tool_calls(settled) == []
     assert "left it where it was" in _text(settled).lower()
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_drag_that_ran_is_never_read_as_a_decline() -> None:
+    """The other half of reading the shape: a result must still be a result.
+
+    A page action that ran answers with an object saying what it did, in any
+    language. Treating that as a refusal would report every successful move as
+    one the user turned down.
+    """
+    await _seed()
+    messages = [_user_message("move standup to Thursday at 15:00")]
+    first = await _run(*messages)
+    with_page = [*messages, *_answered(first, PAGE)]
+    dragged = await _run(*with_page)
+
+    settled = await _run(
+        *with_page, *_answered(dragged, {"dragged": True, "from": "event-1", "to": "slot-1"})
+    )
+
+    assert _tool_calls(settled) == ["read_page"], "a drag that ran is verified, not assumed"
 
 
 @pytest.mark.django_db(transaction=True)

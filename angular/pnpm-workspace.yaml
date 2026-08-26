@@ -14,15 +14,15 @@ allowBuilds:
   lmdb: false
   msgpackr-extract: false
 # pnpm can enforce a minimum release age, refusing a version published within the
-# last day. Both of these are newer than that window and are wanted anyway: the
-# component releases are the fixes this gallery exists to have found.
+# last day. This one is newer than that window and is wanted anyway: the component
+# releases are the fixes this gallery exists to have found.
 #
-# Two entries, not one, and the outgoing version matters as much as the incoming
-# one: the policy checks every entry already in the lockfile before it resolves
-# anything, so listing only the version you are upgrading *to* fails the install
-# outright rather than upgrading past the one you are on. A version drops off this
-# list once no lockfile mentions it, and the whole list can go once the versions
-# age past whatever window you run.
+# One entry now, because the lockfile names one version -- but while an upgrade is
+# in flight the outgoing version matters as much as the incoming one: the policy
+# checks every entry already in the lockfile before it resolves anything, so
+# listing only the version you are upgrading *to* fails the install outright
+# rather than upgrading past the one you are on. Add both, then let the outgoing
+# one drop off once no lockfile mentions it -- and the whole list can go once the
+# versions age past whatever window you run.
 minimumReleaseAgeExclude:
-  - "@artooi/ag-ui-web-component@0.24.0"
-  - "@artooi/ag-ui-web-component@0.25.0"
+  - "@artooi/ag-ui-web-component@0.27.0"

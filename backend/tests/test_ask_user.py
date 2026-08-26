@@ -206,7 +206,10 @@ async def test_the_inserted_question_does_not_renumber_the_steps_after_it() -> N
     history, asked = await _asked()
     history = answered(history, asked, "Fri 17:00")
     dragged = await run(*history, tools=BOARD_TOOLS_WITH_ASK)
-    history = answered(history, dragged, "Dragged.")
+    # What the component's own `drag_and_drop` returns. A bare sentence here would
+    # be a decline: the script tells a page action that ran from one that did not
+    # by the shape of the result, since the decline's wording is the host's.
+    history = answered(history, dragged, {"dragged": True, "from": "event-1", "to": "slot-2"})
 
     verifying = await run(*history, tools=BOARD_TOOLS_WITH_ASK)
     assert tool_calls(verifying) == ["read_page"], "the drag is checked, not assumed"
