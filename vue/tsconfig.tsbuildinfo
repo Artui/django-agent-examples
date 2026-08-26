@@ -1,1 +1,0 @@
-{"root":["./src/api.ts","./src/main.ts","./src/board/calendar.ts","./src/board/dragging.ts","./src/board/pagemap.ts","./src/board/useboard.ts","./src/app.vue","./src/assistant/assistant.vue","./src/board/agendaview.vue","./src/board/backlog.vue","./src/board/eventcard.vue","./src/board/weekgrid.vue","./vite.config.ts"],"version":"5.9.3"}

@@ -141,7 +141,7 @@ async def test_reusing_the_source_run_id_is_refused_in_the_stream() -> None:
     the guard exists, because the warning to send a fresh id reads like the only
     thing standing between you and a corrupted ledger.
 
-    ⭐ The refusal is a `RUN_ERROR` **event**, not an HTTP status, and it could not
+    The refusal is a `RUN_ERROR` **event**, not an HTTP status, and it could not
     be otherwise: `RUN_STARTED` has already gone out, so the response is committed
     at 200 before anything is validated. Anything that goes wrong in a streaming
     endpoint after its first byte is an event — a client that only checks
