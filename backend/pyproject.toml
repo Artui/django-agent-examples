@@ -5,17 +5,42 @@ description = "Shared demo backend for the AG-UI framework integration gallery."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+# Two rules this list follows, both of them learned the hard way.
+#
+# 1. **Every distribution this backend imports is named here**, even when it would
+#    arrive transitively anyway. A transitive floor is somebody else's promise: it
+#    holds until the package in the middle drops the dependency, or relaxes it, and
+#    then a reader who copied one of these files gets an ImportError with nothing
+#    in their own pyproject.toml explaining what was supposed to supply it.
+#    `tests/test_dependencies_are_declared.py` enforces it rather than trusting
+#    this comment.
+#
+# 2. **A version number appears in the pin and nowhere else.** A justification that
+#    restates the number goes stale the moment the pin moves -- silently, because
+#    nothing reads a comment. So each note below says *what* the floor buys and
+#    lets the requirement on the next line say *which release* that is.
 dependencies = [
     "django>=5.2",
     "djangorestframework>=3.15",
     # The service/selector layer. One spec set, declared once in a SpecRegistry,
-    # projected to HTTP (viewsets) and to the agent (spec tools). The floor is 0.40
-    # because the board raises `ServiceNotFound` and `ServiceConflict`, which is
-    # where they arrived.
+    # projected to HTTP (viewsets) and to the agent (spec tools). The floor is
+    # where `ServiceNotFound` and `ServiceConflict` arrived, which the board
+    # raises.
     "djangorestframework-services>=0.40",
+    # Declared because `board/serializers.py` imports `DataclassSerializer`
+    # directly: the board's operation *inputs* are dataclasses, so one declaration
+    # validates an HTTP body and reflects into the schema the agent sees. It also
+    # arrives under djangorestframework-services, which is rule 1's case exactly.
+    "djangorestframework-dataclasses>=1.3.1",
     # The AG-UI transport. [spec-tools] is the in-process bridge that turns the
-    # same specs into agent tools with no MCP hop. The floor is 0.43 for
-    # `approval_prompts`: without it the approval card asks the serialized call.
+    # same specs into agent tools with no MCP hop, and `approval_prompts` is what
+    # makes the approval card ask a readable question instead of the serialized
+    # call.
+    #
+    # The floor is the release that first requires a django-pydantic-agent
+    # carrying the attachment fix described below. This transport seeds later
+    # turns from the client transcript, and this gallery imports a CSV and then
+    # keeps talking about it -- which is the multi-turn shape that bug spoiled.
     #
     # [harness] is the one extra in this gallery that costs a dependency rather
     # than a line: it pulls pydantic-ai-harness, which backs the step store the
@@ -23,22 +48,37 @@ dependencies = [
     # naming django-ag-ui twice would leave whichever uv resolves last.
     "django-ag-ui[spec-tools,harness]>=0.46",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
-    # `AgentDeps`, and `contrib.store` both as an app and as an import path. It
-    # arrives transitively through django-ag-ui either way, which is exactly why a
-    # direct import of it has to be declared: a transitive floor is somebody
-    # else's promise.
-    # 0.16 for the attachment store, which this gallery exercises directly:
-    # below it, an attachment whose bytes had left storage raised instead of
-    # reporting itself unavailable, and re-uploading the file adopted the same
-    # missing blob rather than repairing it.
+    # `AgentDeps`, and `contrib.store` both as an app and as an import path.
+    #
+    # The floor is where an attached file's tool result stopped claiming more than
+    # it could keep. The bytes never travel the event stream, so a later turn
+    # replayed "its contents are attached" with nothing attached and the model
+    # answered confidently about a document it had never read -- no error
+    # anywhere. The same release stops a text attachment over the size cap coming
+    # back whole. This gallery exercises both paths.
     "django-pydantic-agent>=0.17",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle. The floor
-    # is 0.24, which vendors web component 0.24.0: earlier bundles abandon a
-    # sidebar run at its first navigating tool once the thread has stored history
-    # (fixed in 0.23), and earlier still than that the approved call's card breaks
-    # its own name across three lines in a panel this width.
+    # is the release whose vendored bundle asks about each deferred call inside
+    # that call's own tool card, with every question on screen at once and the
+    # arguments above it -- a batch gate answered blind is not a gate. It is also
+    # where a deferred call stopped claiming to run.
     "django-admin-agent>=0.25",
+    # Declared because `agent/tools.py` and `agent/scripted.py` import it
+    # directly: `RunContext` and `ToolReturn` for the server-side tools, and
+    # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
+    # under django-ag-ui and django-pydantic-agent both, which is why rule 1
+    # exists at all -- this is the file whose own comment says so.
+    #
+    # `-slim`, not the `pydantic-ai` meta package: which provider extra to install
+    # is the reader's choice, and `agent/model.py` says how to make it. No floor
+    # above the major, because every surface named above has been there since the
+    # 2 line opened; the ceiling is there because a major is a different library.
+    "pydantic-ai-slim>=2,<3",
+    # Declared because `agent/tools.py` builds a `StateSnapshotEvent` itself --
+    # the AG-UI wire type that carries shared state back to the page. Rule 1
+    # again: it is django-ag-ui's dependency, and this backend's import.
+    "ag-ui-protocol>=0.1.19",
     # ASGI is required: the agent endpoint streams.
     "uvicorn>=0.34",
 ]
@@ -48,6 +88,9 @@ dev = [
     "pytest>=8",
     "pytest-asyncio>=1.4.0",
     "pytest-django>=4.9",
+    # Rule 1 covers the tests too: `tests/test_admin_surface.py` imports
+    # `sync_to_async` itself rather than reaching it through Django.
+    "asgiref>=3.8",
 ]
 
 [tool.uv]

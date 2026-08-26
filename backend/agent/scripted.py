@@ -37,6 +37,18 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.models.function import AgentInfo, DeltaToolCall, FunctionModel
 
+# One backend serves all four frontends, so this list is read in all four -- and
+# the model cannot tell which one is asking. The tool catalogue is identical
+# (`read_week_note` and `write_week_note` are mounted once, for everyone), and the
+# run's shared state, which is the only thing that would distinguish them, does
+# not reach the model: it is `ctx.deps.state` on the server, not part of the
+# instructions this function reads.
+#
+# Every line below therefore works in every app except the note, which is the
+# gallery's one shared-state sample and is drawn by the React board alone. Told
+# to write it, the other three do write it -- the tool runs and the snapshot
+# streams back -- with nothing on screen to show for it. So the line says where
+# to look rather than inviting three of four readers to watch nothing happen.
 HELP = (
     "I can drive this board for you. Try:\n\n"
     "- *move standup to Friday at 11:00*\n"
@@ -45,7 +57,8 @@ HELP = (
     "- *what is on the board?*\n"
     "- *put the onboarding doc first in the backlog*\n"
     "- *book a design sync on Friday at 14:00*\n"
-    "- *note: ship the gallery this week*\n"
+    "- *note: ship the gallery this week* (the shared week note, which the React app"
+    " is the one that draws)\n"
     "- attach `samples/week.csv` and say *import these events*"
 )
 
@@ -1006,6 +1019,19 @@ def _settled(turn: Turn, done: str, declined: str) -> str:
     return declined if _refused(turn) else done
 
 
+#: How the component reports a client-side tool that raised. Its own literal, not
+#: one of ``strings`` -- see `_refused`.
+CLIENT_ERROR_PREFIX = "Error:"
+
+
+def _reports_a_result(body: str) -> bool:
+    """Whether a string result is a serialized report rather than a sentence."""
+    try:
+        return isinstance(json.loads(body), dict | list)
+    except json.JSONDecodeError:
+        return False
+
+
 def _refused(turn: Turn) -> bool:
     """Whether the last tool return was a refusal rather than a result.
 
@@ -1020,19 +1046,32 @@ def _refused(turn: Turn) -> bool:
       ``ToolReturnPart.outcome == "denied"``. That flag is the reliable signal, and
       it is checked first.
     - A **client-side** confirmation the user cancels is an ordinary successful
-      tool result whose *content* happens to say so, because the browser executed
-      the tool and reported a string. There is nothing structured to read.
+      tool result, and its content is the component's ``declinedAction`` string.
+      Nothing in the result says "declined" in a field.
 
-    The prose check is therefore for the client-side case only, and it is
-    deliberately loose: the wording is not ours and it is not stable. Three
-    phrasings already reach here for one idea — the component's "User declined the
-    action.", django-ag-ui's "Cancelled by user." for a denied approval, and
-    pydantic-ai's own "The tool call was denied." default underneath it.
+    The second case is read by **shape, not by wording**, and this repo is the
+    reason. ``declinedAction`` is one of the component's ``strings``, so it is the
+    host's to replace — and the Svelte app, the one built to demonstrate exactly
+    that, sets it to "Vom Benutzer abgelehnt." Matching on the English words
+    "declined", "denied" or "cancel" therefore misses a decline in the frontend
+    most likely to produce one, and the move is then reported with a sentence
+    blaming the *board* for a choice the person made.
+
+    What is not the host's to replace is the shape. A page action that ran reports
+    what it did as an object — ``{"dragged": true, ...}``, ``{"ok": true, ...}``, a
+    page snapshot — while a refusal is a bare sentence. So a bare sentence is a
+    refusal, in any language. The one bare sentence that is not is the component's
+    own report of a tool that threw, which it prefixes itself: that prefix is a
+    literal in the component rather than one of ``strings``, so unlike the decline
+    it does not move with the language.
     """
     if turn.last_outcome == "denied":
         return True
-    body = turn.last if isinstance(turn.last, str) else json.dumps(turn.last)
-    return any(word in body.lower() for word in ("declin", "denied", "cancel"))
+    if not isinstance(turn.last, str):
+        return False
+    body = turn.last.strip()
+    return not (_reports_a_result(body) or body.startswith(CLIENT_ERROR_PREFIX))
+
 
 
 def _summarise(content: Any, weekday: str | None = None) -> list[str]:
