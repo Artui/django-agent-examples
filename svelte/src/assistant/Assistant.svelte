@@ -124,10 +124,29 @@
     // A server-side tool writes without this page's knowledge: approve a booking
     // and the row exists while the board keeps showing what it fetched on mount.
     // Nothing else the element dispatches implies "something may have moved
-    // underneath you", so this event is the signal. Only `side === "server"`
-    // matters -- a client tool ran in this app's own handler.
+    // underneath you", so this event is the signal.
+    //
+    // `invalidated` is the precise half and `tools` is the fallback, and the
+    // `else` is the whole compatibility story: an older component leaves
+    // `invalidated` undefined and this reloads coarsely, exactly as it did
+    // before. Nothing negotiates and there is no version check.
+    //
+    // The board is one resource, so any key under `board.events` means reload.
+    // Matching a prefix is the *host's* call -- on the wire matching is exact,
+    // because a prefix rule there would be the library guessing at a scheme it
+    // does not own.
     chat.addEventListener("ag-ui-run-finished", (event) => {
-      const detail = (event as CustomEvent<{ tools: { name: string; side: string }[] }>).detail;
+      const detail = (event as CustomEvent<{
+        tools: { name: string; side: string }[];
+        invalidated?: string[];
+      }>).detail;
+      const moved = detail.invalidated ?? [];
+      if (moved.length > 0) {
+        if (moved.some((key) => key === "board.events" || key.startsWith("board.events/"))) {
+          reload();
+        }
+        return;
+      }
       if (detail.tools.some((tool) => tool.side === "server")) {
         reload();
       }
