@@ -180,8 +180,30 @@ export function Assistant(props: AssistantProps) {
     //
     // Only `side === "server"` matters. A `client` tool ran in this app's own
     // handler, which already refetched if it needed to.
+    //
+    // `invalidated` is the precise half and `tools` is the fallback, and the
+    // `else` is the whole compatibility story: an older component leaves
+    // `invalidated` undefined and this reloads coarsely, exactly as it did
+    // before. Nothing negotiates and there is no version check.
+    //
+    // The board is one resource, so any key under `board.events` means reload.
+    // Matching a prefix is the *host's* call -- on the wire matching is exact,
+    // because a prefix rule there would be the library guessing at a scheme it
+    // does not own.
     chat.addEventListener("ag-ui-run-finished", (event) => {
-      const detail = (event as CustomEvent<{ tools: { name: string; side: string }[] }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          tools: { name: string; side: string }[];
+          invalidated?: string[];
+        }>
+      ).detail;
+      const moved = detail.invalidated ?? [];
+      if (moved.length > 0) {
+        if (moved.some((key) => key === "board.events" || key.startsWith("board.events/"))) {
+          latest.current.reload();
+        }
+        return;
+      }
       if (detail.tools.some((tool) => tool.side === "server")) {
         latest.current.reload();
       }
