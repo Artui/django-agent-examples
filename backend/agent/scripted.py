@@ -1089,7 +1089,16 @@ def _summarise(content: Any, weekday: str | None = None) -> list[str]:
         except json.JSONDecodeError:
             return [rows]
     if isinstance(rows, dict):
-        rows = rows.get("results", rows.get("events", []))
+        # ``items`` is the pagination envelope every list spec tool answers with --
+        # never a bare array, so that "there is more" is sayable at all. It is
+        # checked first because it is the shape this gallery's own transport
+        # produces; the other two are what a hand-rolled DRF list or a bespoke
+        # service returns, and a reader adapting this file may well have one.
+        #
+        # A model reading the real thing also gets ``page`` / ``totalPages`` /
+        # ``hasNext`` beside the rows, which is what lets it ask for the next page
+        # rather than answering confidently from the first hundred.
+        rows = rows.get("items", rows.get("results", rows.get("events", [])))
     if not isinstance(rows, list) or not rows:
         return ["The board is empty."]
     if weekday is not None:

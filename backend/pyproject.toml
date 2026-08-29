@@ -37,8 +37,17 @@ dependencies = [
     # makes the approval card ask a readable question instead of the serialized
     # call.
     #
-    # The floor is the release that first requires a django-pydantic-agent
-    # carrying the attachment fix described below. This transport seeds later
+    # The floor is where a failing run stopped streaming the raw exception text
+    # to the browser. Pydantic-AI builds `RUN_ERROR` as `str(error)`, so an
+    # exception's own words reached the transcript -- and those words are written
+    # for an operator, not a reader. Below this floor the checkpoint test's
+    # refusal arrives verbatim; at it and above, the browser gets a fixed
+    # sentence and the detail goes to the audit logger instead. Both halves are
+    # asserted, because redacting while dropping the detail would look identical
+    # from the client.
+    #
+    # It also carries the release that first requires a django-pydantic-agent
+    # holding the attachment fix described below. This transport seeds later
     # turns from the client transcript, and this gallery imports a CSV and then
     # keeps talking about it -- which is the multi-turn shape that bug spoiled.
     #
@@ -46,24 +55,47 @@ dependencies = [
     # than a line: it pulls pydantic-ai-harness, which backs the step store the
     # checkpoint panel lists runs from. Both extras belong to one requirement --
     # naming django-ag-ui twice would leave whichever uv resolves last.
-    "django-ag-ui[spec-tools,harness]>=0.46",
+    "django-ag-ui[spec-tools,harness]>=0.49",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
-    # The floor is where an attached file's tool result stopped claiming more than
-    # it could keep. The bytes never travel the event stream, so a later turn
+    # The floor is where `ToolGuard` learned the vocabulary an in-process spec
+    # tool actually speaks. Below it the guard read only the destructive metadata
+    # key the drf-mcp bridge stamps, while a spec reaching the agent through
+    # `service_specs=` carries `annotations["readOnlyHint"]` instead and nothing
+    # translated between them -- so a board write ran unapproved with the guard
+    # enabled and the approval card never shown.
+    #
+    # This gallery is the shape that defect targets, and it was saved only by
+    # naming all three writes in `require_approval`. Verified rather than
+    # reasoned: drop `create_event` from that set and the deferral disappears at
+    # the old floor while it still holds at this one. A floor that holds because
+    # of how the config next door happens to be written is not a floor.
+    #
+    # The release also fixed an attached file's tool result claiming more than it
+    # could keep -- the bytes never travel the event stream, so a later turn
     # replayed "its contents are attached" with nothing attached and the model
-    # answered confidently about a document it had never read -- no error
-    # anywhere. The same release stops a text attachment over the size cap coming
-    # back whole. This gallery exercises both paths.
-    "django-pydantic-agent>=0.17",
+    # answered confidently about a document it had never read, with no error
+    # anywhere. This gallery imports a CSV and then keeps talking about it, which
+    # is exactly that multi-turn shape.
+    "django-pydantic-agent>=0.18",
     # The admin surface: the same board through django.contrib.admin, with the
-    # agent in the admin sidebar and the vendored web-component bundle. The floor
-    # is the release whose vendored bundle asks about each deferred call inside
-    # that call's own tool card, with every question on screen at once and the
-    # arguments above it -- a batch gate answered blind is not a gate. It is also
-    # where a deferred call stopped claiming to run.
-    "django-admin-agent>=0.25",
+    # agent in the admin sidebar and the vendored web-component bundle.
+    #
+    # The floor is where the sidebar's conversation became scoped to the
+    # signed-in principal. The component keeps it in `sessionStorage`, which is
+    # scoped to the *tab* and not to the session, so it outlives the navigation a
+    # logout is -- and a shared demo machine is exactly the shape that bites:
+    # one browser, several principals, the next one landing on the last one's
+    # transcript. `tests/test_admin_surface.py` asserts the attribute is
+    # rendered, so this floor is load-bearing rather than aspirational.
+    #
+    # It is also the release whose vendored bundle offers to quote a selection
+    # made in the admin page, which is what keeps this gallery's admin surface on
+    # the same component version as its four frontends. Below it they disagree,
+    # and a gallery demonstrating two versions of one component is worse than a
+    # gallery one release behind.
+    "django-admin-agent>=0.30",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives

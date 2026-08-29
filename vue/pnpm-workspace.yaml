@@ -1,13 +1,21 @@
-# pnpm can enforce a minimum release age, refusing a version published within the
-# last day. This one is newer than that window and is wanted anyway: the component
-# releases are the fixes this gallery exists to have found.
+# pnpm refuses a version published inside its `minimumReleaseAge` window, so a
+# same-day component release is invisible to a range that still admits an older
+# one. Three things follow, and only the first is obvious.
 #
-# One entry now, because the lockfile names one version -- but while an upgrade is
-# in flight the outgoing version matters as much as the incoming one: the policy
-# checks every entry already in the lockfile before it resolves anything, so
-# listing only the version you are upgrading *to* fails the install outright
-# rather than upgrading past the one you are on. Add both, then let the outgoing
-# one drop off once no lockfile mentions it -- and the whole list can go once the
-# versions age past whatever window you run.
-minimumReleaseAgeExclude:
-  - "@artooi/ag-ui-web-component@0.27.0"
+# **Raising the range floor is how you adopt a fresh release.** With the floor at
+# or above the new version, the range leaves pnpm no mature choice, so it adopts
+# the immature one and records the exemption below itself. That is the bump: edit
+# the floor, install, commit what pnpm wrote here.
+#
+# **`minimumReleaseAgeExclude` alone does not do it.** Listing a version here
+# while the range still admits an older mature one changes nothing -- the older
+# one is still a legal answer, so it wins. The list exempts; it does not prefer.
+# Entries can be dropped once no lockfile mentions them and the versions have
+# aged past the window.
+#
+# **`pnpm update` rewrites the range.** It replaces `>=0.29.0 <1.0.0` in
+# package.json with a caret, and a caret on a `0.x` pins the minor -- so the one
+# command that looks like "keep up with the component" is the command that stops
+# these apps tracking it. Bump by editing the floor, or restore the range
+# afterwards.
+minimumReleaseAgeExclude: [ '@artooi/ag-ui-web-component@0.29.0' ]

@@ -16,6 +16,7 @@ from django_pydantic_agent.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
 from django_pydantic_agent.contrib.store.default_step_store import DefaultStepStore
+from django_pydantic_agent.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.auth import token_user
 from agent.model import build_demo_model
@@ -105,6 +106,19 @@ agent = AGUIServer(
     # changes. This one is scripted for the same reason the model is: no provider,
     # no key, and CI can drive it.
     transcription_backend=ScriptedTranscriptionBackend(),
+    # Where a failure's own words go, now that they no longer go to the browser.
+    #
+    # ``RUN_ERROR`` carries a fixed sentence unless ``TOOL_FAILURE`` opts into
+    # detail, because pydantic-ai builds the message as ``str(error)`` and an
+    # exception's words are written for an operator -- an ORM error carrying SQL,
+    # an ``OSError`` carrying a server path. That redaction is right, and it is
+    # only half a mechanism: the default ``audit_logger`` is a null one, so
+    # leaving this unset redacts the message to the client *and drops it*, and a
+    # refusal reaches nobody at all.
+    #
+    # A real deployment writes these somewhere queryable. This one writes them to
+    # ``logging``, which is the smallest thing that is still honest.
+    audit_logger=LoggingAuditLogger(),
     # Token in a header, so no ambient cookie authority is involved and CSRF
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.
