@@ -1,22 +1,21 @@
 # pnpm refuses a version published inside its `minimumReleaseAge` window, so a
-# same-day component release is invisible here for a day. That is a sensible
-# default and it has one consequence worth writing down, because the obvious
-# reading of the setting below is wrong.
+# same-day component release is invisible to a range that still admits an older
+# one. Three things follow, and only the first is obvious.
 #
-# `minimumReleaseAgeExclude` only lifts the gate for a version you name
-# *explicitly* -- `pnpm add @artooi/ag-ui-web-component@X.Y.Z`. It does **not**
-# make the range in package.json resolve to an immature version: with 0.29.0
-# listed here and the range `>=0.27.0 <1.0.0`, a lockfile deleted and rebuilt
-# from scratch still resolves 0.28.0. Verified, not assumed.
+# **Raising the range floor is how you adopt a fresh release.** With the floor at
+# or above the new version, the range leaves pnpm no mature choice, so it adopts
+# the immature one and records the exemption below itself. That is the bump: edit
+# the floor, install, commit what pnpm wrote here.
 #
-# So there are two ways to adopt a fresh component release, and the list is only
-# involved in one of them: name the version explicitly and add it here, or wait a
-# day and let the range pick it up on its own. Entries can be dropped once no
-# lockfile mentions them and the versions have aged past the window.
+# **`minimumReleaseAgeExclude` alone does not do it.** Listing a version here
+# while the range still admits an older mature one changes nothing -- the older
+# one is still a legal answer, so it wins. The list exempts; it does not prefer.
+# Entries can be dropped once no lockfile mentions them and the versions have
+# aged past the window.
 #
-# One further trap, from the same family: **`pnpm update` rewrites the range**.
-# It replaces `>=0.27.0 <1.0.0` in package.json with a caret, and a caret on a
-# `0.x` pins the minor -- so the one command that looks like "keep up with the
-# component" is the command that stops these apps tracking it. Bump by editing
-# the range, or restore it afterwards.
-minimumReleaseAgeExclude: []
+# **`pnpm update` rewrites the range.** It replaces `>=0.29.0 <1.0.0` in
+# package.json with a caret, and a caret on a `0.x` pins the minor -- so the one
+# command that looks like "keep up with the component" is the command that stops
+# these apps tracking it. Bump by editing the floor, or restore the range
+# afterwards.
+minimumReleaseAgeExclude: [ '@artooi/ag-ui-web-component@0.29.0' ]

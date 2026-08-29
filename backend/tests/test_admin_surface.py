@@ -81,6 +81,11 @@ def test_the_sidebar_renders_into_the_admin_chrome(client: Client, staff: Any) -
     # The vendored bundle, not an npm dependency. This is the whole reason the
     # admin needs no build step.
     assert "django_admin_agent/admin_agent.js" in body
+    # The conversation is scoped to whoever is signed in. `sessionStorage` is
+    # scoped to the tab and not to the session, so it outlives the navigation a
+    # logout is -- and this gallery's admin is the shape where that bites: one
+    # browser, several principals, a shared demo machine.
+    assert f'user-key="{staff.pk}"' in body
 
 
 def test_the_sidebars_bundle_is_findable_as_a_static_file() -> None:

@@ -80,12 +80,22 @@ dependencies = [
     # is exactly that multi-turn shape.
     "django-pydantic-agent>=0.18",
     # The admin surface: the same board through django.contrib.admin, with the
-    # agent in the admin sidebar and the vendored web-component bundle. The floor
-    # is the release whose vendored bundle asks about each deferred call inside
-    # that call's own tool card, with every question on screen at once and the
-    # arguments above it -- a batch gate answered blind is not a gate. It is also
-    # where a deferred call stopped claiming to run.
-    "django-admin-agent>=0.25",
+    # agent in the admin sidebar and the vendored web-component bundle.
+    #
+    # The floor is where the sidebar's conversation became scoped to the
+    # signed-in principal. The component keeps it in `sessionStorage`, which is
+    # scoped to the *tab* and not to the session, so it outlives the navigation a
+    # logout is -- and a shared demo machine is exactly the shape that bites:
+    # one browser, several principals, the next one landing on the last one's
+    # transcript. `tests/test_admin_surface.py` asserts the attribute is
+    # rendered, so this floor is load-bearing rather than aspirational.
+    #
+    # It is also the release whose vendored bundle offers to quote a selection
+    # made in the admin page, which is what keeps this gallery's admin surface on
+    # the same component version as its four frontends. Below it they disagree,
+    # and a gallery demonstrating two versions of one component is worse than a
+    # gallery one release behind.
+    "django-admin-agent>=0.30",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives

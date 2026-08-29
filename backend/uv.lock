@@ -36,7 +36,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.19" },
     { name = "django", specifier = ">=5.2" },
-    { name = "django-admin-agent", specifier = ">=0.25" },
+    { name = "django-admin-agent", specifier = ">=0.30" },
     { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.49" },
     { name = "django-pydantic-agent", specifier = ">=0.18" },
     { name = "djangorestframework", specifier = ">=3.15" },
@@ -160,7 +160,7 @@ wheels = [
 
 [[package]]
 name = "django-admin-agent"
-version = "0.29.0"
+version = "0.30.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -168,9 +168,9 @@ dependencies = [
     { name = "django-ag-ui" },
     { name = "django-pydantic-agent" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/89/94f4fb937330a37709b5f721839c891e476bec9a71476af19bd729a8b530/django_admin_agent-0.29.0.tar.gz", hash = "sha256:1700e90c6d3be567770c9c29a5d7f8205b24ee295fbddf128424c4fd505b4b53", size = 346182, upload-time = "2026-08-28T08:30:30.298Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/be/a4e478afd777930a9fa9b6cfb6b1acdd67044a4b8fc63e7ad1b2407a4230/django_admin_agent-0.30.0.tar.gz", hash = "sha256:4c7561bf7bcb49506a4f3873c0fdcc714ec52b259006342d73f2dcf05124419d", size = 358786, upload-time = "2026-08-29T16:46:26.689Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/da/18642914a8f2842df41de7a49433d239199952a73b7c77067a024b398033/django_admin_agent-0.29.0-py3-none-any.whl", hash = "sha256:79c6a2272c10def2af86294d1567558377de6f47e2198fcef0ccbe697de5f3c5", size = 166106, upload-time = "2026-08-28T08:30:29Z" },
+    { url = "https://files.pythonhosted.org/packages/67/25/38a449d4f434c99fc416955553482e7521209e99ced6eb7ab183da02e83e/django_admin_agent-0.30.0-py3-none-any.whl", hash = "sha256:59775673c8785b6290c72c4b5c7e37b5a4b2b2325cbbd71c2360227f15e9d320", size = 175682, upload-time = "2026-08-29T16:46:25.136Z" },
 ]
 
 [[package]]
@@ -240,7 +240,7 @@ wheels = [
 
 [[package]]
 name = "djangorestframework-pydantic-ai"
-version = "0.22.0"
+version = "0.23.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -249,9 +249,9 @@ dependencies = [
     { name = "djangorestframework-services" },
     { name = "pydantic-ai-slim" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/c5/4202cd054a013bbc852819978846dc0713fe11761d6b74d36bbeb70d962a/djangorestframework_pydantic_ai-0.22.0.tar.gz", hash = "sha256:4c8d3c9eec22088273984536e5b2c9333782b01502f54c7e28cf95aff47a6bb7", size = 200384, upload-time = "2026-08-29T14:36:43.148Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6c/8d/cc0600afb16cc1ceb21ed23dbe821c35cc893af52879a90b07aefe9adaab/djangorestframework_pydantic_ai-0.23.0.tar.gz", hash = "sha256:9b3d11cca981b055fd06cf7e36c1beca3a5d46c0e45ff53050a6532c457237fa", size = 213143, upload-time = "2026-08-29T15:43:58.75Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/84/aeb01b6f57089425c755fd1db50335bdb3f507330826659a676c6d1a3adc/djangorestframework_pydantic_ai-0.22.0-py3-none-any.whl", hash = "sha256:cb6ab9bf63e81ffdbe54705403218fde7743203a512ad92b249ec5cb525a716d", size = 36604, upload-time = "2026-08-29T14:36:41.566Z" },
+    { url = "https://files.pythonhosted.org/packages/89/7b/2f3f6f57af61c340f5c2dcc021dc4c61628c22b4b7655fd931bcb796dd33/djangorestframework_pydantic_ai-0.23.0-py3-none-any.whl", hash = "sha256:181a63facc20e8ce73961c2f9666862ed1df8a0521e1ab230ca19be79ccd0019", size = 41802, upload-time = "2026-08-29T15:43:57.501Z" },
 ]
 
 [[package]]
