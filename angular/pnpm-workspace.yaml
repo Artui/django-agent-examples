@@ -1,28 +1,28 @@
-# pnpm 11 refuses to run a dependency's install scripts until each is answered
-# here, and the answer is per package rather than a blanket allow. It writes this
-# block itself with "set this to true or false" as the value and then **fails the
-# install** on the next run, which reads as a lockfile problem and is not one.
-#
-# esbuild is the only true: its install script fetches the platform binary the
-# Angular build shells out to, so skipping it breaks the build outright. The other
-# three are native accelerators with working fallbacks -- lmdb and msgpackr-extract
-# back the on-disk build cache, and @parcel/watcher is only reached in watch mode --
-# so they stay off, and both `build` and `watch` were run against these values.
 allowBuilds:
   '@parcel/watcher': false
   esbuild: true
   lmdb: false
   msgpackr-extract: false
-# pnpm can enforce a minimum release age, refusing a version published within the
-# last day. This one is newer than that window and is wanted anyway: the component
-# releases are the fixes this gallery exists to have found.
+
+# pnpm refuses a version published inside its `minimumReleaseAge` window, so a
+# same-day component release is invisible here for a day. That is a sensible
+# default and it has one consequence worth writing down, because the obvious
+# reading of the setting below is wrong.
 #
-# One entry now, because the lockfile names one version -- but while an upgrade is
-# in flight the outgoing version matters as much as the incoming one: the policy
-# checks every entry already in the lockfile before it resolves anything, so
-# listing only the version you are upgrading *to* fails the install outright
-# rather than upgrading past the one you are on. Add both, then let the outgoing
-# one drop off once no lockfile mentions it -- and the whole list can go once the
-# versions age past whatever window you run.
-minimumReleaseAgeExclude:
-  - "@artooi/ag-ui-web-component@0.27.0"
+# `minimumReleaseAgeExclude` only lifts the gate for a version you name
+# *explicitly* -- `pnpm add @artooi/ag-ui-web-component@X.Y.Z`. It does **not**
+# make the range in package.json resolve to an immature version: with 0.29.0
+# listed here and the range `>=0.27.0 <1.0.0`, a lockfile deleted and rebuilt
+# from scratch still resolves 0.28.0. Verified, not assumed.
+#
+# So there are two ways to adopt a fresh component release, and the list is only
+# involved in one of them: name the version explicitly and add it here, or wait a
+# day and let the range pick it up on its own. Entries can be dropped once no
+# lockfile mentions them and the versions have aged past the window.
+#
+# One further trap, from the same family: **`pnpm update` rewrites the range**.
+# It replaces `>=0.27.0 <1.0.0` in package.json with a caret, and a caret on a
+# `0.x` pins the minor -- so the one command that looks like "keep up with the
+# component" is the command that stops these apps tracking it. Bump by editing
+# the range, or restore it afterwards.
+minimumReleaseAgeExclude: []
