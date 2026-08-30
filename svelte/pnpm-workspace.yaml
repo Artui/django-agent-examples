@@ -1,21 +1,28 @@
-# pnpm refuses a version published inside its `minimumReleaseAge` window, so a
-# same-day component release is invisible to a range that still admits an older
-# one. Three things follow, and only the first is obvious.
+# The maturity window is off HERE and only here.
 #
-# **Raising the range floor is how you adopt a fresh release.** With the floor at
-# or above the new version, the range leaves pnpm no mature choice, so it adopts
-# the immature one and records the exemption below itself. That is the bump: edit
-# the floor, install, commit what pnpm wrote here.
+# pnpm 11 defaults `minimumReleaseAge` to 24 hours: it refuses a lockfile entry
+# for a version published inside that window. For almost any project that is a
+# good default -- it is a supply-chain guard against a compromised release being
+# pulled in minutes after it is pushed.
 #
-# **`minimumReleaseAgeExclude` alone does not do it.** Listing a version here
-# while the range still admits an older mature one changes nothing -- the older
-# one is still a legal answer, so it wins. The list exempts; it does not prefer.
-# Entries can be dropped once no lockfile mentions them and the versions have
-# aged past the window.
+# **This repository is the one place it is actively wrong.** The gallery exists to
+# demonstrate the family against the versions that just shipped; a sweep releases
+# the whole stack and then proves it composes here, on the same day. A 24-hour
+# window makes that impossible by construction, and every alternative is worse: a
+# stale gallery proves nothing, and waiting a day to find an integration break is
+# a day spent shipping it.
 #
-# **`pnpm update` rewrites the range.** It replaces `>=0.29.0 <1.0.0` in
-# package.json with a caret, and a caret on a `0.x` pins the minor -- so the one
-# command that looks like "keep up with the component" is the command that stops
-# these apps tracking it. Bump by editing the floor, or restore the range
-# afterwards.
-minimumReleaseAgeExclude: [ '@artooi/ag-ui-web-component@0.29.0' ]
+# ⚠ **This is not the mechanism this file used to describe.** It previously said
+# to raise the range floor and let pnpm record an exemption in
+# `minimumReleaseAgeExclude`. That is honoured at *resolution* -- pnpm does
+# resolve and lock the new version -- and ignored by the *lockfile verification*
+# pass that runs on every install, which then fails the whole thing. The older
+# entries appeared to work only because those versions had already aged out of
+# the window on their own. Raising the floor is still how you adopt a release;
+# the exemption list was never what made it install.
+#
+# The other half still holds: **`pnpm update` rewrites the range** into a caret,
+# and a caret on a `0.x` pins the minor -- so the command that reads as "keep up
+# with the component" is the one that stops these apps tracking it. Bump by
+# editing the floor in package.json.
+minimumReleaseAge: 0
