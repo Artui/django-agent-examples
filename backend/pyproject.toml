@@ -96,12 +96,18 @@ dependencies = [
     # transcript. `tests/test_admin_surface.py` asserts the attribute is
     # rendered, so this floor is load-bearing rather than aspirational.
     #
-    # It is also the release whose vendored bundle offers to quote a selection
-    # made in the admin page, which is what keeps this gallery's admin surface on
-    # the same component version as its four frontends. Below it they disagree,
-    # and a gallery demonstrating two versions of one component is worse than a
-    # gallery one release behind.
-    "django-admin-agent>=0.31",
+    # Raised to 0.32 by that same argument rather than by a version sweep. 0.32
+    # is the release that vendors web component 0.31.0, which is what the four
+    # frontends here now resolve; 0.31 still carries 0.30.0 of it. Below this
+    # floor the admin surface and the frontends run different builds of one
+    # component, and a gallery demonstrating two versions of the same thing is
+    # worse than a gallery one release behind.
+    #
+    # 0.31.0 of the component is also where the rating buttons became opt-in --
+    # they fire `ag-ui-feedback` and store nothing, nothing here listens, and
+    # before that they latched on click and told a reader a rating had been
+    # taken. Four frontends and an admin sidebar all showed them.
+    "django-admin-agent>=0.32",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
