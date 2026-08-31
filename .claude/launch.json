@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gallery-backend",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "--directory", "backend", "uvicorn", "demo.asgi:application", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "gallery-react",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "react", "dev"],
+      "port": 5173
+    }
+  ]
+}
