@@ -53,6 +53,14 @@ updates:
         patterns: ["*"]
     cooldown:
       default-days: 7
+    # TypeScript 7 is not adoptable here yet, and the blocker is this app's
+    # type-checker rather than this app. Ignoring the major stops a weekly PR
+    # that cannot go green; `.github/workflows/upstream-drift.yml` is what says
+    # when to delete these four lines, by trying it every week and reporting.
+    # An ignore without that job is how a park becomes permanent.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/svelte"
@@ -63,6 +71,14 @@ updates:
         patterns: ["*"]
     cooldown:
       default-days: 7
+    # TypeScript 7 is not adoptable here yet, and the blocker is this app's
+    # type-checker rather than this app. Ignoring the major stops a weekly PR
+    # that cannot go green; `.github/workflows/upstream-drift.yml` is what says
+    # when to delete these four lines, by trying it every week and reporting.
+    # An ignore without that job is how a park becomes permanent.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/angular"
@@ -73,3 +89,11 @@ updates:
         patterns: ["*"]
     cooldown:
       default-days: 7
+    # TypeScript 7 is not adoptable here yet, and the blocker is this app's
+    # type-checker rather than this app. Ignoring the major stops a weekly PR
+    # that cannot go green; `.github/workflows/upstream-drift.yml` is what says
+    # when to delete these four lines, by trying it every week and reporting.
+    # An ignore without that job is how a park becomes permanent.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
