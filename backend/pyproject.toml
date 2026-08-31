@@ -60,12 +60,18 @@ dependencies = [
     # checkpoint panel lists runs from. Both extras belong to one requirement --
     # naming django-ag-ui twice would leave whichever uv resolves last.
     # The floor is where a delegated sub-agent's lifetime moved onto the
-    # protocol's own SUBAGENT_STARTED / _FINISHED / _ERROR events, which is what
-    # the frontends here now read. Below it the server announces that lifetime
-    # on the CUSTOM channel instead -- which the component still understands, so
-    # the panel would render either way; what the floor buys is that the wire
-    # this gallery demonstrates is the one the protocol defines rather than a
-    # convention that predates it.
+    # protocol's own SUBAGENT_STARTED / _FINISHED / _ERROR events, and what it
+    # buys is currency rather than a capability: this backend delegates to no
+    # sub-agent, so nothing here emits those events at all. The reason to take
+    # it anyway is the one this repo exists for -- a gallery demonstrates the
+    # family at the versions that just shipped, and the transport is the thing
+    # it demonstrates most directly.
+    #
+    # The comment this replaced claimed the floor was for progress "the
+    # frontends now draw". They can draw it; nothing here produces one. Checked
+    # in a browser rather than argued: the React app and the admin surface both
+    # render a delegating agent's panel only if something delegates, and no
+    # scenario in this repo does.
     "django-ag-ui[spec-tools,harness]>=0.54",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
