@@ -154,3 +154,49 @@ jobs:
       - name: Build
         working-directory: ${{ matrix.app }}
         run: pnpm build
+
+  # Every other repository in the family scans its history for secrets; this one
+  # did not, which is the kind of gap that opens when a repo is created after the
+  # hardening pass rather than during it. Public repo, real settings files, four
+  # frontends with their own configs -- exactly the shape where a key gets
+  # committed once and lives in the history afterwards.
+  #
+  # `gitleaks git` reads the whole history, not the working tree, so this catches
+  # a secret that was committed and later deleted. `fetch-depth: 0` is what makes
+  # that possible; the default shallow clone would scan one commit and pass.
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+      - name: Scan repo + history
+        run: gitleaks git --redact --no-banner .
+
+  # One stable name that fans in, so branch protection can require a single
+  # context instead of listing the jobs. That matters more here than elsewhere:
+  # `apps` is a matrix over the four frontends, so its checks are named per app.
+  # Requiring those names directly would mean a fifth frontend merges without
+  # ever being required, and a removed one leaves a required check that never
+  # reports and blocks every PR forever.
+  #
+  # `if: always()` with an explicit result check rather than plain `needs:`,
+  # because a `needs:` job is *skipped* when a dependency fails -- and a skipped
+  # required check reads as pending, which blocks the PR without saying why.
+  # Failing loudly is the point.
+  tests-passed:
+    name: tests
+    if: always()
+    needs: [backend, floor, boots, apps]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs succeeded
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "a required job failed"; exit 1
+          fi

@@ -1,0 +1,38 @@
+# Gitleaks configuration for the gallery.
+#
+# This is the only repository in the family that needs one, and the reason is
+# what the repository is: a demo whose whole point is a working end-to-end
+# stack, which means a real API token in a real Authorization header in
+# committed CI steps and seed data. Every other repo scans clean with the
+# default rules and carries no config at all.
+#
+# The extension is deliberate rather than a blanket rule disable. `curl-auth-header`
+# is a rule worth keeping switched on here -- the CI steps really do call the
+# agent endpoint with a bearer token, and a *real* one appearing in one of them
+# is exactly the mistake this scan should catch.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "curl-auth-header"
+description = "Authorization header on a curl invocation"
+regex = '''(?i)curl\b[^\n]{0,400}?-H\s*['"]?Authorization:\s*(?:Bearer|Token)\s+([^\s'"]+)'''
+secretGroup = 1
+
+  # The seeded demo token, allowlisted by its literal value and nothing wider.
+  #
+  # `manage.py seed_board` mints it, prints it, and says what it is in its own
+  # name; the board's fixtures are public sample data and the endpoint it opens
+  # is a throwaway local server. Allowlisting the string rather than the file
+  # keeps the rule live for those same steps: paste a genuine token into one of
+  # these curl commands and the scan still fails, which is the property worth
+  # preserving.
+  #
+  # Matched on the value rather than by fingerprint on purpose. A gitleaks
+  # fingerprint is `commit:file:rule:line`, so it goes stale when the file is
+  # touched and quietly stops allowlisting anything -- and a stale allowlist
+  # entry fails closed here, blocking every PR until someone regenerates it.
+  [rules.allowlist]
+  regexTarget = "secret"
+  regexes = ['''^demo-token-not-a-secret$''']
