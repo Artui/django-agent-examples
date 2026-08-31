@@ -59,9 +59,14 @@ dependencies = [
     # than a line: it pulls pydantic-ai-harness, which backs the step store the
     # checkpoint panel lists runs from. Both extras belong to one requirement --
     # naming django-ag-ui twice would leave whichever uv resolves last.
-    # 0.53 routes a delegated sub-agent's progress onto the SSE stream, which the
-    # frontends now draw, and stamps every CUSTOM event with a wall clock.
-    "django-ag-ui[spec-tools,harness]>=0.53",
+    # The floor is where a delegated sub-agent's lifetime moved onto the
+    # protocol's own SUBAGENT_STARTED / _FINISHED / _ERROR events, which is what
+    # the frontends here now read. Below it the server announces that lifetime
+    # on the CUSTOM channel instead -- which the component still understands, so
+    # the panel would render either way; what the floor buys is that the wire
+    # this gallery demonstrates is the one the protocol defines rather than a
+    # convention that predates it.
+    "django-ag-ui[spec-tools,harness]>=0.54",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -96,18 +101,16 @@ dependencies = [
     # transcript. `tests/test_admin_surface.py` asserts the attribute is
     # rendered, so this floor is load-bearing rather than aspirational.
     #
-    # Raised by that same argument rather than by a version sweep. 0.32.1 is the
-    # release that vendors web component 0.31.1, which is what the four frontends
-    # here now resolve; 0.32.0 still carries 0.31.0 of it. Below this
-    # floor the admin surface and the frontends run different builds of one
-    # component, and a gallery demonstrating two versions of the same thing is
-    # worse than a gallery one release behind.
-    #
-    # 0.31.0 of the component is also where the rating buttons became opt-in --
-    # they fire `ag-ui-feedback` and store nothing, nothing here listens, and
-    # before that they latched on click and told a reader a rating had been
-    # taken. Four frontends and an admin sidebar all showed them.
-    "django-admin-agent>=0.32.1",
+    # Raised by that same argument rather than by a version sweep, and the
+    # argument is the one that keeps recurring: this floor is the release whose
+    # vendored web component matches what the four frontends resolve. Below it
+    # the admin surface and the frontends run different builds of one component,
+    # and a gallery demonstrating two versions of the same thing is worse than a
+    # gallery one release behind. That invariant is the reason to move this pin
+    # whenever the frontends move, even when nothing in the admin needs it --
+    # here the component's new capability is the sub-agent panel reading the
+    # protocol's own events, which this backend does not delegate to anyway.
+    "django-admin-agent>=0.33",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
