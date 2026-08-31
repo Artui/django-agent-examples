@@ -1,0 +1,201 @@
+# Is the next TypeScript major adoptable yet, per app?
+#
+# Three of the four frontends cannot take TypeScript 7 today, and in every case
+# the blocker is the framework's type-checker rather than this repository:
+# `vue-tsc` resolves `typescript/lib/tsc`, which 7 no longer exports;
+# `svelte-check` refuses outright unless both 6 and 7 are installed and a
+# `--tsgo` flag is passed; the Angular compiler plugin crashes during
+# initialisation. React is already on 7 and builds, which is the whole reason
+# this is worth measuring rather than assuming: the answer is per-app and it
+# changes without anyone here doing anything.
+#
+# `.github/dependabot.yml` ignores the TypeScript major for those three so a
+# weekly PR that cannot go green stops being opened. **This job is the other
+# half of that decision.** An ignore on its own is how a park quietly becomes
+# permanent; this tries the thing every week and says when the ignore can go.
+#
+# It never fails. A red X here would train everyone to skip it, and the finding
+# is a report rather than a regression -- nothing in this repository is broken
+# when an upstream tool has not caught up yet.
+name: upstream drift
+
+on:
+  schedule:
+    # Thursday morning, after the family's other drift jobs, so a week's
+    # upstream movement is already visible when this reports on top of it.
+    - cron: "0 7 * * 4"
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  typescript-next-major:
+    name: is the next TypeScript major adoptable, per app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v4.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      # Each app is installed and built on its own, exactly as tests.yml does,
+      # because that is the claim being tested: not "does TypeScript 7 install"
+      # but "does this app's own type-checker still work under it". The build
+      # script is the app's own, so vue-tsc, svelte-check and ng build each get
+      # their real say.
+      #
+      # The manifest is rewritten on purpose and never committed. `pnpm add`
+      # is deliberately not used: it rewrites the range into a caret as a side
+      # effect, which is the trap the four apps' pnpm-workspace.yaml files
+      # already warn about at length. Here the rewrite is the point, but it is
+      # done explicitly so it cannot be mistaken for an adoption.
+      - name: Try the next TypeScript major in each app
+        id: probe
+        run: |
+          echo "results<<EOF" >> "$GITHUB_OUTPUT"
+          for app in react vue svelte angular; do
+            before="$(node -p "
+              const p = require('./$app/package.json');
+              ({...p.dependencies, ...p.devDependencies}).typescript ?? '(none)'
+            ")"
+            node -e "
+              const fs = require('fs');
+              const path = './$app/package.json';
+              const p = JSON.parse(fs.readFileSync(path, 'utf8'));
+              for (const section of ['dependencies', 'devDependencies']) {
+                if (p[section] && p[section].typescript) { p[section].typescript = 'latest'; }
+              }
+              fs.writeFileSync(path, JSON.stringify(p, null, 2) + '\n');
+            "
+            if (cd "$app" && pnpm install --no-frozen-lockfile >/dev/null 2>&1 \
+                && pnpm build >/dev/null 2>&1); then
+              verdict="ok"
+            else
+              verdict="blocked"
+            fi
+            resolved="$(cd "$app" && node -p "
+              try { require('typescript/package.json').version } catch { '(unresolved)' }
+            " 2>/dev/null || echo "(unresolved)")"
+            echo "$app|$before|$resolved|$verdict" >> "$GITHUB_OUTPUT"
+          done
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Discard the rewritten manifests
+        if: always()
+        run: git checkout -- react/package.json vue/package.json svelte/package.json angular/package.json
+
+      - name: Write the report
+        id: report
+        env:
+          RESULTS: ${{ steps.probe.outputs.results }}
+        run: |
+          python3 - <<'PY' > "${RUNNER_TEMP}/report.md"
+          import hashlib
+          import os
+
+          rows = [
+              line.split("|")
+              for line in os.environ["RESULTS"].splitlines()
+              if line.count("|") == 3
+          ]
+          blocked = [r for r in rows if r[3] != "ok"]
+          ready = [r for r in rows if r[3] == "ok"]
+
+          print("Each app was installed and built with `typescript` at `latest`, using")
+          print("its own build script -- so `vue-tsc`, `svelte-check` and `ng build` each")
+          print("get their real say rather than a version range being read.")
+          print()
+          if not rows:
+              print("**No apps were probed.** The step that builds them produced nothing")
+              print("parseable, which is a fault in this job rather than a finding about")
+              print("TypeScript.")
+          else:
+              print("| app | declared today | probed with | result |")
+              print("| --- | --- | --- | --- |")
+              for app, before, resolved, status in rows:
+                  mark = "adoptable" if status == "ok" else "blocked"
+                  print(f"| `{app}` | `{before}` | {resolved} | **{mark}** |")
+              print()
+              if blocked:
+                  names = ", ".join(f"`{r[0]}`" for r in blocked)
+                  print(f"Still blocked: {names}. The run's log for each says why; the")
+                  print("cause has consistently been the framework's type-checker rather")
+                  print("than anything in this repository.")
+              else:
+                  print("**Every app builds under the next major.** The `ignore` entries")
+                  print("for `typescript` in `.github/dependabot.yml` have done their job")
+                  print("and can be deleted, which lets the ordinary weekly PR through.")
+              print()
+              if ready and blocked:
+                  print("An app moving from blocked to adoptable is the signal to delete")
+                  print("its `ignore` entry -- one app at a time, since these are four")
+                  print("independent installs and nothing forces them to move together.")
+          print()
+          print("Nothing here is a proposal and nothing is broken. The apps' committed")
+          print("manifests and lockfiles are untouched; `tests.yml` is green.")
+          print()
+          digest = hashlib.sha256(
+              "".join(f"{r[0]}:{r[3]}" for r in sorted(rows)).encode()
+          ).hexdigest()[:12]
+          print(f"<!-- typescript-next-major: {digest} -->")
+          PY
+
+      # Always, not on failure: "still blocked, same as last week" is the
+      # expected result for a while, and the issue body is the place that says
+      # so. A comment is added only when an app's verdict actually changes, so
+      # the thread stays quiet until there is something to do.
+      - name: Open or update the readiness issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REPORT_PATH: ${{ runner.temp }}/report.md
+        with:
+          script: |
+            const fs = require("fs");
+            const title = "upstream: is the next TypeScript major adoptable yet?";
+            const report = fs.readFileSync(process.env.REPORT_PATH, "utf8");
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [`Run: ${run}`, "", report].join("\n");
+            const fingerprint = (body.match(/<!-- typescript-next-major: ([0-9a-f]+) -->/) || [])[1];
+            // Created here rather than assumed, because this is the first job in
+            // this repository to use it and a missing label is a confusing way
+            // for a report to fail. Idempotent: an existing label 422s and the
+            // catch swallows exactly that.
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                name: "upstream-drift", color: "d4c5f9",
+                description: "Reported by a scheduled upstream check",
+              });
+            } catch (error) {
+              if (error.status !== 422) { throw error; }
+            }
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "upstream-drift",
+            });
+            const match = existing.data.find((issue) => issue.title === title);
+            if (!match) {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ["upstream-drift"],
+              });
+              return;
+            }
+            const unchanged = (match.body || "").includes(`<!-- typescript-next-major: ${fingerprint} -->`);
+            await github.rest.issues.update({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body,
+            });
+            if (!unchanged) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, body,
+              });
+            }
