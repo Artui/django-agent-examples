@@ -96,9 +96,9 @@ dependencies = [
     # transcript. `tests/test_admin_surface.py` asserts the attribute is
     # rendered, so this floor is load-bearing rather than aspirational.
     #
-    # Raised to 0.32 by that same argument rather than by a version sweep. 0.32
-    # is the release that vendors web component 0.31.0, which is what the four
-    # frontends here now resolve; 0.31 still carries 0.30.0 of it. Below this
+    # Raised by that same argument rather than by a version sweep. 0.32.1 is the
+    # release that vendors web component 0.31.1, which is what the four frontends
+    # here now resolve; 0.32.0 still carries 0.31.0 of it. Below this
     # floor the admin surface and the frontends run different builds of one
     # component, and a gallery demonstrating two versions of the same thing is
     # worse than a gallery one release behind.
@@ -107,7 +107,7 @@ dependencies = [
     # they fire `ag-ui-feedback` and store nothing, nothing here listens, and
     # before that they latched on click and told a reader a rating had been
     # taken. Four frontends and an admin sidebar all showed them.
-    "django-admin-agent>=0.32",
+    "django-admin-agent>=0.32.1",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
