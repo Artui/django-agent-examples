@@ -76,14 +76,14 @@ jobs:
             "
             if (cd "$app" && pnpm install --no-frozen-lockfile >/dev/null 2>&1 \
                 && pnpm build >/dev/null 2>&1); then
-              status="ok"
+              verdict="ok"
             else
-              status="blocked"
+              verdict="blocked"
             fi
             resolved="$(cd "$app" && node -p "
               try { require('typescript/package.json').version } catch { '(unresolved)' }
             " 2>/dev/null || echo "(unresolved)")"
-            echo "$app|$before|$resolved|$status" >> "$GITHUB_OUTPUT"
+            echo "$app|$before|$resolved|$verdict" >> "$GITHUB_OUTPUT"
           done
           echo "EOF" >> "$GITHUB_OUTPUT"
 
