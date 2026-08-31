@@ -26,7 +26,11 @@ dependencies = [
     # projected to HTTP (viewsets) and to the agent (spec tools). The floor is
     # where `ServiceNotFound` and `ServiceConflict` arrived, which the board
     # raises.
-    "djangorestframework-services>=0.40",
+    # Raised to 0.49, which bounds the schema recursion a self-referential
+    # serializer used to crash. The board declares nested serializers and both
+    # transports here build a schema per spec, so the crash was reachable from
+    # the demo rather than theoretical.
+    "djangorestframework-services>=0.49",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
@@ -55,7 +59,9 @@ dependencies = [
     # than a line: it pulls pydantic-ai-harness, which backs the step store the
     # checkpoint panel lists runs from. Both extras belong to one requirement --
     # naming django-ag-ui twice would leave whichever uv resolves last.
-    "django-ag-ui[spec-tools,harness]>=0.49",
+    # 0.53 routes a delegated sub-agent's progress onto the SSE stream, which the
+    # frontends now draw, and stamps every CUSTOM event with a wall clock.
+    "django-ag-ui[spec-tools,harness]>=0.53",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -78,7 +84,7 @@ dependencies = [
     # answered confidently about a document it had never read, with no error
     # anywhere. This gallery imports a CSV and then keeps talking about it, which
     # is exactly that multi-turn shape.
-    "django-pydantic-agent>=0.18",
+    "django-pydantic-agent>=0.21",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -90,12 +96,18 @@ dependencies = [
     # transcript. `tests/test_admin_surface.py` asserts the attribute is
     # rendered, so this floor is load-bearing rather than aspirational.
     #
-    # It is also the release whose vendored bundle offers to quote a selection
-    # made in the admin page, which is what keeps this gallery's admin surface on
-    # the same component version as its four frontends. Below it they disagree,
-    # and a gallery demonstrating two versions of one component is worse than a
-    # gallery one release behind.
-    "django-admin-agent>=0.30",
+    # Raised by that same argument rather than by a version sweep. 0.32.1 is the
+    # release that vendors web component 0.31.1, which is what the four frontends
+    # here now resolve; 0.32.0 still carries 0.31.0 of it. Below this
+    # floor the admin surface and the frontends run different builds of one
+    # component, and a gallery demonstrating two versions of the same thing is
+    # worse than a gallery one release behind.
+    #
+    # 0.31.0 of the component is also where the rating buttons became opt-in --
+    # they fire `ag-ui-feedback` and store nothing, nothing here listens, and
+    # before that they latched on click and told a reader a rating had been
+    # taken. Four frontends and an admin sidebar all showed them.
+    "django-admin-agent>=0.32.1",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
