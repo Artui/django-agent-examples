@@ -114,11 +114,13 @@ dependencies = [
     # and a gallery demonstrating two versions of the same thing is worse than a
     # gallery one release behind. That invariant is the reason to move this pin
     # whenever the frontends move, even when nothing in the admin needs it --
-    # here the component's new capabilities are a panel that resizes from any
-    # edge, a launcher that can be dragged anywhere and opens into the clearest
-    # space beside it, and a Copy that keeps a table's rows and columns. All of
-    # them are on by default, so this backend enables nothing to get them.
-    "django-admin-agent>=0.34",
+    # here the component stops shredding a markdown table. Its stylesheet always
+    # said a wide table should scroll inside its own box, and it could not: the
+    # bubble broke words anywhere, which drops every descendant's min-content
+    # width to one character, so the table always fitted and had nothing to
+    # scroll. Every table answer this gallery has ever demonstrated was rendered
+    # a letter per column.
+    "django-admin-agent>=0.34.1",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
