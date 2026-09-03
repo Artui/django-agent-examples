@@ -36,7 +36,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.19" },
     { name = "django", specifier = ">=5.2" },
-    { name = "django-admin-agent", specifier = ">=0.33" },
+    { name = "django-admin-agent", specifier = ">=0.34" },
     { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.54" },
     { name = "django-pydantic-agent", specifier = ">=0.21" },
     { name = "djangorestframework", specifier = ">=3.15" },
@@ -160,7 +160,7 @@ wheels = [
 
 [[package]]
 name = "django-admin-agent"
-version = "0.33.0"
+version = "0.34.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -168,9 +168,9 @@ dependencies = [
     { name = "django-ag-ui" },
     { name = "django-pydantic-agent" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ea/cb/9251a380d2bf03ab428cf14736807664b013dab45ea40667130a7d819efe/django_admin_agent-0.33.0.tar.gz", hash = "sha256:895a6a928a91277697be40595beaff9c43366b229126f4031d8cf2194a1ba922", size = 369506, upload-time = "2026-08-31T14:29:18.507Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/17/7f2aecd1c0aeebc53fc8684dc9e1b90ab0428036cc592e211a924e1ff1a8/django_admin_agent-0.34.0.tar.gz", hash = "sha256:83f0dfb39c141465ca4fb0e0e00faa0dec34239c7027de40b1891e5ad88b8c4f", size = 377020, upload-time = "2026-09-02T20:49:00.399Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/60/828988c652294f85e4acf5ef3482e3d876541a373981fae12bbe3dc3ea17/django_admin_agent-0.33.0-py3-none-any.whl", hash = "sha256:38a01a2f6f069e8075fe24217984691ea4a770fab2f598a094bc680355b29113", size = 184213, upload-time = "2026-08-31T14:29:17.063Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/3b/793de280a3344413074d7872120e2d63e36f9d24f6c723fd7a14507d4300/django_admin_agent-0.34.0-py3-none-any.whl", hash = "sha256:91fc27aca633036aa7a1c88acea665fc0ad0dbb234bba58f4e5118e2a6832201", size = 189208, upload-time = "2026-09-02T20:48:59.073Z" },
 ]
 
 [[package]]
