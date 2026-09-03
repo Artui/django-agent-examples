@@ -114,13 +114,14 @@ dependencies = [
     # and a gallery demonstrating two versions of the same thing is worse than a
     # gallery one release behind. That invariant is the reason to move this pin
     # whenever the frontends move, even when nothing in the admin needs it --
-    # here the component stops shredding a markdown table. Its stylesheet always
-    # said a wide table should scroll inside its own box, and it could not: the
-    # bubble broke words anywhere, which drops every descendant's min-content
-    # width to one character, so the table always fitted and had nothing to
-    # scroll. Every table answer this gallery has ever demonstrated was rendered
-    # a letter per column.
-    "django-admin-agent>=0.34.1",
+    # and here it is what makes a chart the same size in both halves. The
+    # component drew one into a fixed frame and scaled it to whatever width the
+    # message column had, so the admin sidebar and the four apps, which are not
+    # the same width, drew the same chart at different sizes and different type.
+    # It now takes the width it needs and stops. The panel also moves by its
+    # header, which is what a demo machine wants when the chat is over the row
+    # somebody is pointing at.
+    "django-admin-agent>=0.35.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
