@@ -113,15 +113,18 @@ dependencies = [
     # the admin surface and the frontends run different builds of one component,
     # and a gallery demonstrating two versions of the same thing is worse than a
     # gallery one release behind. That invariant is the reason to move this pin
-    # whenever the frontends move, even when nothing in the admin needs it --
-    # and here it is what makes a chart the same size in both halves. The
-    # component drew one into a fixed frame and scaled it to whatever width the
-    # message column had, so the admin sidebar and the four apps, which are not
-    # the same width, drew the same chart at different sizes and different type.
-    # It now takes the width it needs and stops. The panel also moves by its
-    # header, which is what a demo machine wants when the chat is over the row
-    # somebody is pointing at.
-    "django-admin-agent>=0.35.0",
+    # whenever the frontends move, even when nothing in the admin needs it.
+    #
+    # What it buys this time is a phone. The component's small-viewport layout
+    # makes every placement full-bleed under 600px and sizes it to the part of
+    # the screen an on-screen keyboard leaves rather than to a `100dvh` that
+    # ignores one -- and a gallery is a thing people open on their phone to see
+    # what it looks like, so the half of it that is a Django admin cannot be the
+    # half that still renders a scaled-down desktop panel. The floor also
+    # carries the setting that decides how the sidebar arrives, since from this
+    # component release a corner placement rests at its launcher rather than
+    # opening over the changelist somebody navigated to.
+    "django-admin-agent>=0.37.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
