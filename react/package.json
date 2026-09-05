@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@artooi/ag-ui-web-component": ">=0.35.2 <1.0.0",
+    "@artooi/ag-ui-web-component": ">=0.36.0 <1.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"

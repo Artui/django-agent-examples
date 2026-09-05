@@ -10,7 +10,7 @@
     "type-check": "svelte-check --threshold error"
   },
   "dependencies": {
-    "@artooi/ag-ui-web-component": ">=0.35.2 <1.0.0",
+    "@artooi/ag-ui-web-component": ">=0.36.0 <1.0.0",
     "svelte": "^5.56.9"
   },
   "devDependencies": {

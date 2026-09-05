@@ -561,8 +561,10 @@ def _book_script(turn: Turn, available: set[str]) -> list[Any]:
         return [_call("create_event", arguments)]
     if _refused(turn):
         return ["Nothing was booked."]
+    if (refusal := _board_refused(turn)) is not None:
+        return [f"The board refused that: {refusal}"]
     event = _as_page(turn.last)
-    if (refusal := event.get("error")) is not None:
+    if (legacy := event.get("error")) is not None:
         # The board itself refused -- a slot already taken reaches the model as
         # a `ServiceConflict` rendered into `{"error": ...}`, which is an
         # ordinary successful tool return carrying `outcome == "success"`. So
@@ -575,7 +577,7 @@ def _book_script(turn: Turn, available: set[str]) -> list[Any]:
         # write that created nothing. `_import_verdict` has always read this
         # correctly for a batch; the single booking had the same three outcomes
         # and read only one of them.
-        return [f"The board refused that: {refusal}"]
+        return [f"The board refused that: {legacy}"]
     title = event.get("title") or "it"
     if event.get("day"):
         return [f"Booked {title} for {event['day']} at {event.get('start_hour')}:00."]
@@ -702,9 +704,12 @@ def _import_verdict(turn: Turn, filename: str) -> str:
 
     - the created event, so the row landed;
     - `outcome == "denied"`, so the person said no to that card;
-    - an `error`, so the board itself refused. That is the service's own
-      `ServiceConflict` reaching the model as text, which is what a slot already
-      taken looks like from here.
+    - `outcome == "failed"`, so the board itself refused. That is the service's
+      own `ServiceConflict` reaching the model, which is what a slot already
+      taken looks like from here. It used to arrive as a successful return
+      carrying `{"error": ...}` and told apart by that key; since
+      djangorestframework-pydantic-ai 0.25 it is a failed one carrying the
+      sentence, and the flag is what says so rather than the shape.
 
     A demo that reported only the first of those would call a refused import a
     success, which is the failure mode worth writing out.
@@ -714,11 +719,18 @@ def _import_verdict(turn: Turn, filename: str) -> str:
     declined = 0
     for content, outcome in zip(turn.returns[1:], turn.outcomes[1:]):
         row = _as_page(content)
-        if row.get("title") is not None:
-            added.append(str(row["title"]))
-        elif outcome == "denied":
+        if outcome == "denied":
             declined += 1
+        elif outcome == "failed":
+            refused.append(str(content))
+        elif row.get("title") is not None:
+            added.append(str(row["title"]))
         else:
+            # Neither flag, and no row came back. Pre-0.25 this is where a board
+            # refusal landed, carrying its reason under `error`; after it, it is
+            # a shape nothing here produces, and reporting it as a refusal is
+            # the safe direction -- an import that says a row was refused when
+            # it landed is a worse demo than one that says so when it did not.
             refused.append(str(row.get("error") or content))
     parts = [
         f"Added {_join(added)} from {filename}."
@@ -1078,13 +1090,44 @@ def _refused(turn: Turn) -> bool:
     own report of a tool that threw, which it prefixes itself: that prefix is a
     literal in the component rather than one of ``strings``, so unlike the decline
     it does not move with the language.
+    A third case arrived with djangorestframework-pydantic-ai 0.25, and it is
+    why this function no longer answers on shape alone. The board's own refusal
+    used to come back as ``{"error": ...}`` -- an object, so the shape rule read
+    it as a result and this returned False. It is now a bare sentence carrying
+    ``outcome == "failed"``, which the shape rule alone would read as a decline:
+    the demo would answer a slot the board rejected with "Nothing was booked",
+    blaming the person for a choice the *board* made. That is the same confusion
+    this docstring warns about above, running the other way.
+
+    So a failed outcome is excluded here and answered by `_board_refused`
+    instead. What is left for the shape rule is the one case that still has no
+    field: a client-side decline, which is an ordinary successful return whose
+    content is a sentence the host may have translated.
     """
     if turn.last_outcome == "denied":
         return True
+    if turn.last_outcome == "failed":
+        # The board refused. A different answer, and `_board_refused` gives it.
+        return False
     if not isinstance(turn.last, str):
         return False
     body = turn.last.strip()
     return not (_reports_a_result(body) or body.startswith(CLIENT_ERROR_PREFIX))
+
+
+def _board_refused(turn: Turn) -> str | None:
+    """The board's own reason for refusing, or None if it did not.
+
+    ``outcome == "failed"`` is the structural signal, new in
+    djangorestframework-pydantic-ai 0.25: a ``ServiceError`` raised by a spec is
+    reported as a failed tool call rather than returned as a successful one
+    carrying ``{"error": ...}``. Reading the flag rather than the content means
+    this does not care what the message says or which language it is in -- the
+    same reason `_refused` reads the decline by shape rather than by wording.
+    """
+    if turn.last_outcome != "failed":
+        return None
+    return turn.last.strip() if isinstance(turn.last, str) else "the board refused it"
 
 
 

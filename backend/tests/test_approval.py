@@ -156,3 +156,38 @@ async def test_a_booking_the_board_refuses_is_not_reported_as_added() -> None:
     assert "refused" in answer, f"a refused booking must say so, got: {text(settled)!r}"
     assert "added" not in answer, f"a refused booking must not claim it landed: {text(settled)!r}"
     assert "booked" not in answer, f"a refused booking must not claim it landed: {text(settled)!r}"
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_board_refusal_reaches_the_browser_marked_failed() -> None:
+    """The whole chain, asserted where it composes.
+
+    Five packages have to agree for a refused tool call to render as one: the
+    spec raises a ``ServiceConflict``; ``djangorestframework-pydantic-ai`` turns
+    that into a ``ToolFailed`` rather than a successful return carrying
+    ``{"error": ...}``; pydantic-ai marks the tool return ``outcome="failed"``;
+    ``django-ag-ui`` forwards that onto ``TOOL_CALL_RESULT``; and the web
+    component reads it to settle the card as an error instead of a success.
+
+    Only the last of those is invisible from here, so this asserts the four that
+    are not -- on the bytes a browser receives rather than on any object in
+    process. Before this batch of releases the same refusal reached the browser
+    as a ``TOOL_CALL_RESULT`` indistinguishable from a success, which is what
+    made a refused booking render as a green card.
+    """
+    await _seed()
+    taken = user_message("book a design sync on 2026-08-10 at 9:00")
+
+    first = await run(taken)
+    await run(*[taken], *transcript(first), resume=approve(first))
+
+    second = await run(taken)
+    settled = await run(*[taken], *transcript(second), resume=approve(second))
+
+    results = [event for event in settled if event.get("type") == "TOOL_CALL_RESULT"]
+    assert results, "the refused booking produced no tool result at all"
+    assert results[-1].get("outcome") == "failed", (
+        f"a board refusal must reach the browser marked failed, got: {results[-1]!r}"
+    )
+    # And the reason travels with it, so the card has something to show.
+    assert "already held by" in str(results[-1].get("content"))
