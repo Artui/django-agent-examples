@@ -73,23 +73,30 @@ dependencies = [
     # render a delegating agent's panel only if something delegates, and no
     # scenario in this repo does.
     #
-    # Raised to 0.55, where an endpoint with no model is refused at the mount
-    # rather than one request later. This backend builds four endpoints and
-    # configures a model for all of them, so nothing here changes -- which was
-    # the finding worth having, because mount time is exactly when a consumer
-    # that built its view before settings were complete would break, and the 84
-    # tests below were run against the unreleased branch to check that this one
-    # does not.
+    # Three things this floor buys, none of them restating which release each
+    # was -- the number lives in the pin, and a comment that repeats it is one
+    # more place to go stale.
     #
-    # 0.56 is the floor now: it is the release that puts an `outcome` on
-    # TOOL_CALL_RESULT, so a tool call this gallery's board refuses reaches the
-    # chat marked failed instead of arriving as a card indistinguishable from a
-    # success. The [spec-tools] extra carries
-    # djangorestframework-pydantic-ai>=0.25 with it, which is the half that
-    # makes the marking true rather than merely present -- below it a spec
-    # tool's conflict is an ordinary return and the transport would forward
-    # "success" for a call that failed.
-    "django-ag-ui[spec-tools,harness]>=0.56",
+    # An endpoint with no model is refused at the mount rather than one request
+    # later. This backend builds four endpoints and configures a model for all
+    # of them, so nothing here changes; that was the finding worth having,
+    # because mount time is exactly when a consumer building its view before
+    # settings are complete would break, and the suite was run against the
+    # unreleased branch to check that this one does not.
+    #
+    # `TOOL_CALL_RESULT` carries an `outcome`, so a tool call this gallery's
+    # board refuses reaches the chat marked failed instead of arriving as a card
+    # indistinguishable from a success. The [spec-tools] extra pulls the half
+    # that makes the marking true rather than merely present: below it a spec
+    # tool's conflict is an ordinary return, which the transport would forward
+    # as a success for a call that failed.
+    #
+    # `FORWARD_REASONING` is documented honestly. It had been described as
+    # though a chain-of-thought could only reach a browser once an operator
+    # enabled a thinking budget, which is not something a consumer can rely on.
+    # A gallery is read as a worked example, so it should not be the place
+    # someone learns a guarantee that was never there.
+    "django-ag-ui[spec-tools,harness]>=0.57",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -124,43 +131,38 @@ dependencies = [
     # transcript. `tests/test_admin_surface.py` asserts the attribute is
     # rendered, so this floor is load-bearing rather than aspirational.
     #
-    # Raised by that same argument rather than by a version sweep, and the
-    # argument is the one that keeps recurring: this floor is the release whose
-    # vendored web component matches what the four frontends resolve. Below it
-    # the admin surface and the frontends run different builds of one component,
-    # and a gallery demonstrating two versions of the same thing is worse than a
-    # gallery one release behind. That invariant is the reason to move this pin
-    # whenever the frontends move, even when nothing in the admin needs it.
+    # Two standing arguments govern this pin, and they are why it moves at all.
     #
-    # What it buys this time is the demonstration itself. The sidebar's agent
-    # can move the panel it is speaking from -- send it to a corner, minimise
-    # it, put it back -- and this gallery is where that is worth seeing,
-    # because a chat mounted in the page it is discussing is the only kind that
-    # can ever be in the way. Nothing here configures it: the tools are on by
-    # default in the admin package, so the floor is the whole adoption.
+    # First, the invariant: this floor must name the release whose vendored web
+    # component matches what the four frontends resolve. Below it the admin
+    # surface and the frontends run different builds of one component, and a
+    # gallery demonstrating two versions of the same thing is worse than a
+    # gallery one release behind. That is the reason to move this pin whenever
+    # the frontends move, even when nothing in the admin needs it.
     #
-    # Note what did *not* move with it. The invariant this pin protects is that
-    # the admin surface and the four frontends run the same web component
-    # build, and that admin release re-vendored nothing -- so the frontends
-    # stayed where they were and the two halves stayed in step. Raising this
-    # alone is only correct while that holds, which is why it is written down
-    # here rather than left to whoever reads the diff.
+    # Second, the corollary, which is the half a diff does not show: when an
+    # admin release re-vendors *nothing*, this pin moves alone and the
+    # frontends' ranges correctly stay put. That is not the split the invariant
+    # forbids -- it is the invariant holding. Raising this alone is only correct
+    # while that is true, so check it rather than infer it from the fact that
+    # nothing broke.
     #
-    # 0.39.0 does re-vendor, so this time both halves move: the frontends'
-    # declared range goes to 0.35.2 in the same change. What those two component
-    # releases contain is a documentation paragraph and the fix that made it
-    # render -- all three bundles are the same size and each hop differs in the
-    # embedded version string -- so this pair buys currency rather than
-    # behaviour, and the invariant is the whole reason to spend it. A gallery running one component build in its admin and another
-    # in its frontends is worse than a gallery one release behind. The floor
-    # also carries django-ag-ui 0.55 transitively, and this backend declares
-    # that one itself above.
-    # 0.40.0 vendors the component at 0.36.0, the build that renders a failed
-    # tool call as failed. The four frontends' ranges move to that same
-    # component release in this change, because the invariant above is the whole
-    # reason to spend the floor: the admin surface and the frontends must run
-    # one build of the component, not two.
-    "django-admin-agent>=0.40.0",
+    # What the floor buys, cumulatively and without restating which release
+    # bought which -- the numbers belong in the pin:
+    #
+    #   - The sidebar's agent can move the panel it is speaking from: send it to
+    #     a corner, minimise it, put it back. Worth demonstrating here because a
+    #     chat mounted in the page it is discussing is the only kind that can be
+    #     in the way. Nothing configures it; the tools are on by default, so the
+    #     floor is the whole adoption.
+    #   - A tool call the agent's target refuses renders as failed rather than
+    #     as a card indistinguishable from a success.
+    #   - The reasoning docs no longer promise that a chain-of-thought reaches a
+    #     browser only once an operator enables a thinking budget. It is not a
+    #     promise anyone can keep, and a gallery is read as a worked example, so
+    #     it is the wrong place to learn a guarantee that was never there. This
+    #     one re-vendors nothing, so it is the corollary above in practice.
+    "django-admin-agent>=0.41.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
