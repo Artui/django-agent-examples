@@ -562,6 +562,20 @@ def _book_script(turn: Turn, available: set[str]) -> list[Any]:
     if _refused(turn):
         return ["Nothing was booked."]
     event = _as_page(turn.last)
+    if (refusal := event.get("error")) is not None:
+        # The board itself refused -- a slot already taken reaches the model as
+        # a `ServiceConflict` rendered into `{"error": ...}`, which is an
+        # ordinary successful tool return carrying `outcome == "success"`. So
+        # neither `_refused` nor the outcome says anything, and the only signal
+        # is the shape of the content.
+        #
+        # Read before the fields below, because they are all absent on a refusal
+        # and every one of them has a fallback: `title` becomes "it", `day` is
+        # missing, and the answer used to be "Added it to the backlog." for a
+        # write that created nothing. `_import_verdict` has always read this
+        # correctly for a batch; the single booking had the same three outcomes
+        # and read only one of them.
+        return [f"The board refused that: {refusal}"]
     title = event.get("title") or "it"
     if event.get("day"):
         return [f"Booked {title} for {event['day']} at {event.get('start_hour')}:00."]
