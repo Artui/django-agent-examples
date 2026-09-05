@@ -115,16 +115,20 @@ dependencies = [
     # gallery one release behind. That invariant is the reason to move this pin
     # whenever the frontends move, even when nothing in the admin needs it.
     #
-    # What it buys this time is a phone. The component's small-viewport layout
-    # makes every placement full-bleed under 600px and sizes it to the part of
-    # the screen an on-screen keyboard leaves rather than to a `100dvh` that
-    # ignores one -- and a gallery is a thing people open on their phone to see
-    # what it looks like, so the half of it that is a Django admin cannot be the
-    # half that still renders a scaled-down desktop panel. The floor also
-    # carries the setting that decides how the sidebar arrives, since from this
-    # component release a corner placement rests at its launcher rather than
-    # opening over the changelist somebody navigated to.
-    "django-admin-agent>=0.37.0",
+    # What it buys this time is the demonstration itself. The sidebar's agent
+    # can move the panel it is speaking from -- send it to a corner, minimise
+    # it, put it back -- and this gallery is where that is worth seeing,
+    # because a chat mounted in the page it is discussing is the only kind that
+    # can ever be in the way. Nothing here configures it: the tools are on by
+    # default in the admin package, so the floor is the whole adoption.
+    #
+    # Note what did *not* move with it. The invariant this pin protects is that
+    # the admin surface and the four frontends run the same web component
+    # build, and this admin release re-vendors nothing -- so the frontends stay
+    # where they are and the two halves stay in step. Raising this alone is
+    # only correct while that holds, which is why it is written down here
+    # rather than left to whoever reads the diff.
+    "django-admin-agent>=0.38.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
