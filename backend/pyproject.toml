@@ -72,7 +72,15 @@ dependencies = [
     # in a browser rather than argued: the React app and the admin surface both
     # render a delegating agent's panel only if something delegates, and no
     # scenario in this repo does.
-    "django-ag-ui[spec-tools,harness]>=0.54",
+    #
+    # Raised to 0.55, where an endpoint with no model is refused at the mount
+    # rather than one request later. This backend builds four endpoints and
+    # configures a model for all of them, so nothing here changes -- which was
+    # the finding worth having, because mount time is exactly when a consumer
+    # that built its view before settings were complete would break, and the 84
+    # tests below were run against the unreleased branch to check that this one
+    # does not.
+    "django-ag-ui[spec-tools,harness]>=0.55",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -124,11 +132,21 @@ dependencies = [
     #
     # Note what did *not* move with it. The invariant this pin protects is that
     # the admin surface and the four frontends run the same web component
-    # build, and this admin release re-vendors nothing -- so the frontends stay
-    # where they are and the two halves stay in step. Raising this alone is
-    # only correct while that holds, which is why it is written down here
-    # rather than left to whoever reads the diff.
-    "django-admin-agent>=0.38.0",
+    # build, and that admin release re-vendored nothing -- so the frontends
+    # stayed where they were and the two halves stayed in step. Raising this
+    # alone is only correct while that holds, which is why it is written down
+    # here rather than left to whoever reads the diff.
+    #
+    # 0.39.0 does re-vendor, so this time both halves move: the frontends'
+    # declared range goes to 0.35.2 in the same change. What those two component
+    # releases contain is a documentation paragraph and the fix that made it
+    # render -- all three bundles are the same size and each hop differs in the
+    # embedded version string -- so this pair buys currency rather than
+    # behaviour, and the invariant is the whole reason to spend it. A gallery running one component build in its admin and another
+    # in its frontends is worse than a gallery one release behind. The floor
+    # also carries django-ag-ui 0.55 transitively, and this backend declares
+    # that one itself above.
+    "django-admin-agent>=0.39.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
