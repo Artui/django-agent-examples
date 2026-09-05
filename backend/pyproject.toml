@@ -73,23 +73,30 @@ dependencies = [
     # render a delegating agent's panel only if something delegates, and no
     # scenario in this repo does.
     #
-    # Raised to 0.55, where an endpoint with no model is refused at the mount
-    # rather than one request later. This backend builds four endpoints and
-    # configures a model for all of them, so nothing here changes -- which was
-    # the finding worth having, because mount time is exactly when a consumer
-    # that built its view before settings were complete would break, and the 84
-    # tests below were run against the unreleased branch to check that this one
-    # does not.
+    # Three things this floor buys, none of them restating which release each
+    # was -- the number lives in the pin, and a comment that repeats it is one
+    # more place to go stale.
     #
-    # 0.56 is the floor now: it is the release that puts an `outcome` on
-    # TOOL_CALL_RESULT, so a tool call this gallery's board refuses reaches the
-    # chat marked failed instead of arriving as a card indistinguishable from a
-    # success. The [spec-tools] extra carries
-    # djangorestframework-pydantic-ai>=0.25 with it, which is the half that
-    # makes the marking true rather than merely present -- below it a spec
-    # tool's conflict is an ordinary return and the transport would forward
-    # "success" for a call that failed.
-    "django-ag-ui[spec-tools,harness]>=0.56",
+    # An endpoint with no model is refused at the mount rather than one request
+    # later. This backend builds four endpoints and configures a model for all
+    # of them, so nothing here changes; that was the finding worth having,
+    # because mount time is exactly when a consumer building its view before
+    # settings are complete would break, and the suite was run against the
+    # unreleased branch to check that this one does not.
+    #
+    # `TOOL_CALL_RESULT` carries an `outcome`, so a tool call this gallery's
+    # board refuses reaches the chat marked failed instead of arriving as a card
+    # indistinguishable from a success. The [spec-tools] extra pulls the half
+    # that makes the marking true rather than merely present: below it a spec
+    # tool's conflict is an ordinary return, which the transport would forward
+    # as a success for a call that failed.
+    #
+    # `FORWARD_REASONING` is documented honestly. It had been described as
+    # though a chain-of-thought could only reach a browser once an operator
+    # enabled a thinking budget, which is not something a consumer can rely on.
+    # A gallery is read as a worked example, so it should not be the place
+    # someone learns a guarantee that was never there.
+    "django-ag-ui[spec-tools,harness]>=0.57",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
