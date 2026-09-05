@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@artooi/ag-ui-web-component':
-        specifier: '>=0.35.0 <1.0.0'
-        version: 0.35.0
+        specifier: '>=0.35.2 <1.0.0'
+        version: 0.35.2
       vue:
         specifier: ^3.5.41
         version: 3.5.42(typescript@5.9.3)
@@ -45,8 +45,8 @@ packages:
   '@ag-ui/proto@0.0.59':
     resolution: {integrity: sha512-X+uvDaegLEHw5kJu8tv2eSqHH8ouat+JCfFokGV1uuMquY8qCEQSlGsM7xzexwX9fujuxgHOWumg5kJDqa0+RA==}
 
-  '@artooi/ag-ui-web-component@0.35.0':
-    resolution: {integrity: sha512-45VmXFWr3w4sbZbaDcw3ZPY65DNgU27alt7/APNHqhftB8sGMZJXWETT7BqGSXREbcdmY2bj8YOhZfySAniocw==}
+  '@artooi/ag-ui-web-component@0.35.2':
+    resolution: {integrity: sha512-0r/DSpdkh8J2OIdx2xwpp24n6445UWawCMIObPewjNZbofdis7h5XFn1iCX51hi8uaxqsVxOU9eGrtd2pan+BA==}
     engines: {node: '>=22'}
 
   '@babel/helper-string-parser@7.29.7':
@@ -658,7 +658,7 @@ snapshots:
       '@bufbuild/protobuf': 2.14.0
       '@protobuf-ts/protoc': 2.11.1
 
-  '@artooi/ag-ui-web-component@0.35.0':
+  '@artooi/ag-ui-web-component@0.35.2':
     dependencies:
       '@ag-ui/client': 0.0.59
       '@ag-ui/core': 0.0.59
