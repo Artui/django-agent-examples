@@ -86,6 +86,13 @@ def test_the_sidebar_renders_into_the_admin_chrome(client: Client, staff: Any) -
     # logout is -- and this gallery's admin is the shape where that bites: one
     # browser, several principals, a shared demo machine.
     assert f'user-key="{staff.pk}"' in body
+    # The agent may move the panel it is speaking from, which is the reason
+    # this floor moved and the thing a gallery is for showing. Asserted as the
+    # absence of the off switch, because that is how the admin renders it: the
+    # tools are on unless CHAT_SURFACE_TOOLS says otherwise, and this project
+    # configures nothing. A gallery whose headline capability is off is a
+    # gallery quietly demonstrating the wrong thing.
+    assert "data-chat-surface-tools" not in body
 
 
 def test_the_sidebars_bundle_is_findable_as_a_static_file() -> None:
