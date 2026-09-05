@@ -131,43 +131,38 @@ dependencies = [
     # transcript. `tests/test_admin_surface.py` asserts the attribute is
     # rendered, so this floor is load-bearing rather than aspirational.
     #
-    # Raised by that same argument rather than by a version sweep, and the
-    # argument is the one that keeps recurring: this floor is the release whose
-    # vendored web component matches what the four frontends resolve. Below it
-    # the admin surface and the frontends run different builds of one component,
-    # and a gallery demonstrating two versions of the same thing is worse than a
-    # gallery one release behind. That invariant is the reason to move this pin
-    # whenever the frontends move, even when nothing in the admin needs it.
+    # Two standing arguments govern this pin, and they are why it moves at all.
     #
-    # What it buys this time is the demonstration itself. The sidebar's agent
-    # can move the panel it is speaking from -- send it to a corner, minimise
-    # it, put it back -- and this gallery is where that is worth seeing,
-    # because a chat mounted in the page it is discussing is the only kind that
-    # can ever be in the way. Nothing here configures it: the tools are on by
-    # default in the admin package, so the floor is the whole adoption.
+    # First, the invariant: this floor must name the release whose vendored web
+    # component matches what the four frontends resolve. Below it the admin
+    # surface and the frontends run different builds of one component, and a
+    # gallery demonstrating two versions of the same thing is worse than a
+    # gallery one release behind. That is the reason to move this pin whenever
+    # the frontends move, even when nothing in the admin needs it.
     #
-    # Note what did *not* move with it. The invariant this pin protects is that
-    # the admin surface and the four frontends run the same web component
-    # build, and that admin release re-vendored nothing -- so the frontends
-    # stayed where they were and the two halves stayed in step. Raising this
-    # alone is only correct while that holds, which is why it is written down
-    # here rather than left to whoever reads the diff.
+    # Second, the corollary, which is the half a diff does not show: when an
+    # admin release re-vendors *nothing*, this pin moves alone and the
+    # frontends' ranges correctly stay put. That is not the split the invariant
+    # forbids -- it is the invariant holding. Raising this alone is only correct
+    # while that is true, so check it rather than infer it from the fact that
+    # nothing broke.
     #
-    # 0.39.0 does re-vendor, so this time both halves move: the frontends'
-    # declared range goes to 0.35.2 in the same change. What those two component
-    # releases contain is a documentation paragraph and the fix that made it
-    # render -- all three bundles are the same size and each hop differs in the
-    # embedded version string -- so this pair buys currency rather than
-    # behaviour, and the invariant is the whole reason to spend it. A gallery running one component build in its admin and another
-    # in its frontends is worse than a gallery one release behind. The floor
-    # also carries django-ag-ui 0.55 transitively, and this backend declares
-    # that one itself above.
-    # 0.40.0 vendors the component at 0.36.0, the build that renders a failed
-    # tool call as failed. The four frontends' ranges move to that same
-    # component release in this change, because the invariant above is the whole
-    # reason to spend the floor: the admin surface and the frontends must run
-    # one build of the component, not two.
-    "django-admin-agent>=0.40.0",
+    # What the floor buys, cumulatively and without restating which release
+    # bought which -- the numbers belong in the pin:
+    #
+    #   - The sidebar's agent can move the panel it is speaking from: send it to
+    #     a corner, minimise it, put it back. Worth demonstrating here because a
+    #     chat mounted in the page it is discussing is the only kind that can be
+    #     in the way. Nothing configures it; the tools are on by default, so the
+    #     floor is the whole adoption.
+    #   - A tool call the agent's target refuses renders as failed rather than
+    #     as a card indistinguishable from a success.
+    #   - The reasoning docs no longer promise that a chain-of-thought reaches a
+    #     browser only once an operator enables a thinking budget. It is not a
+    #     promise anyone can keep, and a gallery is read as a worked example, so
+    #     it is the wrong place to learn a guarantee that was never there. This
+    #     one re-vendors nothing, so it is the corollary above in practice.
+    "django-admin-agent>=0.41.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
