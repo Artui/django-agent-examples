@@ -22,6 +22,7 @@ from django_admin_agent import AdminAgentServer
 from django_pydantic_agent.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
+from django_pydantic_agent.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.model import build_demo_model
 
@@ -39,4 +40,12 @@ agent = AdminAgentServer(
     # sends the token; without this the endpoint would let any third-party page
     # drive the admin as the logged-in staff user.
     csrf_exempt=False,
+    # The same reason the board mount sets one, and the same consequence for
+    # leaving it unset: ``RUN_ERROR`` is redacted to a fixed sentence because an
+    # exception's words are written for an operator, and the default
+    # ``audit_logger`` is a null one -- so a mount that configures neither
+    # redacts the failure to the browser and then drops it, and the reason
+    # reaches nobody. This mount had that gap while the board mount documented
+    # it two files away.
+    audit_logger=LoggingAuditLogger(),
 )

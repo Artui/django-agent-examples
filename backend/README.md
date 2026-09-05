@@ -129,13 +129,23 @@ static file, so without that the sidebar is simply absent.
 ## Errors
 
 Business-rule failures raise `ServiceError` (or `ServiceValidationError`), never a
-DRF exception. Over HTTP those become `422` with the service's own message; under
-the agent they become a tool error the model can read and act on. A DRF
-`APIException` would be correct over HTTP and an unhandled failure everywhere
-else.
+DRF exception. The *member* says what kind of failure it is, and every transport
+gets the distinction: `ServiceConflict` is a `409` and `ServiceNotFound` a `404`
+over HTTP, and a readable tool error under the agent. A DRF `APIException` would
+be correct over HTTP and an unhandled failure everywhere else.
 
-Note that a `status_code` attribute on a `ServiceError` subclass has no effect:
-every non-validation service error maps to `422`.
+This paragraph used to say that every non-validation service error maps to `422`
+and that a `status_code` attribute on a subclass has no effect. That was true
+when this gallery was built and stopped being true in drf-services 0.40.0, which
+is where the two members arrived -- see the comment above `SlotTaken` in
+`board/services.py`, which records how the change was noticed.
+
+Under the agent, a refusal comes back as a tool return carrying
+`{"error": "..."}` with `outcome == "success"`, because AG-UI's
+`TOOL_CALL_RESULT` has no field to say otherwise. An answer therefore has to
+read the *shape* of what came back rather than trust the outcome -- which is
+what `_import_verdict` and the single-booking path in `agent/scripted.py` both
+do, and what the chat card in the corner still cannot show you.
 
 ## Tests
 

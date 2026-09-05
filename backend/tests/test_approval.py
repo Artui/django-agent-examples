@@ -124,3 +124,35 @@ async def _seed() -> None:
     user = await get_user_model().objects.acreate(username="demo")
     await Token.objects.acreate(user=user, key="demo-token-not-a-secret")
     await Event.objects.acreate(owner=user, title="Standup", day="2026-08-10", start_hour=9)
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_booking_the_board_refuses_is_not_reported_as_added() -> None:
+    """A refused write must not be answered as a successful one.
+
+    The board refuses a taken slot with a ``ServiceConflict``, which reaches the
+    model as an ordinary successful tool return carrying ``{"error": ...}`` --
+    ``outcome`` is ``"success"`` and nothing structural says otherwise. So the
+    only signal is the shape of the content, and an answer that reads the fields
+    it expected finds none of them: the title falls back to "it", the day is
+    absent, and the reply used to be "Added it to the backlog." for a write that
+    created nothing.
+
+    ``_import_verdict`` has always read this correctly for a batch, and says in
+    its own docstring that reporting only the created rows "would call a refused
+    import a success, which is the failure mode worth writing out". This is that
+    failure mode, on the single-booking path.
+    """
+    await _seed()
+    taken = user_message("book a design sync on 2026-08-10 at 9:00")
+
+    first = await run(taken)
+    await run(*[taken], *transcript(first), resume=approve(first))
+
+    second = await run(taken)
+    settled = await run(*[taken], *transcript(second), resume=approve(second))
+
+    answer = text(settled).lower()
+    assert "refused" in answer, f"a refused booking must say so, got: {text(settled)!r}"
+    assert "added" not in answer, f"a refused booking must not claim it landed: {text(settled)!r}"
+    assert "booked" not in answer, f"a refused booking must not claim it landed: {text(settled)!r}"
