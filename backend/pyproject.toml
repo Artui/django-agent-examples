@@ -80,7 +80,16 @@ dependencies = [
     # that built its view before settings were complete would break, and the 84
     # tests below were run against the unreleased branch to check that this one
     # does not.
-    "django-ag-ui[spec-tools,harness]>=0.55",
+    #
+    # 0.56 is the floor now: it is the release that puts an `outcome` on
+    # TOOL_CALL_RESULT, so a tool call this gallery's board refuses reaches the
+    # chat marked failed instead of arriving as a card indistinguishable from a
+    # success. The [spec-tools] extra carries
+    # djangorestframework-pydantic-ai>=0.25 with it, which is the half that
+    # makes the marking true rather than merely present -- below it a spec
+    # tool's conflict is an ordinary return and the transport would forward
+    # "success" for a call that failed.
+    "django-ag-ui[spec-tools,harness]>=0.56",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -146,7 +155,12 @@ dependencies = [
     # in its frontends is worse than a gallery one release behind. The floor
     # also carries django-ag-ui 0.55 transitively, and this backend declares
     # that one itself above.
-    "django-admin-agent>=0.39.0",
+    # 0.40.0 vendors the component at 0.36.0, the build that renders a failed
+    # tool call as failed. The four frontends' ranges move to that same
+    # component release in this change, because the invariant above is the whole
+    # reason to spend the floor: the admin surface and the frontends must run
+    # one build of the component, not two.
+    "django-admin-agent>=0.40.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
