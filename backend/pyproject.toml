@@ -96,7 +96,7 @@ dependencies = [
     # enabled a thinking budget, which is not something a consumer can rely on.
     # A gallery is read as a worked example, so it should not be the place
     # someone learns a guarantee that was never there.
-    "django-ag-ui[spec-tools,harness]>=0.57",
+    "django-ag-ui[spec-tools,harness]>=0.58",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -160,9 +160,18 @@ dependencies = [
     #   - The reasoning docs no longer promise that a chain-of-thought reaches a
     #     browser only once an operator enables a thinking budget. It is not a
     #     promise anyone can keep, and a gallery is read as a worked example, so
-    #     it is the wrong place to learn a guarantee that was never there. This
-    #     one re-vendors nothing, so it is the corollary above in practice.
-    "django-admin-agent>=0.41.0",
+    #     it is the wrong place to learn a guarantee that was never there. That
+    #     release re-vendored nothing, so it was the corollary above in practice.
+    #   - A message sent to a chat with no endpoint says so, instead of clearing
+    #     the composer and rendering the user's own bubble as though it had gone.
+    #     This release *does* re-vendor, so the frontends' ranges move in the same
+    #     change -- the invariant's ordinary case rather than its corollary, and
+    #     the reason both halves are stated here.
+    #   - A signed-out visitor is handed nothing: the admin's login page renders
+    #     `base_site.html` like every other page, and the sidebar context carries
+    #     a route manifest built from the whole admin registry without filtering
+    #     by permission.
+    "django-admin-agent>=0.42.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
