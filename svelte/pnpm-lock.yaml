@@ -12,15 +12,15 @@ importers:
         specifier: '>=0.37.0 <1.0.0'
         version: 0.37.0
       svelte:
-        specifier: ^5.56.9
-        version: 5.56.10
+        specifier: ^5.57.0
+        version: 5.57.0
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.3.0
-        version: 7.3.0(svelte@5.56.10)(vite@8.2.2)
+        version: 7.3.0(svelte@5.57.0)(vite@8.2.2)
       svelte-check:
         specifier: ^4.4.4
-        version: 4.7.6(picomatch@4.0.7)(svelte@5.56.10)(typescript@5.9.3)
+        version: 4.7.6(picomatch@4.0.7)(svelte@5.57.0)(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -237,8 +237,8 @@ packages:
   esm-env@1.2.2:
     resolution: {integrity: sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA==}
 
-  esrap@2.3.6:
-    resolution: {integrity: sha512-yc0OC12UjPqLoc+fe+v5GNs4TOjAigUw3sTikfC+xeBPGUw7gDRz3DtYaqEhxyMVJojcSWJw7jT0QWR+CbuE/A==}
+  esrap@2.3.7:
+    resolution: {integrity: sha512-n2nf7fZR3c9yXf0BPEuHuXqT+KW0SJVj4cN5FMEkpCZ3scLjOQWpiccyCxVzCC2q1wubTghuEGzngJY/7Ah0Ow==}
     peerDependencies:
       '@typescript-eslint/types': ^8.2.0
     peerDependenciesMeta:
@@ -405,8 +405,8 @@ packages:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: ^5.0.0 || ^6.0.0
 
-  svelte@5.56.10:
-    resolution: {integrity: sha512-Lcxbj8I/KAbpY+VjtY4ENQBV0dDCipfGAhqb51XQZ67CIQqXgsv/8dPkbILaj4Fb6/b6JAEM/PIVbILXgDQy2g==}
+  svelte@5.57.0:
+    resolution: {integrity: sha512-NdbDn7fl4be1ViUG0oq/lvG6OZy3oENolV2ONjiqqsfVoeAfzaQAKUcEX3MrQod/Bebv1PgwET9rfXhgn9s4Kg==}
     engines: {node: '>=18'}
 
   tinyglobby@0.2.17:
@@ -479,8 +479,8 @@ packages:
       vite:
         optional: true
 
-  zimmerframe@1.1.4:
-    resolution: {integrity: sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ==}
+  zimmerframe@1.1.5:
+    resolution: {integrity: sha512-msJxIvYDYcoNL+PJsu+7qmpDWsYmAxTY+2TNYXXF0hzBzBk0BMecOqDOG/EckUoKCuKwObfbugIl8QpqHDXeFA==}
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
@@ -600,18 +600,19 @@ snapshots:
 
   '@sveltejs/load-config@0.2.3': {}
 
-  '@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.56.10)(vite@8.2.2)':
+  '@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0)(vite@8.2.2)':
     dependencies:
       deepmerge: 4.3.1
       magic-string: 1.2.3
       obug: 2.1.4
-      svelte: 5.56.10
+      svelte: 5.57.0
       vite: 8.2.2
       vitefu: 1.1.3(vite@8.2.2)
 
   '@types/estree@1.0.9': {}
 
-  '@types/trusted-types@2.0.7': {}
+  '@types/trusted-types@2.0.7':
+    optional: true
 
   '@types/uuid@10.0.0': {}
 
@@ -641,7 +642,7 @@ snapshots:
 
   esm-env@1.2.2: {}
 
-  esrap@2.3.6:
+  esrap@2.3.7:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
@@ -768,7 +769,7 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  svelte-check@4.7.6(picomatch@4.0.7)(svelte@5.56.10)(typescript@5.9.3):
+  svelte-check@4.7.6(picomatch@4.0.7)(svelte@5.57.0)(typescript@5.9.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@sveltejs/load-config': 0.2.3
@@ -776,29 +777,28 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.7)
       picocolors: 1.1.1
       sade: 1.8.1
-      svelte: 5.56.10
+      svelte: 5.57.0
       typescript: 5.9.3
     transitivePeerDependencies:
       - picomatch
 
-  svelte@5.56.10:
+  svelte@5.57.0:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@jridgewell/sourcemap-codec': 1.6.0
       '@sveltejs/acorn-typescript': 1.0.13(acorn@8.18.0)
       '@types/estree': 1.0.9
-      '@types/trusted-types': 2.0.7
       acorn: 8.18.0
       aria-query: 5.3.1
       axobject-query: 4.1.0
       clsx: 2.1.1
       devalue: 5.9.2
       esm-env: 1.2.2
-      esrap: 2.3.6
+      esrap: 2.3.7
       is-reference: 3.0.3
       locate-character: 3.0.0
       magic-string: 0.30.21
-      zimmerframe: 1.1.4
+      zimmerframe: 1.1.5
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
@@ -829,6 +829,6 @@ snapshots:
     optionalDependencies:
       vite: 8.2.2
 
-  zimmerframe@1.1.4: {}
+  zimmerframe@1.1.5: {}
 
   zod@3.25.76: {}
