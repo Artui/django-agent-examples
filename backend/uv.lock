@@ -36,8 +36,8 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.19" },
     { name = "django", specifier = ">=5.2" },
-    { name = "django-admin-agent", specifier = ">=0.42.0" },
-    { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.58" },
+    { name = "django-admin-agent", specifier = ">=0.43.0" },
+    { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.59" },
     { name = "django-pydantic-agent", specifier = ">=0.21" },
     { name = "djangorestframework", specifier = ">=3.15" },
     { name = "djangorestframework-dataclasses", specifier = ">=1.3.1" },
@@ -132,9 +132,9 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 dependencies = [
-    { name = "asgiref" },
-    { name = "sqlparse" },
-    { name = "tzdata", marker = "sys_platform == 'win32'" },
+    { name = "asgiref", marker = "python_full_version < '3.12'" },
+    { name = "sqlparse", marker = "python_full_version < '3.12'" },
+    { name = "tzdata", marker = "python_full_version < '3.12' and sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d5/d8/43e9d000519adceb189620b6869ff88031e046df91c2e9da72f8f6918399/django-5.2.17.tar.gz", hash = "sha256:9d4d93be539a18ab80d058eb515900e10951e04c537c5a6b394fc49528d3251f", size = 10889740, upload-time = "2026-08-04T15:04:03.173Z" }
 wheels = [
@@ -149,9 +149,9 @@ resolution-markers = [
     "python_full_version >= '3.12'",
 ]
 dependencies = [
-    { name = "asgiref" },
-    { name = "sqlparse" },
-    { name = "tzdata", marker = "sys_platform == 'win32'" },
+    { name = "asgiref", marker = "python_full_version >= '3.12'" },
+    { name = "sqlparse", marker = "python_full_version >= '3.12'" },
+    { name = "tzdata", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e2/42/6cb20996733984c1f6661daeda3877990836c76c633c6c8879d39f7120eb/django-6.1.tar.gz", hash = "sha256:86a2aacd59b817e4d6ac2ebfe22356c58f66f7b24e503f71b7c2fead677ee48b", size = 11223034, upload-time = "2026-08-05T19:21:53.789Z" }
 wheels = [
@@ -160,7 +160,7 @@ wheels = [
 
 [[package]]
 name = "django-admin-agent"
-version = "0.42.0"
+version = "0.43.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -168,14 +168,14 @@ dependencies = [
     { name = "django-ag-ui" },
     { name = "django-pydantic-agent" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5c/c4/904b1d1b2c54559ac34b06a2d5388eed7da266479ce905827e161395b30f/django_admin_agent-0.42.0.tar.gz", hash = "sha256:0a1ab0ec6c65b30992a1f58b3f5de0ee22f27313d16412b5acdbb65d27219f62", size = 413207, upload-time = "2026-09-06T10:18:07.18Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0e/fc/1804dd60494f3fedd76497fd3885ec8d3f98dea0457ab2f4e67182756c81/django_admin_agent-0.43.0.tar.gz", hash = "sha256:8b3977c758b672a908e883c494d37733b884d0f15d94891382f9e1024b688572", size = 413302, upload-time = "2026-09-14T11:17:00.017Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/47/849f738dcff5ea134fbe3255b9816a2c487fd4ee2051fb72e81ee9042db9/django_admin_agent-0.42.0-py3-none-any.whl", hash = "sha256:c7f28ae5e11fdee933d3444ef71f3bcef3cfbd0fe686c2dba534f614ccb72348", size = 206448, upload-time = "2026-09-06T10:18:05.574Z" },
+    { url = "https://files.pythonhosted.org/packages/67/8f/1173988911df04e65fd9ca76111f038aed18f24460da48b19095c14359ff/django_admin_agent-0.43.0-py3-none-any.whl", hash = "sha256:9dcc1eed777d805cc89a897bfab4f510ee64dbee4968d229f6c28b63864b47e9", size = 205990, upload-time = "2026-09-14T11:16:58.503Z" },
 ]
 
 [[package]]
 name = "django-ag-ui"
-version = "0.58.0"
+version = "0.59.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-protocol" },
@@ -184,9 +184,9 @@ dependencies = [
     { name = "django-pydantic-agent" },
     { name = "pydantic-ai-slim", extra = ["ag-ui"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/f1/0f230e14423bfa7ca1c7156d7b3e71fc2f914f41e10c68f5b3302e0faaf5/django_ag_ui-0.58.0.tar.gz", hash = "sha256:b525feb100f64203233d40242c2cff72b5ef761d386bcb9a9c8f27ad5e1b54de", size = 542303, upload-time = "2026-09-06T10:04:40.625Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/91/2e17114d9974bdab8e570912e36fe00404e65bff5357c6d485b249858c5d/django_ag_ui-0.59.0.tar.gz", hash = "sha256:5d5dfd8de3968bd888513e5341c31a23d616a770f80e9656578b4b74816351f5", size = 543457, upload-time = "2026-09-14T11:01:40.837Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/79/ec26d63f215903d7ae2d0eba12ddd93ea00a52889faecf79aebe32c25bc1/django_ag_ui-0.58.0-py3-none-any.whl", hash = "sha256:c7d2a9a3534a9b62b8e067f501e41deda6a7f442af81e194e59070c48d0ce845", size = 145063, upload-time = "2026-09-06T10:04:39.05Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/30/f863cd7c6ec17adc46fee66474b89486fd753735a26dbbc59788ddf24162/django_ag_ui-0.59.0-py3-none-any.whl", hash = "sha256:979abb6d6a5f43d707eebbca1f20354d61ec9de901f282e5c09239a0ab8e111d", size = 145066, upload-time = "2026-09-14T11:01:39.318Z" },
 ]
 
 [package.optional-dependencies]
