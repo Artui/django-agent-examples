@@ -12,7 +12,7 @@
   "dependencies": {
     "@artooi/ag-ui-web-component": ">=0.37.0 <1.0.0",
     "vue": "^3.5.41",
-    "vue-router": "^5.2.0"
+    "vue-router": "^5.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.8",
