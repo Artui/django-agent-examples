@@ -96,7 +96,7 @@ dependencies = [
     # enabled a thinking budget, which is not something a consumer can rely on.
     # A gallery is read as a worked example, so it should not be the place
     # someone learns a guarantee that was never there.
-    "django-ag-ui[spec-tools,harness]>=0.58",
+    "django-ag-ui[spec-tools,harness]>=0.59",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -171,7 +171,7 @@ dependencies = [
     #     `base_site.html` like every other page, and the sidebar context carries
     #     a route manifest built from the whole admin registry without filtering
     #     by permission.
-    "django-admin-agent>=0.42.0",
+    "django-admin-agent>=0.43.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
