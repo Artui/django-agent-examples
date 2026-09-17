@@ -198,10 +198,12 @@ dependencies = [
     #     finished, including one restored by a reload while it waited for
     #     approval, where it used to show a spinner that never settled; and
     #     opening the conversation list moves focus into it. This release
-    #     re-vendors, so the frontends' ranges move in the same change. It also names the signed-in user in a full-page chat's
-    #     greeting, which this gallery's sidebar mount does not show, and renders
-    #     a refused call from a bridged MCP server as failed, where this admin
-    #     mount bridges no server. Neither of those halves reaches this gallery.
+    #     re-vendors, so the frontends' ranges move in the same change. It also
+    #     names the signed-in user in a full-page chat's greeting, which this
+    #     gallery's admin chat does not show at the default placement it keeps,
+    #     and renders a refused call from a bridged MCP server as failed, where
+    #     this admin mount bridges no server. Neither of those halves reaches
+    #     this gallery.
     "django-admin-agent>=0.44.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
