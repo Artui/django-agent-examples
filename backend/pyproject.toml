@@ -29,7 +29,12 @@ dependencies = [
     # transports here build a schema per spec, so that crash was reachable from
     # the demo rather than theoretical. It is also past where `ServiceNotFound`
     # and `ServiceConflict` arrived, which the board raises.
-    "djangorestframework-services>=0.49",
+    #
+    # Raised since with the transport, whose [spec-tools] extra requires it
+    # through djangorestframework-pydantic-ai, so the floor declared here is not
+    # left below the one that resolves. That is the whole reason: nothing this
+    # suite observes moved with it.
+    "djangorestframework-services>=0.52.1",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
@@ -95,7 +100,19 @@ dependencies = [
     # enabled a thinking budget, which is not something a consumer can rely on.
     # A gallery is read as a worked example, so it should not be the place
     # someone learns a guarantee that was never there.
-    "django-ag-ui[spec-tools,harness]>=0.59",
+    #
+    # The latest move carries that refusal marking one route over: a tool bridged
+    # from `drf_mcp_server=` that its server refuses now reaches the browser
+    # marked failed, as a `service_specs=` tool's already did. This backend
+    # bridges no MCP server, so nothing here changes. The [spec-tools] half moves
+    # with it and does reach this route: a refusal an affordance issues ends with
+    # the rule's code, a tool that finds nothing answers `None` rather than a row
+    # of empty fields, and a `many=True` service spec is refused when the toolset
+    # is built. The board declares no affordance, every one of its tools answers
+    # with an event or a list of them, and no spec is `many=True`, so this suite
+    # reads the same at either floor; the reason to take it is currency, as
+    # above.
+    "django-ag-ui[spec-tools,harness]>=0.60",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -118,7 +135,14 @@ dependencies = [
     # answered confidently about a document it had never read, with no error
     # anywhere. This gallery imports a CSV and then keeps talking about it, which
     # is exactly that multi-turn shape.
-    "django-pydantic-agent>=0.21",
+    #
+    # Raised since with the transport, which requires it anyway, so the declared
+    # floor is not left below the one that resolves. What it changed is the
+    # drf-mcp bridge: a tool-level failure is raised rather than returned, so a
+    # refused bridged call is marked failed and keeps its code and chain step in
+    # the text. Nothing here uses that bridge; stating it keeps this comment
+    # honest about a floor that buys this gallery nothing it can observe.
+    "django-pydantic-agent>=0.23",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -170,7 +194,15 @@ dependencies = [
     #     `base_site.html` like every other page, and the sidebar context carries
     #     a route manifest built from the whole admin registry without filtering
     #     by permission.
-    "django-admin-agent>=0.43.0",
+    #   - The vendored component labels a tool call that never returned as not
+    #     finished, including one restored by a reload while it waited for
+    #     approval, where it used to show a spinner that never settled; and
+    #     opening the conversation list moves focus into it. This release
+    #     re-vendors, so the frontends' ranges move in the same change. It also names the signed-in user in a full-page chat's
+    #     greeting, which this gallery's sidebar mount does not show, and renders
+    #     a refused call from a bridged MCP server as failed, where this admin
+    #     mount bridges no server. Neither of those halves reaches this gallery.
+    "django-admin-agent>=0.44.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
