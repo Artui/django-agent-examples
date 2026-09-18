@@ -34,7 +34,15 @@ dependencies = [
     # through djangorestframework-pydantic-ai, so the floor declared here is not
     # left below the one that resolves. That is the whole reason: nothing this
     # suite observes moved with it.
-    "djangorestframework-services>=0.52.1",
+    #
+    # Raised again on that reasoning, and this time what resolves it is a hard
+    # requirement rather than a tidy one: djangorestframework-pydantic-ai passes
+    # `many_as_argument` on every spec call, and that argument first exists at
+    # this floor, so below it every spec tool call raises `TypeError`. The
+    # package still imports, so the failure waits for a call rather than for a
+    # resolve. Still nothing this suite observes moved with it -- no spec the
+    # board declares is `many=True`.
+    "djangorestframework-services>=0.53.0",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
@@ -112,7 +120,20 @@ dependencies = [
     # with an event or a list of them, and no spec is `many=True`, so this suite
     # reads the same at either floor; the reason to take it is currency, as
     # above.
-    "django-ag-ui[spec-tools,harness]>=0.60",
+    #
+    # The latest move is an SSE heartbeat and a delegated sub-agent stopped when
+    # the client that asked for it disconnects. Neither reaches this suite:
+    # nothing here delegates, and no test is silent for the fifteen seconds a
+    # beat waits for. The heartbeat does reach anyone deploying what this gallery
+    # demonstrates, which is the ordinary case rather than an exotic one -- an AWS
+    # Application Load Balancer and nginx each close an idle stream at sixty
+    # seconds by default, and an agent thinking about a real question is quieter
+    # than that. So this is the rarer kind of currency floor: unobservable from
+    # inside the repo and load-bearing the moment the demo becomes a deployment.
+    # The [spec-tools] half moves to a release where a `many=True` service spec
+    # is a tool taking its list under one named argument rather than a refusal at
+    # build; no spec here is `many=True`, so this suite reads the same either way.
+    "django-ag-ui[spec-tools,harness]>=0.61",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -142,7 +163,14 @@ dependencies = [
     # refused bridged call is marked failed and keeps its code and chain step in
     # the text. Nothing here uses that bridge; stating it keeps this comment
     # honest about a floor that buys this gallery nothing it can observe.
-    "django-pydantic-agent>=0.23",
+    #
+    # Raised once more with the transport, which requires it anyway. This one
+    # buys not merely nothing observable but nothing whatsoever: the release
+    # changes no code in django-pydantic-agent at all, it only raises that
+    # package's own extras onto the drf-mcp band its dependents now declare. The
+    # reason to state it is unchanged -- a declared floor below the one that
+    # resolves is a claim this repo is not making on purpose.
+    "django-pydantic-agent>=0.24",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -204,7 +232,18 @@ dependencies = [
     #     and renders a refused call from a bridged MCP server as failed, where
     #     this admin mount bridges no server. Neither of those halves reaches
     #     this gallery.
-    "django-admin-agent>=0.44.0",
+    #   - The vendored component stops drawing an empty ARGUMENTS region on a
+    #     tool call made with no arguments, stops an empty row of skill chips
+    #     taking space above the composer, and repairs four things about a
+    #     checkpoint continuation: it waits for the run in flight, is let go of
+    #     when its first save fails, keeps the continued exchange with its
+    #     conversation, and parks a turn typed before the resumed run has begun.
+    #     That last set is the half that lands here rather than passing over,
+    #     because this gallery has a checkpoint panel and a scenario that resumes
+    #     from one. On a viewport 600px and under the composer now stays at the
+    #     foot of the panel with the greeting over the space above it. This
+    #     release re-vendors, so the frontends' ranges move in the same change.
+    "django-admin-agent>=0.45.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
