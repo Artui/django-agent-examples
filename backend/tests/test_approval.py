@@ -166,8 +166,9 @@ async def test_a_board_refusal_reaches_the_browser_marked_failed() -> None:
     spec raises a ``ServiceConflict``; ``djangorestframework-pydantic-ai`` turns
     that into a ``ToolFailed`` rather than a successful return carrying
     ``{"error": ...}``; pydantic-ai marks the tool return ``outcome="failed"``;
-    ``django-ag-ui`` forwards that onto ``TOOL_CALL_RESULT``; and the web
-    component reads it to settle the card as an error instead of a success.
+    ``django-ag-ui`` forwards that into ``TOOL_CALL_RESULT``'s ``metadata``; and
+    the web component reads it there to settle the card as an error instead of
+    a success.
 
     Only the last of those is invisible from here, so this asserts the four that
     are not -- on the bytes a browser receives rather than on any object in
@@ -186,7 +187,12 @@ async def test_a_board_refusal_reaches_the_browser_marked_failed() -> None:
 
     results = [event for event in settled if event.get("type") == "TOOL_CALL_RESULT"]
     assert results, "the refused booking produced no tool result at all"
-    assert results[-1].get("outcome") == "failed", (
+    # Read from `metadata`, which is the only place the component looks: its
+    # AG-UI client deletes an undeclared top-level field before the card sees
+    # it. The transport still writes one there for older components, so an
+    # assertion on it would stay green with the field the browser reads gone.
+    outcome = (results[-1].get("metadata") or {}).get("outcome")
+    assert outcome == "failed", (
         f"a board refusal must reach the browser marked failed, got: {results[-1]!r}"
     )
     # And the reason travels with it, so the card has something to show.
