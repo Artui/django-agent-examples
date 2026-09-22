@@ -144,7 +144,22 @@ dependencies = [
     # backend does use, and it is unobservable here for a second, narrower
     # reason: the board declares no affordance, so no operation is ever
     # unavailable to explain.
-    "django-ag-ui[spec-tools,harness]>=0.62",
+    #
+    # The latest move is the protocol's 1.0, and unlike the last few it reaches
+    # every surface here. The four frontends' web component now runs on the 1.0
+    # client, which deletes any field its schema does not declare from an event
+    # it receives and from a request it sends. Two of the fields this gallery
+    # demonstrates were exactly that: the outcome that settles a refused
+    # booking's card as failed, and the refs to a file the composer attached,
+    # which ride on the next user message. The transport now writes and reads
+    # both in the `metadata` the schema declares. Below the floor, with the
+    # frontends at their declared range, a refused booking renders as a green
+    # card again and an attached file never reaches the agent -- the upload
+    # succeeds, the chip shows, and the model is asked about a document it was
+    # never given. `tests/test_approval.py` and `tests/test_attachments.py` read
+    # those two fields where the component reads them, so this floor is held
+    # rather than asserted.
+    "django-ag-ui[spec-tools,harness]>=0.63",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #

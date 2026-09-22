@@ -102,8 +102,11 @@ default so it never competes with a host's own switch in the `header-actions` sl
   blocks them by default and *fails* the install; the Angular CLI needs esbuild's
   native binary and lmdb, so the allowance is committed rather than answered at a
   prompt.
-- The production budget is raised to 800 kB. Most of the bundle is the chat element
-  and `@ag-ui/client`; a real app would code-split them.
+- The production budget is raised to 1.1 MB (warning) and 1.3 MB (error). Most of
+  the bundle is the chat element and `@ag-ui/client`; a real app would code-split
+  them. The client is the part that grew: from the protocol's 1.0 it validates every
+  event against schemas it ships, which brings a zod runtime and the protobuf
+  encoder along with it, and took this app from about 810 kB to 1.06 MB.
 - Reloading used to truncate the restored transcript: the server sends
   `"toolCalls": null` on an assistant turn that called no tool, and the replay
   guarded only against the key being absent, so a `TypeError` stopped it at the

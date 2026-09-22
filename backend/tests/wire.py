@@ -96,9 +96,14 @@ def user_message(
 ) -> dict[str, Any]:
     """A user turn, with the attachment refs the composer rides on it.
 
-    `attachments` is not an AG-UI field. `RunAgentInput` validates with
-    `extra="allow"`, so it arrives intact and the adapter ignores it; the server
-    reads it only to build the manifest.
+    The refs go in `metadata`, because that is where the composer puts them:
+    the frontends' AG-UI client deletes any field its schema does not declare
+    from a request before sending it, and `metadata` is declared. A top-level
+    `attachments` key would still be read by the server, which keeps it for
+    conversations stored by an older component -- so a helper writing it there
+    would pass every test while describing a request no frontend here sends.
+    The adapter ignores the refs; the server reads them only to build the
+    manifest.
     """
     message: dict[str, Any] = {
         "id": f"msg-{uuid.uuid4().hex[:8]}",
@@ -106,7 +111,7 @@ def user_message(
         "content": content,
     }
     if attachments:
-        message["attachments"] = attachments
+        message["metadata"] = {"attachments": attachments}
     return message
 
 
