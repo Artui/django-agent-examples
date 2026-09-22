@@ -280,17 +280,23 @@ dependencies = [
     #     from one. On a viewport 600px and under the composer now stays at the
     #     foot of the panel with the greeting over the space above it. This
     #     release re-vendors, so the frontends' ranges move in the same change.
-    #   - The latest move re-vendors nothing -- 0.45.0 and 0.46.0 both carry web
-    #     component 0.40.0, which is the version the four frontends declare -- so
-    #     this pin moves alone and their ranges correctly stay, which is the
-    #     corollary above holding rather than the invariant breaking. What it
-    #     carries is the transport, bridge and MCP floors for tool availability:
-    #     a sidebar given `drf_mcp_server=` follows which of that server's tools
-    #     an operation condition allows on every model step, and is told by name
-    #     and reason what was left out. This gallery's admin mount bridges no
-    #     server, so the whole of it passes over -- the reason to take it is the
-    #     invariant above and currency, as with the two releases before it.
-    "django-admin-agent>=0.46.0",
+    #   - A release that re-vendored nothing, so the pin moved alone and the
+    #     frontends' ranges correctly stayed -- the corollary above holding
+    #     rather than the invariant breaking. What it carried is the transport,
+    #     bridge and MCP floors for tool availability: a sidebar given
+    #     `drf_mcp_server=` follows which of that server's tools an operation
+    #     condition allows on every model step, and is told by name and reason
+    #     what was left out. This gallery's admin mount bridges no server, so the
+    #     whole of it passed over.
+    #   - The latest move re-vendors, and is the invariant's ordinary case: the
+    #     component on the protocol's 1.0 client, which the four frontends'
+    #     ranges move to in the same change. Its point is the same as theirs --
+    #     the client deletes any field its schema does not declare, so a refused
+    #     tool call's outcome and a message's attachment refs have to travel in
+    #     `metadata`, and the admin's own floor on the transport is what
+    #     guarantees that its sidebar and its server agree. Without the pair, a
+    #     refused change in the admin chat would render as a green card.
+    "django-admin-agent>=0.47.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
