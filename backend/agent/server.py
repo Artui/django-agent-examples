@@ -8,7 +8,7 @@ hook that establishes who is acting.
 from __future__ import annotations
 
 from django_ag_ui import AGUIServer, SkillRegistry, build_ag_ui_config
-from django_pydantic_agent import ToolGuardConfig
+from django_pydantic_agent import ScopedConversationStore, ToolGuardConfig
 from django_pydantic_agent.contrib.store.default_attachment_store import (
     DefaultAttachmentStore,
 )
@@ -64,7 +64,10 @@ agent = AGUIServer(
     # agent as tools with no MCP hop in the path.
     service_specs=spec_registry,
     skills=skills,
-    conversation_store=DefaultConversationStore(),
+    # Scoped, because the admin mount keeps its conversations in the same table
+    # for the same person: unscoped, each drawer listed the other's threads, and
+    # opening one continued it under the wrong agent. See `admin_server.py`.
+    conversation_store=ScopedConversationStore(DefaultConversationStore(), scope="board"),
     # Uploads. One argument turns on three things at once: the composer grows a
     # clip, `attachments/` is mounted beside the run endpoint, and the agent gains
     # a per-request `read_attachment` tool scoped to the acting user.
