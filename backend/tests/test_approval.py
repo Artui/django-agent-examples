@@ -13,12 +13,16 @@ client written out.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import AsyncClient
 from rest_framework.authtoken.models import Token
 
 from board.models import Event
 from tests.wire import (
+    AUTH,
     approve,
     calls,
     deny,
@@ -197,3 +201,37 @@ async def test_a_board_refusal_reaches_the_browser_marked_failed() -> None:
     )
     # And the reason travels with it, so the card has something to show.
     assert "already held by" in str(results[-1].get("content"))
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_board_refusal_is_stored_marked_failed() -> None:
+    """The copy a reload replays says what the stream said.
+
+    Every frontend here is given the thread index, so a reload rebuilds the
+    conversation from the server's stored copy rather than the tab's, and each
+    card is settled a second time from whatever that copy kept. The stream can
+    be right while the store is wrong: the stored thread is pydantic-ai's own
+    dump, which kept a tool call's outcome nowhere the component reads it, so a
+    booking shown as refused came back from a reload as a green card. Read
+    through the thread endpoint the component fetches, on the field it reads.
+    """
+    await _seed()
+    taken = user_message("book a design sync on 2026-08-10 at 9:00")
+
+    first = await run(taken)
+    await run(*[taken], *transcript(first), resume=approve(first))
+    second = await run(taken)
+    await run(*[taken], *transcript(second), resume=approve(second))
+
+    response = await AsyncClient().get("/agent/threads/thread-test/", headers=AUTH)
+    assert response.status_code == 200, response.content[:400]
+    stored = [
+        message
+        for message in json.loads(response.content)["messages"]
+        if message.get("role") == "tool" and "already held by" in str(message.get("content"))
+    ]
+    assert len(stored) == 1, f"expected the one refused call stored, got: {stored!r}"
+    outcome = (stored[0].get("metadata") or {}).get("outcome")
+    assert outcome == "failed", (
+        f"a stored board refusal must replay marked failed, got: {stored[0]!r}"
+    )

@@ -145,8 +145,8 @@ dependencies = [
     # reason: the board declares no affordance, so no operation is ever
     # unavailable to explain.
     #
-    # The latest move is the protocol's 1.0, and unlike the last few it reaches
-    # every surface here. The four frontends' web component now runs on the 1.0
+    # The move before it was the protocol's 1.0, and unlike the few before that
+    # it reaches every surface here. The four frontends' web component now runs on the 1.0
     # client, which deletes any field its schema does not declare from an event
     # it receives and from a request it sends. Two of the fields this gallery
     # demonstrates were exactly that: the outcome that settles a refused
@@ -159,7 +159,16 @@ dependencies = [
     # never given. `tests/test_approval.py` and `tests/test_attachments.py` read
     # those two fields where the component reads them, so this floor is held
     # rather than asserted.
-    "django-ag-ui[spec-tools,harness]>=0.63",
+    #
+    # The latest move carries that outcome onto the stored thread. All four
+    # frontends are given the thread index, so a reload rebuilds the
+    # conversation from the server's copy rather than the tab's, and below the
+    # floor that copy was pydantic-ai's own dump, which keeps the outcome only
+    # where the component never reads it. A refused booking rendered as failed
+    # while it happened and as a green card after the next reload.
+    # `tests/test_approval.py` reads the stored copy through the thread endpoint
+    # the component fetches, so this half is held too.
+    "django-ag-ui[spec-tools,harness]>=0.64",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -288,15 +297,24 @@ dependencies = [
     #     condition allows on every model step, and is told by name and reason
     #     what was left out. This gallery's admin mount bridges no server, so the
     #     whole of it passed over.
-    #   - The latest move re-vendors, and is the invariant's ordinary case: the
+    #   - A release that re-vendored, the invariant's ordinary case: the
     #     component on the protocol's 1.0 client, which the four frontends'
-    #     ranges move to in the same change. Its point is the same as theirs --
+    #     ranges moved to in the same change. Its point is the same as theirs --
     #     the client deletes any field its schema does not declare, so a refused
     #     tool call's outcome and a message's attachment refs have to travel in
     #     `metadata`, and the admin's own floor on the transport is what
     #     guarantees that its sidebar and its server agree. Without the pair, a
     #     refused change in the admin chat would render as a green card.
-    "django-admin-agent>=0.47.0",
+    #   - The latest move re-vendors too, so the frontends' ranges move with it.
+    #     What it lands here is the admin's half: its navigating tools --
+    #     opening a changelist, a change form, a filtered list -- reload the
+    #     page, and the card for that call now reads done on the page it opened
+    #     instead of "not finished" once the run ends. The four frontends route
+    #     in-page through the host's own `navigate()`, so their cards were never
+    #     affected, and they move for the invariant rather than for the fix. It
+    #     also floors the admin's transport on the release that stores a tool
+    #     call's outcome, which the transport floor above already takes here.
+    "django-admin-agent>=0.48.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
