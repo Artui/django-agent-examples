@@ -95,6 +95,25 @@ def test_the_sidebar_renders_into_the_admin_chrome(client: Client, staff: Any) -
     assert "data-chat-surface-tools" not in body
 
 
+def test_an_admin_page_names_itself_in_the_browser_tab(client: Client, staff: Any) -> None:
+    """Each admin page has a title, as a stock admin's does.
+
+    The override is this project's `admin/base_site.html`, so it extends
+    `admin/base.html` -- and the stock `base_site.html` it replaces is where
+    Django fills in `{% block title %}`. Without its own, every admin page
+    shipped `<title></title>`: the tab showed the URL, and browser history
+    listed a dozen identical blank entries.
+    """
+    client.force_login(staff)
+
+    changelist = client.get("/admin/board/event/").content.decode()
+    change = client.get(f"/admin/board/event/{Event.objects.get().pk}/change/").content.decode()
+
+    assert "<title>Select event to change | Scheduling board admin</title>" in changelist
+    # The subtitle is the object, which is what tells two open change forms apart.
+    assert "<title>Retro on 2026-08-14 at 16:00 | Change event | Scheduling board admin</title>" in change
+
+
 def test_the_sidebars_bundle_is_findable_as_a_static_file() -> None:
     """The sidebar is a static file, which is why serving them is not optional.
 
