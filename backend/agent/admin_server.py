@@ -19,6 +19,7 @@ comparing against `agent/server.py` is everything that differs:
 from __future__ import annotations
 
 from django_admin_agent import AdminAgentServer
+from django_pydantic_agent import ScopedConversationStore
 from django_pydantic_agent.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
@@ -35,7 +36,14 @@ or a filter reloads the page. Say what changed, in one sentence.
 agent = AdminAgentServer(
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
-    conversation_store=DefaultConversationStore(),
+    # One table, one person, two agents: the demo user is staff here and holds
+    # the board mount's token there, and a store keys a thread by owner and id.
+    # Unscoped, the sidebar's drawer listed the board's conversations and
+    # opening one continued it under this agent's tools and principal, which
+    # owner scoping cannot catch because the owner is the same. The partition is
+    # a thread-id prefix, so it needs no migration; it is opt-in because a
+    # transport scoping by itself would orphan a single-mount project's history.
+    conversation_store=ScopedConversationStore(DefaultConversationStore(), scope="admin"),
     # The admin authenticates with a session cookie, so CSRF applies. The sidebar
     # sends the token; without this the endpoint would let any third-party page
     # drive the admin as the logged-in staff user.

@@ -4,6 +4,11 @@
 {# The whole admin integration: one template override, one inclusion tag. The tag
    builds its own context (endpoint, route map, skills, the vendored bundle URL),
    so the admin site does not have to be swapped. #}
+{# The stock base_site.html this file replaces is also where Django fills in the
+   page title, so an override has to carry that block too or every admin page
+   ships an empty <title>. Same shape as the stock one, under this site's name. #}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Scheduling board admin{% endblock %}
+
 {% block branding %}
   <div id="site-name"><a href="{% url 'admin:index' %}">Scheduling board admin</a></div>
   {% django_admin_agent_sidebar %}
