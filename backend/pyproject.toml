@@ -160,7 +160,7 @@ dependencies = [
     # those two fields where the component reads them, so this floor is held
     # rather than asserted.
     #
-    # The latest move carries that outcome onto the stored thread. All four
+    # The move after that carries that outcome onto the stored thread. All four
     # frontends are given the thread index, so a reload rebuilds the
     # conversation from the server's copy rather than the tab's, and below the
     # floor that copy was pydantic-ai's own dump, which keeps the outcome only
@@ -168,7 +168,20 @@ dependencies = [
     # while it happened and as a green card after the next reload.
     # `tests/test_approval.py` reads the stored copy through the thread endpoint
     # the component fetches, so this half is held too.
-    "django-ag-ui[spec-tools,harness]>=0.64",
+    #
+    # The latest move is the `[spec-tools]` half, and it is the first in a while
+    # that this gallery demonstrates rather than merely takes. `list_events`
+    # accepts a field selection, and a selection the serializer refuses while
+    # rendering -- `fields=items`, written against the page rather than its
+    # rows -- used to escape the tool as an exception, so the call failed with
+    # its reason withheld and the model had nothing to correct. The spec toolset
+    # this extra now floors turns it into one retry that names the argument and
+    # quotes the serializer, and the next call gets the page.
+    # `tests/test_selection_retry.py` drives exactly that through the scripted
+    # model and fails below the floor, so it is held rather than asserted. The
+    # `[drf-mcp]` half moves with it for the other route, which no mount here
+    # uses.
+    "django-ag-ui[spec-tools,harness]>=0.65",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -216,7 +229,14 @@ dependencies = [
     # leaving implied, because it means this repo demonstrates one of the two
     # routes a spec can reach an agent by and cannot notice a regression on the
     # other.
-    "django-pydantic-agent>=0.25",
+    #
+    # Raised once more with the transport, and like the one before last it
+    # changes no code: it raises that package's own extras onto the bands the
+    # transport's now declare, so the bridge's package does not advertise the
+    # band in which a refused selection is a failed call. The selection demo
+    # here runs on `service_specs=`, so it is the transport floor above that
+    # holds it, not this one.
+    "django-pydantic-agent>=0.26",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -305,8 +325,8 @@ dependencies = [
     #     `metadata`, and the admin's own floor on the transport is what
     #     guarantees that its sidebar and its server agree. Without the pair, a
     #     refused change in the admin chat would render as a green card.
-    #   - The latest move re-vendors too, so the frontends' ranges move with it.
-    #     What it lands here is the admin's half: its navigating tools --
+    #   - A release that re-vendored too, so the frontends' ranges moved with it.
+    #     What it landed here is the admin's half: its navigating tools --
     #     opening a changelist, a change form, a filtered list -- reload the
     #     page, and the card for that call now reads done on the page it opened
     #     instead of "not finished" once the run ends. The four frontends route
@@ -314,7 +334,15 @@ dependencies = [
     #     affected, and they move for the invariant rather than for the fix. It
     #     also floors the admin's transport on the release that stores a tool
     #     call's outcome, which the transport floor above already takes here.
-    "django-admin-agent>=0.48.0",
+    #   - The latest move re-vendors nothing, so the pin moves alone and the
+    #     frontends' ranges correctly stay: the corollary again. It floors the
+    #     admin's transport, bridge and MCP extra on the releases where a field
+    #     selection a bridged tool refuses while rendering reaches the model as
+    #     one retry rather than a failed call with its reason withheld. This
+    #     admin mount bridges no server, so that half passes over too; the same
+    #     fix on the `service_specs=` route is what `list_events` demonstrates,
+    #     and the transport floor above is what holds it.
+    "django-admin-agent>=0.49.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
