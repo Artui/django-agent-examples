@@ -140,12 +140,26 @@ when this gallery was built and stopped being true in drf-services 0.40.0, which
 is where the two members arrived -- see the comment above `SlotTaken` in
 `board/services.py`, which records how the change was noticed.
 
-Under the agent, a refusal comes back as a tool return carrying
-`{"error": "..."}` with `outcome == "success"`, because AG-UI's
-`TOOL_CALL_RESULT` has no field to say otherwise. An answer therefore has to
-read the *shape* of what came back rather than trust the outcome -- which is
-what `_import_verdict` and the single-booking path in `agent/scripted.py` both
-do, and what the chat card in the corner still cannot show you.
+Under the agent, a refusal is a *failed* tool call. The service's
+`ServiceConflict` reaches the model as a tool return marked
+`outcome == "failed"` and carrying the service's own sentence, and django-ag-ui
+forwards that flag onto the `TOOL_CALL_RESULT` the browser receives, under
+`metadata`, which is where the web component reads it to settle the card as an
+error. Two tests in `tests/test_approval.py` hold both copies of it, off the wire:
+
+- `test_a_board_refusal_reaches_the_browser_marked_failed` books a slot that is
+  already taken and asserts that the last `TOOL_CALL_RESULT` in the stream has
+  `metadata.outcome == "failed"` and that its content carries the reason
+  (`"already held by"`).
+- `test_a_board_refusal_is_stored_marked_failed` reads the same conversation
+  back through `/agent/threads/<id>/`, the copy a reload replays, and asserts
+  the stored tool message carries the same `metadata.outcome`.
+
+An answer therefore reads the flag, not the wording: `_import_verdict` and
+`_board_refused` in `agent/scripted.py` both branch on `outcome == "failed"`.
+The one refusal with no field is a decline made in the browser, which is an
+ordinary successful return whose text says so, and `_refused` still tells that
+one apart by its shape.
 
 ## Tests
 
