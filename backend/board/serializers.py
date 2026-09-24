@@ -31,6 +31,64 @@ class EventSerializer(serializers.ModelSerializer):
         )
 
 
+class SelectableEventSerializer(EventSerializer):
+    """`EventSerializer`, narrowed to the fields a caller names in `?fields=`.
+
+    `?fields=title,day` renders each event with those two keys and no others, and
+    a name the event does not have is refused rather than skipped. Only the list
+    renders through this: the writes answer with `EventSerializer` itself, so a
+    selection never reaches the result of a move or a booking.
+
+    It reads `request.query_params`, which is the one channel both transports
+    fill. Over HTTP the query string supplies it; under the agent, the `fields`
+    argument `board/specs.py` declares on `list_events` is popped from the tool
+    call and seeded there, so this class has no idea which transport it is
+    rendering for and does not need one. No selection library is involved on
+    purpose: the parsing is a split on commas, and the refusal is worded here,
+    by the serializer that knows what it can render.
+    """
+
+    def to_representation(self, instance: Event) -> dict[str, object]:
+        rendered = super().to_representation(instance)
+        selected = self._selected()
+        if selected is None:
+            return rendered
+        # Refused, not ignored. A name silently dropped would answer a typo with
+        # a narrower row and no word about why, and that is also exactly what the
+        # agent needs to hear when it writes a selection against the *page* a
+        # list tool returns (`items`, `page`, ...) rather than against the row
+        # this renders: the transport turns this error into a retry the model can
+        # act on, and it can only do that if there is an error to turn.
+        unknown = [name for name in selected if name not in rendered]
+        if unknown:
+            raise serializers.ValidationError(
+                [f"Unknown field `{name}`." for name in unknown], code="unknown_field"
+            )
+        # Declared order, whatever order the caller wrote them in, so two
+        # selections naming the same fields render the same row.
+        return {name: value for name, value in rendered.items() if name in selected}
+
+    def _selected(self) -> list[str] | None:
+        """The names `?fields=` asks for, or `None` when it asks for nothing.
+
+        Read defensively, because not every render has a request behind it: a
+        serializer built by hand in a shell, a test, or a management command gets
+        no `request` in its context, and none of those should fail for want of a
+        query string they never had. An empty or all-comma value is also "no
+        selection" rather than "select nothing" -- a row with no keys is never
+        what a caller meant.
+        """
+        request = self.context.get("request")
+        query_params = getattr(request, "query_params", None)
+        if query_params is None:
+            return None
+        raw = query_params.get("fields")
+        if not raw:
+            return None
+        names = [name.strip() for name in str(raw).split(",") if name.strip()]
+        return names or None
+
+
 @dataclass
 class MoveEventInput:
     """Put an event in a grid cell, or send it back to the backlog.

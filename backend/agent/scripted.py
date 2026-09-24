@@ -32,6 +32,7 @@ from typing import Any
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
+    RetryPromptPart,
     ToolReturnPart,
     UserPromptPart,
 )
@@ -55,6 +56,7 @@ HELP = (
     "- *scroll to Friday 17:00*\n"
     "- *switch to the agenda view*\n"
     "- *what is on the board?*\n"
+    "- *just the titles on the board*\n"
     "- *put the onboarding doc first in the backlog*\n"
     "- *book a design sync on Friday at 14:00*\n"
     "- *note: ship the gallery this week* (the shared week note, which the React app"
@@ -89,6 +91,10 @@ class Turn:
     # The files this conversation carries. Not read from the messages like
     # everything else above -- see `_attached`.
     attached: tuple[Attached, ...] = field(default_factory=tuple)
+    # One per call the transport handed back to be tried again: which tool, and
+    # the text it sent with it. Deliberately not among `returns` -- see
+    # `_read_turn` for why a retry must not advance `round`.
+    retries: tuple[tuple[str, str], ...] = ()
 
     @property
     def round(self) -> int:
@@ -109,6 +115,10 @@ class Turn:
                 return self.returns[index]
         return None
 
+    def retried(self, name: str) -> list[str]:
+        """What the transport said each time it handed a call to `name` back."""
+        return [said for tool, said in self.retries if tool == name]
+
     def without(self, name: str) -> Turn:
         """This turn as if `name` had never been called.
 
@@ -126,6 +136,7 @@ class Turn:
             outcomes=tuple(self.outcomes[index] for index in keep),
             names=tuple(self.names[index] for index in keep),
             attached=self.attached,
+            retries=self.retries,
         )
 
 
@@ -174,6 +185,11 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
         return _navigate_script(turn, available)
     if re.search(r"\b(backlog|first|top|reorder|before)\b", text):
         return _reorder_script(turn, available)
+    # Before the filter branch, whose "only" would otherwise take "only the
+    # titles": naming the fields a read returns narrows each row, and a filter
+    # narrows which rows there are, so the two are different requests.
+    if re.search(r"\btitles\b", text):
+        return _titles_script(turn, available)
     if re.search(r"\b(filter|only|hide|room)\b", text):
         return _filter_script(turn, available)
     if re.search(r"\bnote\b", text):
@@ -802,6 +818,61 @@ def _overview_script(turn: Turn, available: set[str]) -> list[Any]:
     return _summarise(turn.last, _named_weekday(turn.prompt))
 
 
+def _titles_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Ask the board for one field, the way a model reading the tool first would.
+
+    `list_events` declares a `fields` argument its serializer reads, and the tool
+    documents answering with a page: `{"items": [...], "page", "totalPages",
+    "hasNext"}`. A model that takes the second fact as the scope of the first asks
+    for `items` -- and the serializer renders one event at a time, so it has no
+    `items` field and refuses the name. That refusal comes back as a retry rather
+    than as the end of the run, carrying the serializer's own words and a
+    sentence saying the selection applies to each item, so the second call is
+    the one a model reading that sentence makes.
+
+    The first call is scripted to be wrong on purpose. A demo that only ever
+    sends a correct selection would show nothing a reader could not have
+    guessed; this one shows what happens to the mistake a real model is most
+    likely to make here, and that it costs one round instead of the turn.
+    """
+    if "list_events" not in available:
+        return [_missing_tools("list_events")]
+    if turn.round == 0:
+        said = turn.retried("list_events")
+        if not said:
+            return [_call("list_events", {"fields": "items"})]
+        # Read the retry rather than assuming it. Only a refusal of the selection
+        # is answered by changing the selection; anything else, or a second
+        # refusal after the correction, is reported rather than tried again,
+        # because a script that re-sent a call on every retry would spend the
+        # whole retry budget and end the run on an error the reader never sees
+        # the cause of.
+        if len(said) == 1 and "`fields`" in said[0]:
+            return [_call("list_events", {"fields": "title"})]
+        return [f"The board would not render that selection: {said[-1]}"]
+    return _titles(turn.last)
+
+
+def _titles(content: Any) -> list[str]:
+    """The event titles out of a page of rows that each carry only `title`."""
+    page = content
+    if isinstance(page, str):
+        try:
+            page = json.loads(page)
+        except json.JSONDecodeError:
+            return [page]
+    rows = page.get("items", []) if isinstance(page, dict) else page
+    titles = [
+        str(row["title"]) for row in rows or [] if isinstance(row, dict) and row.get("title")
+    ]
+    if not titles:
+        return ["The board is empty."]
+    more = isinstance(page, dict) and page.get("hasNext")
+    # The page says whether it is the whole board, so the answer can too.
+    suffix = ", and there are more on the next page." if more else "."
+    return [f"The titles on the board are {_join(titles)}{suffix}"]
+
+
 # --- helpers ------------------------------------------------------------------
 
 
@@ -855,6 +926,7 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
     returns: list[Any] = []
     outcomes: list[str] = []
     names: list[str] = []
+    retries: list[tuple[str, str]] = []
     for message in messages:
         if not isinstance(message, ModelRequest):
             continue
@@ -866,16 +938,36 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
                 returns = []
                 outcomes = []
                 names = []
+                retries = []
             elif isinstance(part, ToolReturnPart):
                 returns.append(part.content)
                 outcomes.append(part.outcome)
                 names.append(part.tool_name)
+            elif isinstance(part, RetryPromptPart) and part.tool_name:
+                # A call the transport handed back arrives as its own part, not
+                # as a `ToolReturnPart`: nothing ran, and the model is being
+                # asked to try again rather than told a result. So it is kept
+                # apart from `returns` rather than counted as one. Counted, it
+                # would advance `round` the way an inserted step would (see
+                # `Turn.without`), and every script here reads its position from
+                # that number -- a retry on round zero would read as round one,
+                # and the script would answer from a "result" that is an error
+                # message. Left out entirely, the script would see round zero
+                # again and send the same call again until the retry budget ran
+                # out. Kept separately, a script that expects a retry can read
+                # it, and the ones that do not are unaffected.
+                #
+                # A retry with no tool name is the output validator's, which no
+                # script here provokes.
+                said = part.content if isinstance(part.content, str) else str(part.content)
+                retries.append((part.tool_name, said))
     return Turn(
         prompt=prompt,
         returns=tuple(returns),
         outcomes=tuple(outcomes),
         names=tuple(names),
         attached=attached,
+        retries=tuple(retries),
     )
 
 

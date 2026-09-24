@@ -35,7 +35,7 @@ ASGI is not optional — the agent endpoint streams.
 
 | Route | What it is |
 | --- | --- |
-| `GET /api/events/` | The acting user's board. |
+| `GET /api/events/` | The acting user's board; `?fields=title,day` narrows each row. |
 | `POST /api/events/move/` | Schedule or unschedule an event. |
 | `POST /api/events/reorder/` | Reorder the backlog. |
 | `POST /api/events/` | Create an event. |
@@ -70,6 +70,16 @@ Two consequences worth knowing:
 - **A service's docstring is the tool description.** The spec toolset warns at
   startup about an operation without one, because a model picks tools almost
   entirely by description.
+
+A read-shaping argument is declared there too. `list_events` is registered with
+an `agent_contract` naming a `fields` query param, because over HTTP the query
+string supplies `?fields=` and under the agent nothing does: the transport
+advertises it on the tool and seeds it into `request.query_params`, where
+`SelectableEventSerializer` reads it on either transport. A name no event has is
+refused by the serializer in its own words -- a `400` over HTTP, and under the
+agent a retry that also says the selection applies to each item in `items`, never
+to the page around them. *just the titles on the board* shows that retry: the
+scripted model aims its first selection at the page, on purpose, and corrects it.
 
 ## A model, or not
 
