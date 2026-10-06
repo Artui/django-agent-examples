@@ -179,7 +179,7 @@ dependencies = [
     # `tests/test_approval.py` reads the stored copy through the thread endpoint
     # the component fetches, so this half is held too.
     #
-    # The latest move is the `[spec-tools]` half, and it is the first in a while
+    # The move after that was the `[spec-tools]` half, the first in a while
     # that this gallery demonstrates rather than merely takes. `list_events`
     # accepts a field selection, and a selection the serializer refuses while
     # rendering -- `fields=items`, written against the page rather than its
@@ -196,16 +196,16 @@ dependencies = [
     # dependency rather than through anything the transport does. Its
     # pydantic-ai requirement named the `[ag-ui]` extra, which from one release
     # on caps the protocol below the major this transport needs, so every
-    # resolve of this backend settled on the last pydantic-ai before the cap and
-    # said nothing. The transport now names `[ui]`, the same requirement without
-    # that line, and the stack resolves to the current pydantic-ai -- the one
-    # whose tool-hook order the django-pydantic-agent floor below was written
-    # for. [harness] had been held back with it and moves too, so the step store
-    # the checkpoint panel lists runs from is the current one. The floor alone
-    # does not move an install that has already resolved, because the release
-    # before the cap still satisfies the transport: the lock upgrade that adopts
-    # it names `pydantic-ai-slim` and `pydantic-ai-harness` as well, and reading
-    # the lock is how to tell it worked. The [spec-tools] half makes a call
+    # resolve of this backend stopped below the cap and said nothing. The
+    # transport now names `[ui]`, the same requirement without that line, so the
+    # stack resolves past the cap, onto the pydantic-ai whose tool-hook order
+    # the django-pydantic-agent floor below was written for. [harness] had been
+    # held back with it and moves too; it backs the step store the checkpoint
+    # panel lists runs from. The floor alone does not move an install that has
+    # already resolved, because a release from below the cap still satisfies
+    # the transport: the lock upgrade that adopts it names `pydantic-ai-slim`
+    # and `pydantic-ai-harness` as well, and reading the lock is how to tell it
+    # worked. The [spec-tools] half makes a call
     # missing a required argument one retry, which this board cannot produce,
     # for the reason the djangorestframework-services note above gives.
     "django-ag-ui[spec-tools,harness]>=0.67",
@@ -269,14 +269,17 @@ dependencies = [
     # resolves, whose tool hooks run in a different order: the audit capability
     # is pinned innermost and the tool-failure policy outermost, so a record
     # describes the tool's own execution and a tool that defers itself is not
-    # recorded as a failure. Both mounts here configure `LoggingAuditLogger` and
-    # every write is held for approval, so this looks like the shape it was
-    # written for, and it was measured rather than assumed: a held write leaves
-    # no record while it waits and one success once it is approved, and the
-    # previous release forced onto the current pydantic-ai records exactly the
-    # same. The guard holds a call before audit sees it, so the defect never
-    # reached this gallery. No mount here passes `capabilities=`, so the other
-    # half, an error hook handed the tool's own exception, passes over too.
+    # recorded as a failure. Measured on that pydantic-ai, the first half
+    # reaches this gallery: the board mount's step store is a capability the
+    # transport attaches to every run, and below this floor a board tool's
+    # audit record times the step store's hooks along with the tool, where at
+    # it the record times the tool alone. Nothing in the suite holds that -- it
+    # passes on either side of the floor -- so this half is asserted rather
+    # than held. The rest passes over. A held board write leaves no record while
+    # it waits and one success once approved on either side, because the guard
+    # marks the tool unapproved before any tool hook runs. And the step store's
+    # error hook was already handed the tool's own exception, so the policy's
+    # new position changes nothing it records.
     "django-pydantic-agent>=0.27",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
@@ -375,9 +378,9 @@ dependencies = [
     #     affected, and they move for the invariant rather than for the fix. It
     #     also floors the admin's transport on the release that stores a tool
     #     call's outcome, which the transport floor above already takes here.
-    #   - The latest move re-vendors nothing, so the pin moves alone and the
-    #     frontends' ranges correctly stay: the corollary again. It floors the
-    #     admin's transport, bridge and MCP extra on the releases where a field
+    #   - A release that re-vendored nothing, so the pin moved alone and the
+    #     frontends' ranges correctly stayed: the corollary again. It floored
+    #     the admin's transport, bridge and MCP extra on the releases where a field
     #     selection a bridged tool refuses while rendering reaches the model as
     #     one retry rather than a failed call with its reason withheld. This
     #     admin mount bridges no server, so that half passes over too; the same
@@ -385,10 +388,11 @@ dependencies = [
     #     and the transport floor above is what holds it.
     #   - The latest move re-vendors nothing either, so the pin moves alone and
     #     the frontends' ranges stay where they are. It floors the admin's
-    #     transport on the release that reaches the current pydantic-ai, which
-    #     the transport floor above already takes here, and its bridge and MCP
-    #     extra on the releases where a bridged call missing the argument that
-    #     names a row is one retry; this admin mount bridges no server.
+    #     transport on the release whose pydantic-ai requirement no longer caps
+    #     the protocol, which the transport floor above already takes here, and
+    #     its bridge and MCP extra on the releases where a bridged call missing
+    #     the argument that names a row is one retry; this admin mount bridges
+    #     no server.
     "django-admin-agent>=0.50.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
@@ -403,8 +407,8 @@ dependencies = [
     #
     # No extra either, and that is load-bearing rather than tidy: naming
     # `[ag-ui]` here would bring back the cap the transport note above describes,
-    # and the resolver would settle below the current pydantic-ai again without
-    # reporting a conflict.
+    # and the resolver would settle below that cap again without reporting a
+    # conflict.
     "pydantic-ai-slim>=2,<3",
     # Declared because `agent/tools.py` builds a `StateSnapshotEvent` itself --
     # the AG-UI wire type that carries shared state back to the page. Rule 1
