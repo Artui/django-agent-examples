@@ -95,7 +95,7 @@ jobs:
       # accepted on purpose.
       - name: Check no direct dependency is held back
         id: held-back
-        uses: Artui/held-back-check@fb60218ca605e9c038c94df201f8406460c13bb5 # v0.0.0
+        uses: Artui/held-back-check@b64bbb88fd63c9c96675caba477cce13714de93e # v0.1.0
         with:
           working-directory: backend
 
