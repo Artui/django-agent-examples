@@ -199,6 +199,11 @@ jobs:
   typescript-next-major:
     name: is the next TypeScript major adoptable, per app
     runs-on: ubuntu-latest
+    # Named once, here: the step that opens the issue and the step that closes
+    # it both find it by this exact title, and a copy in each script is how
+    # the two would drift apart.
+    env:
+      ISSUE_TITLE: "upstream: is the next TypeScript major adoptable yet?"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # `version` is required here and not merely tidy: this job runs from the
@@ -259,6 +264,11 @@ jobs:
         if: always()
         run: git checkout -- react/package.json vue/package.json svelte/package.json angular/package.json
 
+      # Besides the report, this sets `adoptable`, which is what decides between
+      # the two issue steps below: `true` closes the issue, `false` opens or
+      # updates it. It is computed here, from the same lists the report's prose
+      # is written from, so the report a close posts and the condition that
+      # posted it come from one reading of the probe and cannot disagree.
       - name: Write the report
         id: report
         env:
@@ -268,13 +278,25 @@ jobs:
           import hashlib
           import os
 
-          rows = [
-              line.split("|")
-              for line in os.environ["RESULTS"].splitlines()
-              if line.count("|") == 3
-          ]
+          lines = [line for line in os.environ["RESULTS"].splitlines() if line.strip()]
+          rows = [line.split("|") for line in lines if line.count("|") == 3]
           blocked = [r for r in rows if r[3] != "ok"]
           ready = [r for r in rows if r[3] == "ok"]
+          # A declared range can itself contain `|` (`^6 || ^7`), and such a
+          # line is dropped from the table. An app nobody could read is not an
+          # app that builds, so it keeps the issue open.
+          unread = len(lines) - len(rows)
+
+          # No app is blocked: at least one app was read, every line the probe
+          # wrote was read, and none of them is blocked. An app already on the
+          # next major is probed at it too, so its verdict is `ok` and needs no
+          # case of its own. Each conjunct has a case in
+          # backend/tests/test_upstream_drift_workflow.py that fails without it:
+          # `nothing-probed` holds `rows`, `unreadable-line` holds `unread` and
+          # `three-blocked` holds `blocked`.
+          adoptable = bool(rows) and not unread and not blocked
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as outputs:
+              print(f"adoptable={'true' if adoptable else 'false'}", file=outputs)
 
           print("Each app was installed and built with `typescript` at `latest`, using")
           print("its own build script -- so `vue-tsc`, `svelte-check` and `ng build` each")
@@ -291,12 +313,18 @@ jobs:
                   mark = "adoptable" if status == "ok" else "blocked"
                   print(f"| `{app}` | `{before}` | {resolved} | **{mark}** |")
               print()
+              if unread:
+                  print(f"**{unread} line(s) of the probe's output could not be read** and")
+                  print("are missing from the table. That is a fault in this job rather")
+                  print("than a finding about TypeScript, and until it is fixed this")
+                  print("report cannot say that every app builds.")
+                  print()
               if blocked:
                   names = ", ".join(f"`{r[0]}`" for r in blocked)
                   print(f"Still blocked: {names}. The run's log for each says why; the")
                   print("cause has consistently been the framework's type-checker rather")
                   print("than anything in this repository.")
-              else:
+              elif adoptable:
                   print("**Every app builds under the next major.** The `ignore` entries")
                   print("for `typescript` in `.github/dependabot.yml` have done their job")
                   print("and can be deleted, which lets the ordinary weekly PR through.")
@@ -321,15 +349,22 @@ jobs:
       # thread stays quiet until there is something to do. From main only, like
       # the backend job's issue: a dispatch on a branch is a trial of that
       # branch, and its verdict does not belong in the issue about main.
+      #
+      # Only while the answer is still no, though: an app is blocked, or the
+      # probe's output could not be read in full. Once no app is blocked, the
+      # step below closes the issue with this same report, and running this one
+      # as well would post it twice. Both read `adoptable` by its two named
+      # values, so a run that never wrote it touches the issue in neither
+      # direction.
       - name: Open or update the readiness issue
-        if: github.ref == 'refs/heads/main'
+        if: steps.report.outputs.adoptable == 'false' && github.ref == 'refs/heads/main'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REPORT_PATH: ${{ runner.temp }}/report.md
         with:
           script: |
             const fs = require("fs");
-            const title = "upstream: is the next TypeScript major adoptable yet?";
+            const title = process.env.ISSUE_TITLE;
             const report = fs.readFileSync(process.env.REPORT_PATH, "utf8");
             const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = [`Run: ${run}`, "", report].join("\n");
@@ -370,3 +405,47 @@ jobs:
                 issue_number: match.number, body,
               });
             }
+
+      # The question has its answer: every app either already declares the next
+      # major or builds under it. The closing comment carries the run and the
+      # report, because the report is what says the `ignore` entries in
+      # `.github/dependabot.yml` can go, and it is the last thing the issue says.
+      # Nothing is opened when there is no issue to close, and the comment is
+      # posted once: a closed issue is not found again by the open-issue lookup,
+      # so the next week with nothing blocked passes quietly. The next major
+      # that blocks an app opens a new issue through the step above.
+      - name: Close the readiness issue once no app is blocked
+        if: steps.report.outputs.adoptable == 'true' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REPORT_PATH: ${{ runner.temp }}/report.md
+        with:
+          script: |
+            const fs = require("fs");
+            const report = fs.readFileSync(process.env.REPORT_PATH, "utf8");
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "upstream-drift",
+            });
+            const match = existing.data.find((issue) => issue.title === process.env.ISSUE_TITLE);
+            if (!match) {
+              return;
+            }
+            const body = [
+              "No app is blocked on the next TypeScript major any more: each one",
+              "already declares it or builds under it. Closing; the next major that",
+              "blocks an app opens a new issue.",
+              "",
+              `Run: ${run}`,
+              "",
+              report,
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body,
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, state: "closed", state_reason: "completed",
+            });
