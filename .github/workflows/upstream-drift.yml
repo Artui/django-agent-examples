@@ -1,4 +1,20 @@
-# Is the next TypeScript major adoptable yet, per app?
+# Two scheduled questions about upstream, one job each.
+#
+# ## Has an upstream Python release moved under the backend?
+#
+# `backend/uv.lock` is what every other job resolves against, so a dependency
+# that `pyproject.toml` leaves open can still be frozen everywhere it is tested.
+# The family's packages each measure that gap for themselves; nothing measured
+# it for the gallery, which is the only place they are composed. This job
+# ignores the lock, resolves the newest versions the manifest allows, and runs
+# the backend's checks and suite against them. It also fails when a direct
+# dependency resolves below its newest release, which is how every resolve of
+# this stack stopped at pydantic-ai-slim 2.46 for weeks with nothing failing.
+#
+# It fails, and files an issue, because a regression there is real: something a
+# fresh install of the gallery would get today does not work.
+#
+# ## Is the next TypeScript major adoptable yet, per app?
 #
 # Three of the four frontends cannot take TypeScript 7 today, and in every case
 # the blocker is the framework's type-checker rather than this repository:
@@ -14,9 +30,9 @@
 # half of that decision.** An ignore on its own is how a park quietly becomes
 # permanent; this tries the thing every week and says when the ignore can go.
 #
-# It never fails. A red X here would train everyone to skip it, and the finding
-# is a report rather than a regression -- nothing in this repository is broken
-# when an upstream tool has not caught up yet.
+# That job never fails. A red X there would train everyone to skip it, and the
+# finding is a report rather than a regression -- nothing in this repository is
+# broken when an upstream tool has not caught up yet.
 name: upstream drift
 
 on:
@@ -35,6 +51,151 @@ permissions:
   issues: write
 
 jobs:
+  backend-resolve-latest:
+    name: backend, resolved unpinned
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      # The newest Python, as in the family's own drift jobs: it is where an
+      # upstream release lands first.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Resolve the newest versions pyproject allows
+        run: uv lock --upgrade
+
+      - name: Report what changed against the committed lock
+        # The most useful line in the log when this fails: it names the
+        # upgrade that broke the build.
+        run: git --no-pager diff --stat uv.lock || true
+
+      - name: Install
+        id: install
+        run: uv sync --all-groups
+
+      - name: Show the resolved versions
+        run: uv pip list
+
+      # A resolve can succeed by backing off. When the newest release of a
+      # direct dependency conflicts with something else this project requires,
+      # uv takes the newest version that does resolve and logs an ordinary
+      # "Updated" line, so the suite below passes against a release nobody
+      # chose. That is how django-ag-ui's run went green with pydantic-ai-slim
+      # at 2.46 and 2.54 out, and this backend declares slim directly, so it
+      # sat at 2.46 too. This fails on a direct dependency held below a release
+      # older than the Dependabot cooldown, and asks uv what holds it. A
+      # ceiling declared in pyproject.toml is honoured, which is how a hold is
+      # accepted on purpose.
+      - name: Check no direct dependency is held back
+        id: held-back
+        uses: Artui/held-back-check@fb60218ca605e9c038c94df201f8406460c13bb5 # v0.0.0
+        with:
+          working-directory: backend
+
+      # The same three steps as the backend job in tests.yml. Each runs whether
+      # or not the check above failed: they answer a different question, and a
+      # hold is no reason to stop measuring what did resolve.
+      - name: Django checks
+        id: checks
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync python manage.py check
+      - name: Migrations are complete
+        id: migrations
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync python manage.py makemigrations --check --dry-run
+      - name: Suite
+        id: suite
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync python -m pytest -q
+
+      - name: Open or update an issue on failure
+        # Main only. A dispatch on any other branch is a trial of that branch's
+        # manifest, and an issue saying the unpinned resolve is failing would be
+        # filed against the wrong tree.
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          HELD_BACK: ${{ steps.held-back.outcome }}
+          REPORT: ${{ steps.held-back.outputs.report }}
+          CHECKS: ${{ steps.checks.outcome }}
+          MIGRATIONS: ${{ steps.migrations.outcome }}
+          SUITE: ${{ steps.suite.outcome }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require("fs");
+            // Matched by title, never by label alone: the TypeScript readiness
+            // issue carries the same label, and commenting on whichever
+            // labelled issue comes first would file this report there.
+            const title = "upstream drift: the backend's unpinned resolve is failing";
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const sections = [];
+            const failed = [
+              ["CHECKS", "`manage.py check`"],
+              ["MIGRATIONS", "`makemigrations --check`"],
+              ["SUITE", "the suite"],
+            ].filter(([key]) => process.env[key] === "failure").map(([, name]) => name);
+            if (failed.length) {
+              sections.push([
+                `The weekly unpinned resolve failed ${failed.join(", ")}. A dependency`,
+                "released a version that `backend/pyproject.toml` admits and the gallery",
+                "does not survive.",
+                "",
+                "The `git diff --stat uv.lock` step in that run names what moved.",
+              ].join("\n"));
+            }
+            if (process.env.HELD_BACK === "failure") {
+              sections.push(fs.existsSync(process.env.REPORT)
+                ? fs.readFileSync(process.env.REPORT, "utf8")
+                : "The held-back check failed before writing its report; the run's log says why.");
+            }
+            if (!sections.length) {
+              sections.push("A step before the checks failed; the run's log names it.");
+            }
+            const body = [
+              ...sections,
+              "",
+              `Run: ${run}`,
+              "",
+              "Fix forward (adopt the new version) or add a floor/ceiling that says",
+              "why, but do not silence the job: a fresh install of the gallery gets",
+              "exactly what this resolved.",
+            ].join("\n");
+            // Created here rather than assumed, as the readiness job does: a
+            // missing label is a confusing way for a report to fail. An existing
+            // label 422s and the catch swallows exactly that.
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                name: "upstream-drift", color: "d4c5f9",
+                description: "Reported by a scheduled upstream check",
+              });
+            } catch (error) {
+              if (error.status !== 422) { throw error; }
+            }
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "upstream-drift",
+            });
+            const match = existing.data.find((issue) => issue.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ["upstream-drift"],
+              });
+            }
+
   typescript-next-major:
     name: is the next TypeScript major adoptable, per app
     runs-on: ubuntu-latest
@@ -154,11 +315,14 @@ jobs:
           print(f"<!-- typescript-next-major: {digest} -->")
           PY
 
-      # Always, not on failure: "still blocked, same as last week" is the
-      # expected result for a while, and the issue body is the place that says
-      # so. A comment is added only when an app's verdict actually changes, so
-      # the thread stays quiet until there is something to do.
+      # Not on failure only: "still blocked, same as last week" is the expected
+      # result for a while, and the issue body is the place that says so. A
+      # comment is added only when an app's verdict actually changes, so the
+      # thread stays quiet until there is something to do. From main only, like
+      # the backend job's issue: a dispatch on a branch is a trial of that
+      # branch, and its verdict does not belong in the issue about main.
       - name: Open or update the readiness issue
+        if: github.ref == 'refs/heads/main'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REPORT_PATH: ${{ runner.temp }}/report.md
