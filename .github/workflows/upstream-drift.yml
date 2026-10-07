@@ -54,6 +54,11 @@ jobs:
   backend-resolve-latest:
     name: backend, resolved unpinned
     runs-on: ubuntu-latest
+    # Named once, here, for the same reason as the readiness job's: the step
+    # that opens the issue and the step that closes it find it by this exact
+    # title, and a copy in each script is how the two would drift apart.
+    env:
+      ISSUE_TITLE: "upstream drift: the backend's unpinned resolve is failing"
     defaults:
       run:
         working-directory: backend
@@ -133,7 +138,7 @@ jobs:
             // Matched by title, never by label alone: the TypeScript readiness
             // issue carries the same label, and commenting on whichever
             // labelled issue comes first would file this report there.
-            const title = "upstream drift: the backend's unpinned resolve is failing";
+            const title = process.env.ISSUE_TITLE;
             const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const sections = [];
             const failed = [
@@ -196,9 +201,62 @@ jobs:
               });
             }
 
+      # The cause is gone when the job passes: the resolve, the install, the
+      # held-back check and the three checks after it, which is exactly the set
+      # whose failure files the issue above. The closing comment carries the
+      # run and the held-back check's report, which it writes on a pass too and
+      # which lists anything newer still inside the cooldown. Nothing is opened
+      # on a pass, and the comment is posted once: a closed issue is not found
+      # again by the open-issue lookup. Main only, like the step above: a pass
+      # on another branch says nothing about the tree the issue was filed
+      # against.
+      - name: Close the issue once the resolve passes
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          REPORT: ${{ steps.held-back.outputs.report }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require("fs");
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "upstream-drift",
+            });
+            const match = existing.data.find((issue) => issue.title === process.env.ISSUE_TITLE);
+            if (!match) {
+              return;
+            }
+            const report = fs.existsSync(process.env.REPORT)
+              ? fs.readFileSync(process.env.REPORT, "utf8")
+              : "The held-back check passed without writing its report; the run's log has its output.";
+            const body = [
+              "The weekly unpinned resolve passed: the newest versions",
+              "`backend/pyproject.toml` admits install, no direct dependency is held",
+              "back, and `manage.py check`, `makemigrations --check` and the suite are",
+              "green. Closing; a later failure opens a new issue.",
+              "",
+              `Run: ${run}`,
+              "",
+              report,
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body,
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, state: "closed", state_reason: "completed",
+            });
+
   typescript-next-major:
     name: is the next TypeScript major adoptable, per app
     runs-on: ubuntu-latest
+    # Named once, here: the step that opens the issue and the step that closes
+    # it both find it by this exact title, and a copy in each script is how
+    # the two would drift apart.
+    env:
+      ISSUE_TITLE: "upstream: is the next TypeScript major adoptable yet?"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # `version` is required here and not merely tidy: this job runs from the
@@ -251,7 +309,43 @@ jobs:
             resolved="$(cd "$app" && node -p "
               try { require('typescript/package.json').version } catch { '(unresolved)' }
             " 2>/dev/null || echo "(unresolved)")"
-            echo "$app|$before|$resolved|$verdict" >> "$GITHUB_OUTPUT"
+            # The majors the range the app declares today admits, so the report
+            # can tell an app that has adopted the probed major from one that
+            # merely builds under it. The registry answers rather than a semver
+            # parser here: `npm view` lists the published versions a range
+            # admits. npm answers `(none)` and a range admitting nothing alike,
+            # with an `E404` error object, which reads as no majors at all.
+            #
+            # Any other error is the registry not answering, and so is output
+            # that is not JSON at all, which is what npm leaves when it dies
+            # before printing. Either ends the step rather than reading as no
+            # majors: that would say every app
+            # still had to bump, and the issue would be opened or commented on
+            # for a change nobody made. With the step failed, the report is
+            # skipped and neither issue step runs. `|| true` sits on `npm view`
+            # alone, whose exit says nothing the JSON does not; `majors` is a
+            # bare assignment, which under the runner's default `bash -e` fails
+            # the step when node exits non-zero, so nothing may follow the
+            # closing quote. The snippet is in double quotes, so it holds no
+            # `"`, `$`, backtick or backslash, which the shell would rewrite.
+            # backend/tests/test_upstream_drift_workflow.py runs it on what npm
+            # prints in each case: `one-version` fails without the test for an
+            # `error`, and `no-such-version` without the one for `E404`.
+            admitted="$(npm view "typescript@$before" version --json 2>/dev/null || true)"
+            majors="$(ADMITTED="$admitted" node -p "
+              let answer;
+              try { answer = JSON.parse(process.env.ADMITTED); } catch {
+                console.error('npm view printed no JSON: ' + JSON.stringify(process.env.ADMITTED));
+                process.exit(1);
+              }
+              if (answer.error && answer.error.code !== 'E404') {
+                console.error('npm view failed: ' + answer.error.code + ': ' + answer.error.summary);
+                process.exit(1);
+              }
+              const versions = [].concat(answer).filter((v) => typeof v === 'string');
+              [...new Set(versions.map((v) => v.split('.')[0]))].join(' ')
+            ")"
+            echo "$app|$before|$resolved|$verdict|$majors" >> "$GITHUB_OUTPUT"
           done
           echo "EOF" >> "$GITHUB_OUTPUT"
 
@@ -259,6 +353,22 @@ jobs:
         if: always()
         run: git checkout -- react/package.json vue/package.json svelte/package.json angular/package.json
 
+      # Besides the report, this sets `state`, which is what decides between
+      # the two issue steps below. It has three values:
+      #
+      # - `blocked`: an app does not build under the next major, or the probe's
+      #   output could not be read in full.
+      # - `adoptable`: every app builds under it, and at least one does not
+      #   declare it yet. The issue stays open, because something is still to
+      #   do, and this state fingerprints differently from `blocked`, so the
+      #   step below comments once when it is reached: that comment is the
+      #   notification that the `ignore` entries can go.
+      # - `adopted`: every app declares the next major and builds under it. The
+      #   question is answered and the issue closes.
+      #
+      # It is computed here, from the same lists the report's prose is written
+      # from, so the report a step posts and the condition that posted it come
+      # from one reading of the probe and cannot disagree.
       - name: Write the report
         id: report
         env:
@@ -268,13 +378,42 @@ jobs:
           import hashlib
           import os
 
-          rows = [
-              line.split("|")
-              for line in os.environ["RESULTS"].splitlines()
-              if line.count("|") == 3
-          ]
+          lines = [line for line in os.environ["RESULTS"].splitlines() if line.strip()]
+          rows = [line.split("|") for line in lines if line.count("|") == 4]
           blocked = [r for r in rows if r[3] != "ok"]
           ready = [r for r in rows if r[3] == "ok"]
+          # A declared range can itself contain `|` (`^6 || ^7`), and such a
+          # line is dropped from the table. An app nobody could read is not an
+          # app that builds, so it keeps the issue open.
+          unread = len(lines) - len(rows)
+
+
+          def declares(row):
+              """Whether the app's declared range admits the major it was probed at."""
+              return row[2].split(".")[0] in row[4].split()
+
+
+          # The apps that build under the next major and do not declare it yet.
+          # An app already on the next major is probed at it too, so it builds,
+          # declares it, and is not here.
+          to_bump = [r[0] for r in ready if not declares(r)]
+
+          # Each condition has a case in
+          # backend/tests/test_upstream_drift_workflow.py that fails without it:
+          # `nothing-probed` holds `rows`, `unreadable-line` holds `unread`,
+          # `three-blocked` holds `blocked`, and `one-to-bump` holds `to_bump`.
+          # `blocked` is an allow-list of `ok` rather than a match on the word
+          # `blocked`: `empty-verdict` and `unknown-verdict` fail without that.
+          # `declares` is held in each direction: `all-adopted` fails if it
+          # never answers yes, `one-to-bump` if it always does.
+          if not rows or unread or blocked:
+              state = "blocked"
+          elif to_bump:
+              state = "adoptable"
+          else:
+              state = "adopted"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as outputs:
+              print(f"state={state}", file=outputs)
 
           print("Each app was installed and built with `typescript` at `latest`, using")
           print("its own build script -- so `vue-tsc`, `svelte-check` and `ng build` each")
@@ -287,19 +426,41 @@ jobs:
           else:
               print("| app | declared today | probed with | result |")
               print("| --- | --- | --- | --- |")
-              for app, before, resolved, status in rows:
-                  mark = "adoptable" if status == "ok" else "blocked"
+              for row in rows:
+                  app, before, resolved, verdict = row[:4]
+                  if verdict != "ok":
+                      mark = "blocked"
+                  elif declares(row):
+                      mark = "adopted"
+                  else:
+                      mark = "adoptable"
                   print(f"| `{app}` | `{before}` | {resolved} | **{mark}** |")
               print()
+              if unread:
+                  print(f"**{unread} line(s) of the probe's output could not be read** and")
+                  print("are missing from the table. That is a fault in this job rather")
+                  print("than a finding about TypeScript, and until it is fixed this")
+                  print("report cannot say that every app builds.")
+                  print()
               if blocked:
                   names = ", ".join(f"`{r[0]}`" for r in blocked)
                   print(f"Still blocked: {names}. The run's log for each says why; the")
                   print("cause has consistently been the framework's type-checker rather")
                   print("than anything in this repository.")
-              else:
-                  print("**Every app builds under the next major.** The `ignore` entries")
-                  print("for `typescript` in `.github/dependabot.yml` have done their job")
-                  print("and can be deleted, which lets the ordinary weekly PR through.")
+              elif state == "adoptable":
+                  print("**Every app builds under the next major**, and these do not declare")
+                  print("it yet. For each, delete the `typescript` `ignore` entry under its")
+                  print("directory in `.github/dependabot.yml`, which lets the weekly PR make")
+                  print("the bump, or bump the range by hand. This issue closes once every")
+                  print("app declares the next major.")
+                  print()
+                  for app in to_bump:
+                      print(f'- `{app}`: the entry under `directory: "/{app}"`')
+              elif state == "adopted":
+                  print("**Every app declares the next major and builds under it.** Nothing")
+                  print("is left to adopt. A `typescript` `ignore` entry still in")
+                  print("`.github/dependabot.yml` now holds back only the major after this")
+                  print("one, and can go.")
               print()
               if ready and blocked:
                   print("An app moving from blocked to adoptable is the signal to delete")
@@ -309,8 +470,19 @@ jobs:
           print("Nothing here is a proposal and nothing is broken. The apps' committed")
           print("manifests and lockfiles are untouched; `tests.yml` is green.")
           print()
+          # An app still to bump enters the digest on its own, so an app
+          # bumping while others still have to moves the fingerprint even
+          # though every verdict is the same `ok` before and after. The open
+          # step comments only when it moves, and that is how anyone watching
+          # the issue hears of the bump. It enters only then, so every state
+          # with nothing to bump fingerprints exactly as it did before adoption
+          # was tracked, and the issue gets no comment for the change of format
+          # alone.
           digest = hashlib.sha256(
-              "".join(f"{r[0]}:{r[3]}" for r in sorted(rows)).encode()
+              (
+                  "".join(f"{r[0]}:{r[3]}" for r in sorted(rows))
+                  + "".join(f"{app}:bump" for app in sorted(to_bump))
+              ).encode()
           ).hexdigest()[:12]
           print(f"<!-- typescript-next-major: {digest} -->")
           PY
@@ -321,15 +493,22 @@ jobs:
       # thread stays quiet until there is something to do. From main only, like
       # the backend job's issue: a dispatch on a branch is a trial of that
       # branch, and its verdict does not belong in the issue about main.
+      #
+      # Only until every app has adopted the next major, though. While an app
+      # is blocked, or every app builds and some have still to bump, the issue
+      # is where that is said; once every app declares it, the step below
+      # closes the issue with this same report, and running this one as well
+      # would post it twice. Both steps match `state` by exact value, so a run
+      # that never wrote it touches the issue in neither direction.
       - name: Open or update the readiness issue
-        if: github.ref == 'refs/heads/main'
+        if: (steps.report.outputs.state == 'blocked' || steps.report.outputs.state == 'adoptable') && github.ref == 'refs/heads/main'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REPORT_PATH: ${{ runner.temp }}/report.md
         with:
           script: |
             const fs = require("fs");
-            const title = "upstream: is the next TypeScript major adoptable yet?";
+            const title = process.env.ISSUE_TITLE;
             const report = fs.readFileSync(process.env.REPORT_PATH, "utf8");
             const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = [`Run: ${run}`, "", report].join("\n");
@@ -370,3 +549,49 @@ jobs:
                 issue_number: match.number, body,
               });
             }
+
+      # The question has its answer: every app declares the next major and
+      # builds under it. Closing on that rather than on "every app could" is
+      # deliberate: an issue closed while the `ignore` entries still stand
+      # would leave nothing open saying they can go. The closing comment carries
+      # the run and the report, which is the last thing the issue says. Nothing
+      # is opened when there is no issue to close, and the comment is posted
+      # once: a closed issue is not found again by the open-issue lookup, so
+      # the next week with everything adopted passes quietly. The next major
+      # that blocks an app, or that an app has still to bump, opens a new issue
+      # through the step above.
+      - name: Close the readiness issue once every app has adopted
+        if: steps.report.outputs.state == 'adopted' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REPORT_PATH: ${{ runner.temp }}/report.md
+        with:
+          script: |
+            const fs = require("fs");
+            const report = fs.readFileSync(process.env.REPORT_PATH, "utf8");
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "upstream-drift",
+            });
+            const match = existing.data.find((issue) => issue.title === process.env.ISSUE_TITLE);
+            if (!match) {
+              return;
+            }
+            const body = [
+              "Every app now declares the next TypeScript major and builds under it.",
+              "Closing; the next major that blocks an app, or that an app has still",
+              "to bump, opens a new issue.",
+              "",
+              `Run: ${run}`,
+              "",
+              report,
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body,
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, state: "closed", state_reason: "completed",
+            });
