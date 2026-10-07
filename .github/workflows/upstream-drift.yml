@@ -316,8 +316,10 @@ jobs:
             # admits. npm answers `(none)` and a range admitting nothing alike,
             # with an `E404` error object, which reads as no majors at all.
             #
-            # Any other error is the registry not answering, and it ends the
-            # step rather than reading as no majors: that would say every app
+            # Any other error is the registry not answering, and so is output
+            # that is not JSON at all, which is what npm leaves when it dies
+            # before printing. Either ends the step rather than reading as no
+            # majors: that would say every app
             # still had to bump, and the issue would be opened or commented on
             # for a change nobody made. With the step failed, the report is
             # skipped and neither issue step runs. `|| true` sits on `npm view`
@@ -331,8 +333,11 @@ jobs:
             # `error`, and `no-such-version` without the one for `E404`.
             admitted="$(npm view "typescript@$before" version --json 2>/dev/null || true)"
             majors="$(ADMITTED="$admitted" node -p "
-              let answer = [];
-              try { answer = JSON.parse(process.env.ADMITTED); } catch {}
+              let answer;
+              try { answer = JSON.parse(process.env.ADMITTED); } catch {
+                console.error('npm view printed no JSON: ' + JSON.stringify(process.env.ADMITTED));
+                process.exit(1);
+              }
               if (answer.error && answer.error.code !== 'E404') {
                 console.error('npm view failed: ' + answer.error.code + ': ' + answer.error.summary);
                 process.exit(1);

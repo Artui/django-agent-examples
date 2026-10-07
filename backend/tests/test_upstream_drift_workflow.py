@@ -247,15 +247,25 @@ def test_the_probe_reads_the_majors_a_range_admits(admitted: str, majors: str) -
 
 
 @_NEEDS_NODE
-def test_a_registry_that_does_not_answer_fails_the_probe() -> None:
+@pytest.mark.parametrize(
+    ("admitted", "said"),
+    [
+        pytest.param(_NPM_UNREACHABLE, "ECONNREFUSED", id="registry-unreachable"),
+        # npm dying before it prints anything leaves the `|| true` an empty
+        # string, and one dying mid-way leaves text that is not JSON.
+        pytest.param("", "printed no JSON", id="nothing-printed"),
+        pytest.param("npm ERR! cb() never called", "printed no JSON", id="not-json"),
+    ],
+)
+def test_a_registry_that_does_not_answer_fails_the_probe(admitted: str, said: str) -> None:
     # Read as no majors, an unreachable registry would say every app that
     # builds had still to bump: `adopted` would read as `adoptable` and open
     # the issue again, and an open issue would get a comment for a change
     # nobody made. Failing here skips the report, and with it both issue steps.
-    completed = _run_majors(_NPM_UNREACHABLE)
+    completed = _run_majors(admitted)
     assert completed.returncode != 0
     assert completed.stdout == ""
-    assert "ECONNREFUSED" in completed.stderr
+    assert said in completed.stderr
 
 
 def _run_report(results: str, tmp_path: Path) -> tuple[str, str]:
