@@ -52,7 +52,19 @@ dependencies = [
     # finds its row from an id in its own input -- and the tool definitions the
     # model is handed were compared on both sides of the floor and are
     # byte-for-byte the same.
-    "djangorestframework-services>=0.55.0",
+    #
+    # Raised once more, and it is declared here only because the transports
+    # this backend reaches require it anyway: both the [spec-tools] route and
+    # the [drf-mcp] one now refuse, at startup, a tool no call could be served
+    # through, and the refusal is built on what the kernel learned to say about
+    # a spec's arguments, so a floor left below it would be one no resolve could
+    # reach. What it buys the board is the same wording on every route for a
+    # call that leaves out an argument, and a tool definition that states what
+    # the transport fills. Nothing this suite observes moved with it: the
+    # definitions the model is handed were compared on both sides of the floor
+    # and are byte-for-byte the same, and no spec the board declares is one the
+    # new startup refusal names.
+    "djangorestframework-services>=0.56.0",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
@@ -208,7 +220,18 @@ dependencies = [
     # worked. The [spec-tools] half makes a call
     # missing a required argument one retry, which this board cannot produce,
     # for the reason the djangorestframework-services note above gives.
-    "django-ag-ui[spec-tools,harness]>=0.67",
+    #
+    # Raised again with the transport's two extras, which move together: a call
+    # refused for leaving out a required argument is worded the same way on the
+    # [spec-tools] route as on the [drf-mcp] one, and a tool that could never
+    # serve a call is refused when the stack starts rather than on every call.
+    # The wording is the one `service_specs=` already wrote, and this backend
+    # hands that route a registry rather than a toolset built with its own
+    # conventions, so what reaches the model here is the default sentence and
+    # the board has no way to reword it. The startup refusal names nothing the
+    # board declares. The same release answers a thread rename whose body is too
+    # deeply nested with a 400 instead of a 500, which no screen here sends.
+    "django-ag-ui[spec-tools,harness]>=0.68",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -280,7 +303,15 @@ dependencies = [
     # marks the tool unapproved before any tool hook runs. And the step store's
     # error hook was already handed the tool's own exception, so the policy's
     # new position changes nothing it records.
-    "django-pydantic-agent>=0.27",
+    #
+    # Raised again with the transport, which requires it. The change is in the
+    # bridge for an MCP server: a refusal it hands the model no longer repeats,
+    # as appended JSON, a detail its own sentence already states. This backend
+    # bridges no server -- its operations reach the agent through
+    # `service_specs=` -- so that half passes over, and the floor is declared so
+    # the two routes' wording cannot part company in an install that mixes
+    # releases.
+    "django-pydantic-agent>=0.28",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -393,7 +424,16 @@ dependencies = [
     #     its bridge and MCP extra on the releases where a bridged call missing
     #     the argument that names a row is one retry; this admin mount bridges
     #     no server.
-    "django-admin-agent>=0.50.0",
+    #   - The latest move re-vendors nothing as well, so the pin moves alone and
+    #     the frontends' ranges stay where they are. It floors the admin's
+    #     transport and bridge on the releases that word a call missing a
+    #     required argument the same way on both routes and refuse at startup a
+    #     tool no call could be served through, and its MCP extra on the
+    #     matching server. This admin mount bridges no server, and the tools it
+    #     declares are none of the kinds the refusal names, so the floor holds
+    #     the admin's half of one wording rather than anything this surface
+    #     shows.
+    "django-admin-agent>=0.51.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
