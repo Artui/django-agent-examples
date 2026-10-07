@@ -313,13 +313,32 @@ jobs:
             # can tell an app that has adopted the probed major from one that
             # merely builds under it. The registry answers rather than a semver
             # parser here: `npm view` lists the published versions a range
-            # admits. An error (`(none)`, or a range admitting nothing) prints
-            # JSON with no version in it, which reads as no majors at all.
+            # admits. npm answers `(none)` and a range admitting nothing alike,
+            # with an `E404` error object, which reads as no majors at all.
+            #
+            # Any other error is the registry not answering, and it ends the
+            # step rather than reading as no majors: that would say every app
+            # still had to bump, and the issue would be opened or commented on
+            # for a change nobody made. With the step failed, the report is
+            # skipped and neither issue step runs. `|| true` sits on `npm view`
+            # alone, whose exit says nothing the JSON does not; `majors` is a
+            # bare assignment, which under the runner's default `bash -e` fails
+            # the step when node exits non-zero, so nothing may follow the
+            # closing quote. The snippet is in double quotes, so it holds no
+            # `"`, `$`, backtick or backslash, which the shell would rewrite.
+            # backend/tests/test_upstream_drift_workflow.py runs it on what npm
+            # prints in each case: `one-version` fails without the test for an
+            # `error`, and `no-such-version` without the one for `E404`.
             admitted="$(npm view "typescript@$before" version --json 2>/dev/null || true)"
             majors="$(ADMITTED="$admitted" node -p "
-              let versions = [];
-              try { versions = [].concat(JSON.parse(process.env.ADMITTED)); } catch {}
-              [...new Set(versions.filter((v) => typeof v === 'string').map((v) => v.split('.')[0]))].join(' ')
+              let answer = [];
+              try { answer = JSON.parse(process.env.ADMITTED); } catch {}
+              if (answer.error && answer.error.code !== 'E404') {
+                console.error('npm view failed: ' + answer.error.code + ': ' + answer.error.summary);
+                process.exit(1);
+              }
+              const versions = [].concat(answer).filter((v) => typeof v === 'string');
+              [...new Set(versions.map((v) => v.split('.')[0]))].join(' ')
             ")"
             echo "$app|$before|$resolved|$verdict|$majors" >> "$GITHUB_OUTPUT"
           done
@@ -378,6 +397,8 @@ jobs:
           # backend/tests/test_upstream_drift_workflow.py that fails without it:
           # `nothing-probed` holds `rows`, `unreadable-line` holds `unread`,
           # `three-blocked` holds `blocked`, and `one-to-bump` holds `to_bump`.
+          # `blocked` is an allow-list of `ok` rather than a match on the word
+          # `blocked`: `empty-verdict` and `unknown-verdict` fail without that.
           # `declares` is held in each direction: `all-adopted` fails if it
           # never answers yes, `one-to-bump` if it always does.
           if not rows or unread or blocked:
@@ -444,11 +465,14 @@ jobs:
           print("Nothing here is a proposal and nothing is broken. The apps' committed")
           print("manifests and lockfiles are untouched; `tests.yml` is green.")
           print()
-          # An app still to bump enters the digest on its own, so `adoptable`
-          # and `adopted` fingerprint differently even though every verdict is
-          # the same `ok`. It enters only then, so every state with nothing to
-          # bump fingerprints exactly as it did before adoption was tracked,
-          # and the issue gets no comment for the change of format alone.
+          # An app still to bump enters the digest on its own, so an app
+          # bumping while others still have to moves the fingerprint even
+          # though every verdict is the same `ok` before and after. The open
+          # step comments only when it moves, and that is how anyone watching
+          # the issue hears of the bump. It enters only then, so every state
+          # with nothing to bump fingerprints exactly as it did before adoption
+          # was tracked, and the issue gets no comment for the change of format
+          # alone.
           digest = hashlib.sha256(
               (
                   "".join(f"{r[0]}:{r[3]}" for r in sorted(rows))

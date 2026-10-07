@@ -15,16 +15,19 @@ tests about its own CI, and the backend suite is the one `tests.yml` runs on
 every pull request.
 
 The workflow is read as text rather than parsed: the checks are about which
-strings a job's block contains, and no YAML parser is declared here. The one
-exception is the readiness job's report script, which is executed, because
-which state it writes is decided by what that script computes and a string
-match cannot say what a condition evaluates to.
+strings a job's block contains, and no YAML parser is declared here. The two
+exceptions are the readiness job's report script and the probe's snippet that
+reads the registry's answer, which are executed, because which state the job
+writes is decided by what they compute and a string match cannot say what a
+condition evaluates to.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -162,6 +165,99 @@ def test_the_probe_writes_the_fields_the_report_reads() -> None:
     assert 'line.count("|") == 4' in _the_step(_READINESS, "id: report")
 
 
+def _run_majors(admitted: str) -> subprocess.CompletedProcess[str]:
+    """Run the probe's majors snippet on `admitted`, which is what `npm view` printed.
+
+    The snippet sits in the shell's double quotes, so what node receives is the
+    text in the workflow only while it has nothing those quotes interpret.
+    """
+    step = _the_step(_READINESS, "id: probe")
+    # Anchored at both ends of its lines on purpose. Under the runner's default
+    # `bash -e`, a bare assignment from a command substitution fails the step
+    # when node exits non-zero; an `|| true` or a pipe after the closing quote
+    # would swallow that exit, and stops this from matching at all.
+    match = re.search(
+        r'^ *majors="\$\(ADMITTED="\$admitted" node -p "\n(.*?)\n *"\)"$',
+        step,
+        re.DOTALL | re.MULTILINE,
+    )
+    assert match is not None
+    snippet = match.group(1)
+    for interpreted in ('"', "$", "`", "\\"):
+        assert interpreted not in snippet, f"the shell rewrites {interpreted!r} before node runs"
+    return subprocess.run(
+        ["node", "-p", textwrap.dedent(snippet)],
+        env={**os.environ, "ADMITTED": admitted},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+# What `npm view "typescript@<range>" version --json` prints, as npm 11 prints
+# it: one version as a bare string, several as a list, and a failure as an
+# `error` object on stdout. `json.dumps` with an indent of two writes the same
+# bytes npm does. The shell's `$(...)` strips the trailing newline.
+def _npm_error(code: str, summary: str, detail: str) -> str:
+    return json.dumps({"error": {"code": code, "summary": summary, "detail": detail}}, indent=2)
+
+
+# npm answers a range admitting nothing with this, and `(none)` (an app with no
+# `typescript` at all) the same way.
+_NPM_NO_SUCH_VERSION = _npm_error(
+    "E404",
+    "No match found for version ^99",
+    "The requested resource 'typescript@^99' could not be found or you do not have"
+    " permission to access it.\n\nNote that you can also install from a\ntarball,"
+    " folder, http url, or git url.",
+)
+
+# And this with `--registry` pointed at a port nothing listens on.
+_NPM_UNREACHABLE = _npm_error(
+    "ECONNREFUSED",
+    "FetchError: request to http://127.0.0.1:9/typescript failed,"
+    " reason: connect ECONNREFUSED 127.0.0.1:9",
+    "If you are behind a proxy, please make sure that the 'proxy' config is set"
+    " properly.  See: 'npm help config'",
+)
+
+_NEEDS_NODE = pytest.mark.skipif(
+    shutil.which("node") is None,
+    reason="the probe's snippet is JavaScript, and node is not on PATH",
+)
+
+
+@_NEEDS_NODE
+@pytest.mark.parametrize(
+    ("admitted", "majors"),
+    [
+        pytest.param(json.dumps("7.0.2"), "7", id="one-version"),
+        pytest.param(json.dumps(["6.0.2", "6.0.3"], indent=2), "6", id="one-major"),
+        pytest.param(json.dumps(["6.0.2", "6.0.3", "7.0.2"], indent=2), "6 7", id="two-majors"),
+        pytest.param(_NPM_NO_SUCH_VERSION, "", id="no-such-version"),
+    ],
+)
+def test_the_probe_reads_the_majors_a_range_admits(admitted: str, majors: str) -> None:
+    # `declares` in the report looks the probed major up in this list, so a
+    # snippet reading the wrong part of a version, or the JSON as raw text,
+    # answers no for every app and the issue never closes.
+    completed = _run_majors(admitted)
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout == f"{majors}\n"
+
+
+@_NEEDS_NODE
+def test_a_registry_that_does_not_answer_fails_the_probe() -> None:
+    # Read as no majors, an unreachable registry would say every app that
+    # builds had still to bump: `adopted` would read as `adoptable` and open
+    # the issue again, and an open issue would get a comment for a change
+    # nobody made. Failing here skips the report, and with it both issue steps.
+    completed = _run_majors(_NPM_UNREACHABLE)
+    assert completed.returncode != 0
+    assert completed.stdout == ""
+    assert "ECONNREFUSED" in completed.stderr
+
+
 def _run_report(results: str, tmp_path: Path) -> tuple[str, str]:
     """Run the readiness job's report script on `results`; return report and outputs.
 
@@ -230,6 +326,21 @@ vue|^7.0.2|7.0.2|ok|7
 svelte|^7.0.2|7.0.2|ok|7
 angular|~6.0.2 || ~7.0.2|7.0.2|ok|6 7"""
 
+# A verdict other than `ok` is not a build that passed. The probe writes only
+# `ok` or `blocked` today, so these two hold the report to an allow-list of
+# `ok`: read against `blocked` instead, each would say every app had adopted.
+_EMPTY_VERDICT = """\
+react|^7.0.2|7.0.2|ok|7
+vue|^7.0.2|7.0.2|ok|7
+svelte|^7.0.2|7.0.2|ok|7
+angular|~7.0.2|7.0.2||7"""
+
+_UNKNOWN_VERDICT = """\
+react|^7.0.2|7.0.2|ok|7
+vue|^7.0.2|7.0.2|ok|7
+svelte|^7.0.2|7.0.2|ok|7
+angular|~7.0.2|7.0.2|timeout|7"""
+
 _ADOPTABLE_HEADLINE = "**Every app builds under the next major**, and these do not declare"
 _ADOPTED_HEADLINE = "**Every app declares the next major and builds under it.**"
 
@@ -244,6 +355,8 @@ _ADOPTED_HEADLINE = "**Every app declares the next major and builds under it.**"
         pytest.param(_ALL_ADOPTED, "adopted", [], id="all-adopted"),
         pytest.param("", "blocked", [], id="nothing-probed"),
         pytest.param(_ONE_UNREADABLE, "blocked", [], id="unreadable-line"),
+        pytest.param(_EMPTY_VERDICT, "blocked", [], id="empty-verdict"),
+        pytest.param(_UNKNOWN_VERDICT, "blocked", [], id="unknown-verdict"),
     ],
 )
 def test_the_report_states_how_far_adoption_has_got(
@@ -261,11 +374,13 @@ def test_the_report_states_how_far_adoption_has_got(
         assert (f'the entry under `directory: "/{app}"`' in report) is (app in to_bump), app
 
 
-def test_bumping_the_last_app_moves_the_fingerprint(tmp_path: Path) -> None:
-    # Every verdict is `ok` in both, so a fingerprint of the verdicts alone
-    # would call them the same report. The open step comments only when the
-    # fingerprint moves, so `adoptable` would never be announced to anyone
-    # already watching the issue.
-    adoptable, _ = _run_report(_ONE_TO_BUMP, tmp_path)
-    adopted, _ = _run_report(_ALL_ADOPTED, tmp_path)
-    assert _fingerprint(adoptable) != _fingerprint(adopted)
+def test_an_app_bumping_moves_the_fingerprint(tmp_path: Path) -> None:
+    # Both are `adoptable` and every verdict is `ok` in both, so a fingerprint
+    # of the verdicts alone would call them the same report. The open step runs
+    # on each, rewrites the body silently and comments only when the
+    # fingerprint moves, so two apps bumping would be announced to nobody
+    # watching the issue. `adoptable` to `adopted` needs no such help: the
+    # close step runs then instead, and it comments whatever the fingerprint.
+    three, _ = _run_report(_THREE_TO_BUMP, tmp_path)
+    one, _ = _run_report(_ONE_TO_BUMP, tmp_path)
+    assert _fingerprint(three) != _fingerprint(one)
