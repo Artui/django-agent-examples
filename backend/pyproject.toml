@@ -236,10 +236,10 @@ dependencies = [
     # prompt that run answered, where every run in a conversation, resumed and
     # forked ones included, carried the conversation's opening line, because a
     # run's snapshot holds the whole thread. The name is what the panel picks a
-    # run by, and this gallery has a scenario that resumes from one, so the
-    # board shows the difference on both routes. It is worked out when the panel
-    # reads the run index, so runs recorded before the upgrade are named
-    # correctly too.
+    # run by, and the four frontends have a scenario that resumes from one, so
+    # the board shows the difference; the admin mount configures no step store
+    # and so mounts no panel. It is worked out when the panel reads the run
+    # index, so runs recorded before the upgrade are named correctly too.
     "django-ag-ui[spec-tools,harness]>=0.68.1",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
@@ -443,13 +443,16 @@ dependencies = [
     #     the admin's half of one wording rather than anything this surface
     #     shows.
     #   - The latest move re-vendors, so the frontends' ranges move with it.
-    #     What lands here is the checkpoint panel, on both routes: a run resumed
-    #     or forked from it draws the turn it sent ahead of its answer, where the
-    #     answer used to stream under no question. The admin also floors its
-    #     transport on the release that names each run in the panel by its own
-    #     prompt, which the transport floor above takes here for the frontends.
-    #     The rest of the component release closes gaps around a send and asks
-    #     no host wiring of either route.
+    #     What lands on this admin route is the bundle's fixes around a send it
+    #     meets on its default path: a navigating tool's reload resumes the run
+    #     with a second send held behind it, New chat during the thread store's
+    #     load starts empty, and a change of signed-in user clears the composer.
+    #     Its checkpoint-panel half -- a resumed or forked turn drawn ahead of its
+    #     answer, and each run named by its own prompt, which is why the admin
+    #     also floors its transport -- passes over here, because this admin
+    #     mount configures no step store and so mounts no panel; the four
+    #     frontends are where the board shows it. Neither route owes any host
+    #     wiring.
     "django-admin-agent>=0.52.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
