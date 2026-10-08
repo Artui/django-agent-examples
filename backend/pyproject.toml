@@ -231,7 +231,16 @@ dependencies = [
     # the board has no way to reword it. The startup refusal names nothing the
     # board declares. The same release answers a thread rename whose body is too
     # deeply nested with a 400 instead of a 500, which no screen here sends.
-    "django-ag-ui[spec-tools,harness]>=0.68",
+    #
+    # Raised again for the checkpoint panel: each run in it is named by the
+    # prompt that run answered, where every run in a conversation, resumed and
+    # forked ones included, carried the conversation's opening line, because a
+    # run's snapshot holds the whole thread. The name is what the panel picks a
+    # run by, and the four frontends have a scenario that resumes from one, so
+    # the board shows the difference; the admin mount configures no step store
+    # and so mounts no panel. It is worked out when the panel reads the run
+    # index, so runs recorded before the upgrade are named correctly too.
+    "django-ag-ui[spec-tools,harness]>=0.68.1",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -417,15 +426,15 @@ dependencies = [
     #     admin mount bridges no server, so that half passes over too; the same
     #     fix on the `service_specs=` route is what `list_events` demonstrates,
     #     and the transport floor above is what holds it.
-    #   - The latest move re-vendors nothing either, so the pin moves alone and
-    #     the frontends' ranges stay where they are. It floors the admin's
+    #   - A release that re-vendored nothing either, so the pin moved alone and
+    #     the frontends' ranges stayed where they were. It floored the admin's
     #     transport on the release whose pydantic-ai requirement no longer caps
     #     the protocol, which the transport floor above already takes here, and
     #     its bridge and MCP extra on the releases where a bridged call missing
     #     the argument that names a row is one retry; this admin mount bridges
     #     no server.
-    #   - The latest move re-vendors nothing as well, so the pin moves alone and
-    #     the frontends' ranges stay where they are. It floors the admin's
+    #   - A release that re-vendored nothing as well, so the pin moved alone and
+    #     the frontends' ranges stayed where they were. It floored the admin's
     #     transport and bridge on the releases that word a call missing a
     #     required argument the same way on both routes and refuse at startup a
     #     tool no call could be served through, and its MCP extra on the
@@ -433,7 +442,18 @@ dependencies = [
     #     declares are none of the kinds the refusal names, so the floor holds
     #     the admin's half of one wording rather than anything this surface
     #     shows.
-    "django-admin-agent>=0.51.0",
+    #   - The latest move re-vendors, so the frontends' ranges move with it.
+    #     What lands on this admin route is the bundle's fixes around a send it
+    #     meets on its default path: a navigating tool's reload resumes the run
+    #     with a second send held behind it, New chat during the thread store's
+    #     load starts empty, and a change of signed-in user clears the composer.
+    #     Its checkpoint-panel half -- a resumed or forked turn drawn ahead of its
+    #     answer, and each run named by its own prompt, which is why the admin
+    #     also floors its transport -- passes over here, because this admin
+    #     mount configures no step store and so mounts no panel; the four
+    #     frontends are where the board shows it. Neither route owes any host
+    #     wiring.
+    "django-admin-agent>=0.52.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
