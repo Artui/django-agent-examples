@@ -400,11 +400,13 @@ reconnect.
 
 ### The run list is readable, and has one rough edge left
 
-Each row leads with the run's **first user message**, from the index's `preview`
-field, with the time beside it — so the panel reads as a list of conversations rather
-than of timestamps. Rows arrive newest first.
+Each row leads with **the prompt that run answered**, from the index's `preview`
+field, with the time beside it — so the runs of one conversation read apart, a resumed
+or forked one included, rather than as a list of timestamps. A run continued past a
+tool approval posts no new prompt, so it keeps the question it is still answering.
+Rows arrive newest first.
 
-The edge: two runs that opened on the *same sentence* still read alike, because the
+The edge: two runs that answered the *same sentence* still read alike, because the
 words are the row's identity and those words are identical. Recorded as a finding
 against the component.
 

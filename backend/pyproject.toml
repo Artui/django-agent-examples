@@ -450,7 +450,7 @@ dependencies = [
     #     prompt, which the transport floor above takes here for the frontends.
     #     The rest of the component release closes gaps around a send and asks
     #     no host wiring of either route.
-    "django-admin-agent>=0.51.0",
+    "django-admin-agent>=0.52.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
