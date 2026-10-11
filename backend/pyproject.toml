@@ -459,11 +459,15 @@ dependencies = [
     #     loading it, which every page load, thread pick and change of signed-in
     #     user does, used to go out without the history and its save replaced the
     #     stored conversation with the new exchange. Typed meanwhile it shows as
-    #     "Waiting to send" and goes out afterwards. The same bundle releases a
-    #     microphone grant a second click left recording, and clears a "thinking"
-    #     indicator a cleared conversation left behind. The hint the new wait adds
-    #     is left to the component's English default in the one translated table
-    #     here, as its sibling hints are. Neither route owes any host wiring.
+    #     "Waiting to send" and goes out afterwards. The same bundle clears a
+    #     "thinking" indicator a cleared conversation left behind. Its microphone
+    #     fixes -- a grant a second click left recording, and a recorder that
+    #     could not start failing silently -- pass over here, because this admin
+    #     mount configures no transcription backend and so shows no mic; the four
+    #     frontends, whose mount does, are where they land. The hint the new wait
+    #     adds is left to the component's English default in the one translated
+    #     table here, as its sibling hints are. Neither route owes any host
+    #     wiring.
     "django-admin-agent>=0.53.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
