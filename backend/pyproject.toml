@@ -442,8 +442,8 @@ dependencies = [
     #     declares are none of the kinds the refusal names, so the floor holds
     #     the admin's half of one wording rather than anything this surface
     #     shows.
-    #   - The latest move re-vendors, so the frontends' ranges move with it.
-    #     What lands on this admin route is the bundle's fixes around a send it
+    #   - A release that re-vendored too, so the frontends' ranges moved with it.
+    #     What landed on this admin route was the bundle's fixes around a send it
     #     meets on its default path: a navigating tool's reload resumes the run
     #     with a second send held behind it, New chat during the thread store's
     #     load starts empty, and a change of signed-in user clears the composer.
@@ -453,7 +453,18 @@ dependencies = [
     #     mount configures no step store and so mounts no panel; the four
     #     frontends are where the board shows it. Neither route owes any host
     #     wiring.
-    "django-admin-agent>=0.52.0",
+    #   - The latest move re-vendors as well, so the frontends' ranges move with
+    #     it. What lands on this admin route is the composer holding until the
+    #     stored conversation is drawn: a message sent while the sidebar is still
+    #     loading it, which every page load, thread pick and change of signed-in
+    #     user does, used to go out without the history and its save replaced the
+    #     stored conversation with the new exchange. Typed meanwhile it shows as
+    #     "Waiting to send" and goes out afterwards. The same bundle releases a
+    #     microphone grant a second click left recording, and clears a "thinking"
+    #     indicator a cleared conversation left behind. The hint the new wait adds
+    #     is left to the component's English default in the one translated table
+    #     here, as its sibling hints are. Neither route owes any host wiring.
+    "django-admin-agent>=0.53.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
