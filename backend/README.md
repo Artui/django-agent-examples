@@ -71,9 +71,8 @@ Two consequences worth knowing:
   startup about an operation without one, because a model picks tools almost
   entirely by description.
 
-A read-shaping argument is declared there too. `list_events` is registered with
-an `agent_contract` naming a `fields` query param, because over HTTP the query
-string supplies `?fields=` and under the agent nothing does: the transport
+A read-shaping argument is declared there too. `list_events` declares a `fields`
+query param in its spec's `reads`, because over HTTP the query string supplies `?fields=` and under the agent nothing does: the transport
 advertises it on the tool and seeds it into `request.query_params`, where
 `SelectableEventSerializer` reads it on either transport. A name no event has is
 refused by the serializer in its own words -- a `400` over HTTP, and under the
