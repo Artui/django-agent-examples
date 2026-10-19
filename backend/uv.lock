@@ -35,9 +35,9 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.19" },
     { name = "django", specifier = ">=5.2" },
-    { name = "django-admin-agent", specifier = ">=0.53.0" },
-    { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.68.1" },
-    { name = "django-pydantic-agent", specifier = ">=0.28" },
+    { name = "django-admin-agent", specifier = ">=0.53.1" },
+    { name = "django-ag-ui", extras = ["spec-tools", "harness"], specifier = ">=0.68.2" },
+    { name = "django-pydantic-agent", specifier = ">=0.28.2" },
     { name = "djangorestframework", specifier = ">=3.15" },
     { name = "djangorestframework-dataclasses", specifier = ">=1.3.1" },
     { name = "djangorestframework-services", specifier = ">=0.58.0" },

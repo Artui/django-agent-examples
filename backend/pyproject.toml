@@ -248,7 +248,16 @@ dependencies = [
     # the board shows the difference; the admin mount configures no step store
     # and so mounts no panel. It is worked out when the panel reads the run
     # index, so runs recorded before the upgrade are named correctly too.
-    "django-ag-ui[spec-tools,harness]>=0.68.1",
+    #
+    # Raised to the release that floors both spec routes on the pair that
+    # supplies a spec's arguments from the server rather than from the model:
+    # `server_arguments=` on the MCP bridge and `tool_server_arguments=` on the
+    # Pydantic-AI toolset. The pair already resolved here through the
+    # kernel floor, but only transitively, so nothing stated that this stack
+    # needs it. Naming it here makes an install that copies this file take the
+    # pair on purpose. This backend passes neither argument, so the floor
+    # holds the resolution rather than any screen.
+    "django-ag-ui[spec-tools,harness]>=0.68.2",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -328,7 +337,14 @@ dependencies = [
     # `service_specs=` -- so that half passes over, and the floor is declared so
     # the two routes' wording cannot part company in an install that mixes
     # releases.
-    "django-pydantic-agent>=0.28",
+    #
+    # Raised again with the transport, and like the earlier floor-only raises it
+    # changes no code here: it floors this package's extras on the pair that
+    # supplies a spec's arguments from the server (`server_arguments=` on the
+    # MCP bridge, `tool_server_arguments=` on the Pydantic-AI toolset), so a
+    # declared floor says the pair is required rather than leaving it to
+    # whatever the kernel floor happens to pull.
+    "django-pydantic-agent>=0.28.2",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -476,7 +492,13 @@ dependencies = [
     #     adds is left to the component's English default in the one translated
     #     table here, as its sibling hints are. Neither route owes any host
     #     wiring.
-    "django-admin-agent>=0.53.0",
+    #   - A release that vendors nothing: it floors the admin's MCP extra on the
+    #     bridge that accepts a spec's server-supplied arguments
+    #     (`server_arguments=`), where the earlier floor admitted a build with no
+    #     ceiling on the kernel. This admin mount bridges no server, so it holds
+    #     the resolution rather than anything the surface shows, and the
+    #     bundle and the frontends' ranges stay where they were.
+    "django-admin-agent>=0.53.1",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
