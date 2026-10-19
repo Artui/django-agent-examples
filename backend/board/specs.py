@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_services import (
-    OfflineContract,
     QueryParam,
     SelectorKind,
     SelectorSpec,
@@ -42,6 +41,27 @@ list_events_spec = SelectorSpec(
     # answer to a move.
     output_serializer=SelectableEventSerializer,
     permission_classes=[IsAuthenticated],
+    # What a caller with no query string has to be told. Over HTTP `?fields=` is
+    # just there for the serializer to read; the agent has no URL, so the
+    # argument is declared on the spec as a read and the transport advertises it
+    # on the tool, pops it from the call, and seeds it into
+    # `request.query_params` where the same serializer reads it. Declared on the
+    # spec rather than on the registry entry or the transport's constructor so
+    # any transport handed this registry advertises the same argument.
+    #
+    # The description says what a *row* has, and deliberately not what the
+    # result looks like: the transport appends that on a list tool itself,
+    # because the envelope a page arrives in is the transport's shape, not the
+    # board's.
+    reads=[
+        QueryParam(
+            "fields",
+            description=(
+                "Comma-separated names of the event fields to return, for "
+                "example `title,day`. Omit it for every field."
+            ),
+        ),
+    ],
 )
 
 move_event_spec = ServiceSpec(
@@ -75,34 +95,7 @@ create_event_spec = ServiceSpec(
 # `agent/server.py` hands it to AGUIServer, so a new operation cannot arrive on
 # one transport and be forgotten on the other.
 registry = SpecRegistry()
-registry.register(
-    "list_events",
-    list_events_spec,
-    tags=("read",),
-    # What a caller with no query string has to be told. Over HTTP `?fields=` is
-    # just there for the serializer to read; the agent has no URL, so the
-    # argument is declared here and the transport advertises it on the tool,
-    # pops it from the call, and seeds it into `request.query_params` where the
-    # same serializer reads it. Declared on the entry rather than on the
-    # transport's constructor so any other transport handed this registry --
-    # an MCP server, say -- advertises the same argument.
-    #
-    # The description says what a *row* has, and deliberately not what the
-    # result looks like: the transport appends that on a list tool itself,
-    # because the envelope a page arrives in is the transport's shape, not the
-    # board's.
-    agent_contract=OfflineContract(
-        query_params=(
-            QueryParam(
-                "fields",
-                description=(
-                    "Comma-separated names of the event fields to return, for "
-                    "example `title,day`. Omit it for every field."
-                ),
-            ),
-        ),
-    ),
-)
+registry.register("list_events", list_events_spec, tags=("read",))
 registry.register("move_event", move_event_spec, tags=("write",))
 registry.register("reorder_event", reorder_event_spec, tags=("write",))
 registry.register("create_event", create_event_spec, tags=("write",))

@@ -114,7 +114,7 @@ async def test_the_list_tool_tells_the_model_what_a_selection_applies_to(
 
     assert "list_events" in served, f"the model was never offered the list: {sorted(served)}"
     fields = served["list_events"].parameters_json_schema["properties"].get("fields")
-    assert fields is not None, "the `fields` argument the registry declares is not on the tool"
+    assert fields is not None, "the `fields` argument the spec declares in `reads` is not on the tool"
     description = fields["description"]
     # The board's own words first, then the transport's: the row is the board's
     # to describe, and the page it arrives in is the transport's.

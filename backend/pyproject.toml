@@ -64,7 +64,15 @@ dependencies = [
     # definitions the model is handed were compared on both sides of the floor
     # and are byte-for-byte the same, and no spec the board declares is one the
     # new startup refusal names.
-    "djangorestframework-services>=0.56.0",
+    #
+    # Raised again, and this time the suite observes it: the floor is where the
+    # DRF adapter sits over the kernel, and a spec declares the query values it
+    # reads in its own `reads`. That is where `list_events` names its `fields`
+    # selection, so a registry entry no longer carries a contract of its own for
+    # it. Below the floor `SelectorSpec` has no `reads`, so every test that
+    # imports the board dies at collection -- the opposite of the earlier floors
+    # above, which no test here could tell apart.
+    "djangorestframework-services>=0.58.0",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
