@@ -509,7 +509,7 @@ dependencies = [
     #     message id, and the transport floor above does not move for the
     #     transport release that stores messages under the ids they streamed.
     #     Neither route owes any host wiring.
-    "django-admin-agent>=0.53.1",
+    "django-admin-agent>=0.54.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
