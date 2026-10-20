@@ -477,8 +477,8 @@ dependencies = [
     #     mount configures no step store and so mounts no panel; the four
     #     frontends are where the board shows it. Neither route owes any host
     #     wiring.
-    #   - The latest move re-vendors as well, so the frontends' ranges move with
-    #     it. What lands on this admin route is the composer holding until the
+    #   - A release that re-vendored as well, so the frontends' ranges moved
+    #     with it. What landed on this admin route is the composer holding until the
     #     stored conversation is drawn: a message sent while the sidebar is still
     #     loading it, which every page load, thread pick and change of signed-in
     #     user does, used to go out without the history and its save replaced the
@@ -497,8 +497,19 @@ dependencies = [
     #     (`server_arguments=`), where the earlier floor admitted a build with no
     #     ceiling on the kernel. This admin mount bridges no server, so it holds
     #     the resolution rather than anything the surface shows, and the
-    #     bundle and the frontends' ranges stay where they were.
-    "django-admin-agent>=0.53.1",
+    #     bundle and the frontends' ranges stayed where they were.
+    #   - The latest move re-vendors, so the frontends' ranges move with it. The
+    #     bundle's `ag-ui-feedback` event names the message that was rated --
+    #     its AG-UI id, its thread, and the run that streamed it -- where it
+    #     carried only the text and the rating. The rating pair is a host opt-in
+    #     (`data-message-actions` listing `feedback`), and neither route opts
+    #     in: the admin mount keeps `MESSAGE_ACTIONS` at its default, and none of
+    #     the four frontends lists `feedback` or listens for the event. So the
+    #     whole of it passes over on both routes, nothing here keys a rating by
+    #     message id, and the transport floor above does not move for the
+    #     transport release that stores messages under the ids they streamed.
+    #     Neither route owes any host wiring.
+    "django-admin-agent>=0.54.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
