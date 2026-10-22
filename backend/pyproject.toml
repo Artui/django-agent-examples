@@ -531,7 +531,7 @@ dependencies = [
     #     django-spec-agents and floors its transport on the release that does,
     #     so the admin surface and the four frontends share one agent runtime
     #     and one store; below it an install would carry both runtimes.
-    "django-admin-agent>=0.54.0",
+    "django-admin-agent>=0.55.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
