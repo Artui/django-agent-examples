@@ -8,15 +8,15 @@ hook that establishes who is acting.
 from __future__ import annotations
 
 from django_ag_ui import AGUIServer, SkillRegistry, build_ag_ui_config
-from django_pydantic_agent import ScopedConversationStore, ToolGuardConfig
-from django_pydantic_agent.contrib.store.default_attachment_store import (
+from django_spec_agents import ScopedConversationStore, ToolGuardConfig
+from django_spec_agents.contrib.store.default_attachment_store import (
     DefaultAttachmentStore,
 )
-from django_pydantic_agent.contrib.store.default_conversation_store import (
+from django_spec_agents.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
-from django_pydantic_agent.contrib.store.default_step_store import DefaultStepStore
-from django_pydantic_agent.policy.audit.logging_audit_logger import LoggingAuditLogger
+from django_spec_agents.contrib.store.default_step_store import DefaultStepStore
+from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.auth import token_user
 from agent.model import build_demo_model

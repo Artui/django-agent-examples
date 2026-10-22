@@ -152,6 +152,7 @@ async def test_reusing_the_source_run_id_is_refused_in_the_stream(caplog) -> Non
     await run(user_message("what is on the board?"), thread="t-reuse")
     source = (await _runs())[0]["run_id"]
 
+    # django-spec-agents kept the audit logger's old name.
     with caplog.at_level(logging.WARNING, logger="django_pydantic_agent.audit"):
         events = await _stream(
             await _post("resume", source, "how busy is the week?", thread="t-reuse", run_id=source)
