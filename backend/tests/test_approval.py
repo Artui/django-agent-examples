@@ -167,7 +167,7 @@ async def test_a_board_refusal_reaches_the_browser_marked_failed() -> None:
     """The whole chain, asserted where it composes.
 
     Five packages have to agree for a refused tool call to render as one: the
-    spec raises a ``ServiceConflict``; ``djangorestframework-pydantic-ai`` turns
+    spec raises a ``ServiceConflict``; ``django-spec-agents``' spec toolset turns
     that into a ``ToolFailed`` rather than a successful return carrying
     ``{"error": ...}``; pydantic-ai marks the tool return ``outcome="failed"``;
     ``django-ag-ui`` forwards that into ``TOOL_CALL_RESULT``'s ``metadata``; and

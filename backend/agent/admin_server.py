@@ -19,11 +19,11 @@ comparing against `agent/server.py` is everything that differs:
 from __future__ import annotations
 
 from django_admin_agent import AdminAgentServer
-from django_pydantic_agent import ScopedConversationStore
-from django_pydantic_agent.contrib.store.default_conversation_store import (
+from django_spec_agents import ScopedConversationStore
+from django_spec_agents.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
-from django_pydantic_agent.policy.audit.logging_audit_logger import LoggingAuditLogger
+from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.model import build_demo_model
 

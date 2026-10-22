@@ -11,7 +11,7 @@ from collections import Counter
 
 from ag_ui.core import EventType, StateSnapshotEvent
 from django_ag_ui import ToolCategory, ToolRegistry, tool
-from django_pydantic_agent import AgentDeps
+from django_spec_agents import AgentDeps
 from pydantic_ai import RunContext, ToolReturn
 
 from board.models import Event

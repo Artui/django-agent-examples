@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "rest_framework_services",
     # The reference conversation store, so chat history survives a reload and
     # the web component's history drawer has something to list.
-    "django_pydantic_agent.contrib.store",
+    "django_spec_agents.contrib.store",
     "board",
 ]
 
