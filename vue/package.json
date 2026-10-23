@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "@artooi/ag-ui-web-component": ">=0.44.0 <1.0.0",
-    "vue": "^3.5.43",
+    "vue": "^3.5.44",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitejs/plugin-vue": "^6.0.10",
     "typescript": "^5.9.3",
     "vite": "^8.3.4",
-    "vue-tsc": "^3.3.12"
+    "vue-tsc": "^3.3.13"
   }
 }
