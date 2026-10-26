@@ -27,10 +27,12 @@ from typing import Any
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
+from pydantic_ai.messages import ModelRequest, RetryPromptPart, ToolReturnPart, UserPromptPart
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.tools import ToolDefinition
 from rest_framework.authtoken.models import Token
 
+from agent.scripted import _read_turn
 from board.models import Event
 from board.serializers import EventSerializer, SelectableEventSerializer
 from tests.wire import AUTH, calls, run, text, user_message
@@ -171,3 +173,32 @@ def _seed_sync() -> Any:
     Event.objects.create(owner=user, title="Standup", day="2026-08-10", start_hour=9)
     Event.objects.create(owner=user, title="Write the release notes", position=0)
     return user
+
+
+# The older shape is deprecated upstream, which is the point: it is built here
+# because an install on the declared slim floor can still produce it.
+@pytest.mark.filterwarnings("ignore:`RetryPromptPart` is deprecated")
+def test_both_retry_shapes_are_read_as_retries() -> None:
+    # A retry reaches the scripted model as either shape, depending on which
+    # pydantic-ai resolved, and every resolution the gates make today produces
+    # only the newer one. Built directly, so the older arm and the `isinstance`
+    # guarding the newer one are each held by something: drop the guard and a
+    # `RetryPromptPart`, which has no `outcome`, raises instead of being read.
+    turn = _read_turn(
+        [
+            ModelRequest(
+                parts=[
+                    UserPromptPart(content="list the events"),
+                    RetryPromptPart(tool_name="list_events", content="old shape"),
+                    ToolReturnPart(
+                        tool_name="list_events", content="new shape", outcome="retried"
+                    ),
+                ]
+            )
+        ],
+        (),
+    )
+
+    assert turn.retries == (("list_events", "old shape"), ("list_events", "new shape"))
+    assert turn.returns == ()
+    assert turn.outcomes == ()
