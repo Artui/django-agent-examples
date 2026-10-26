@@ -72,7 +72,17 @@ dependencies = [
     # it. Below the floor `SelectorSpec` has no `reads`, so every test that
     # imports the board dies at collection -- the opposite of the earlier floors
     # above, which no test here could tell apart.
-    "djangorestframework-services>=0.58.0",
+    #
+    # Raised again because the transport's spec toolset now compiles each spec
+    # through the kernel, and what it says about `list_events` follows from how
+    # the adapter compiles the `fields` selection. Below this floor the adapter
+    # compiles it as a read the selector takes; at it, as a shape the presenter
+    # applies, which is what lets the toolset tell the model the selection
+    # applies to each item in `items` and never to the page envelope.
+    # Both tests in `test_selection_retry.py` fail below the floor: the one
+    # reading that sentence off the tool definition, and the run that depends
+    # on the model being told it.
+    "djangorestframework-services>=0.62.0",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
@@ -268,7 +278,18 @@ dependencies = [
     # assumed. A tool registered under a name other than its function's is now
     # offered and gated under the registered one; no tool here is, so the
     # approval set keeps its spelling.
-    "django-ag-ui[specs,harness]>=0.69.0",
+    #
+    # Raised to the transport that runs on django-spec-agents over the kernel,
+    # which two things here need. The runtime it pairs with serves the board's
+    # specs by compiling them through the kernel, and no lower transport
+    # admits that runtime. And it streams a retried tool call as the retry it
+    # is: the model library now records a tool's retry as the call's own return
+    # marked `retried`, and below this floor that mark was forwarded onto the
+    # tool result, so a client reading an outcome took a retry for a call that
+    # ended. `test_selection_retry.py` holds the board's half of that with the
+    # scripted model's matching arm. The board's specs are still the DRF
+    # adapter's, compiled by the kernel; they move once, when the board does.
+    "django-ag-ui[specs,harness]>=0.70.0",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -362,7 +383,12 @@ dependencies = [
     # MCP bridge, `tool_server_arguments=` on the Pydantic-AI toolset), so a
     # declared floor says the pair is required rather than leaving it to
     # whatever the kernel floor happens to pull.
-    "django-spec-agents>=0.1.0",
+    #
+    # Raised with the transport, which requires it: the release that moves the
+    # spec toolset onto the kernel. It seeds a call's `request` from the run's
+    # deps, which both mounts here build with their transport's default, so a
+    # board spec reading the request keeps receiving it.
+    "django-spec-agents>=0.2.0",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -532,7 +558,14 @@ dependencies = [
     #     django-spec-agents and floors its transport on the release that does,
     #     so the admin surface and the four frontends share one agent runtime
     #     and one store; below it an install would carry both runtimes.
-    "django-admin-agent>=0.55.0",
+    #   - The latest move vendors nothing either. The admin floors the
+    #     transport and the runtime above on the releases that move the spec
+    #     toolset onto the kernel, so the two surfaces stay on one runtime, and
+    #     its own deps now carry the run's request the way the transport's
+    #     default does. The admin mount here passes no `service_specs=`, so that
+    #     half passes over; the bundle and the frontends' ranges stay where they
+    #     are, and neither route owes any host wiring.
+    "django-admin-agent>=0.56.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
