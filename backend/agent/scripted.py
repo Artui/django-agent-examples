@@ -944,7 +944,10 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
                 # own `ToolReturnPart`, marked `retried`, rather than the
                 # `RetryPromptPart` below. It is the same event, so it is read the
                 # same way: kept apart from `returns`, for the reasons the next
-                # arm gives. Both arms stay while the declared floor predates it.
+                # arm gives. Both arms stay because the declared slim floor
+                # predates the change; today the harness extra pulls a newer
+                # release, so no resolution here produces the old part, and
+                # `test_both_retry_shapes_are_read_as_retries` builds both.
                 said = part.content if isinstance(part.content, str) else str(part.content)
                 retries.append((part.tool_name, said))
             elif isinstance(part, ToolReturnPart):

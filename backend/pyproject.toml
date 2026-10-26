@@ -74,14 +74,17 @@ dependencies = [
     # above, which no test here could tell apart.
     #
     # Raised again because the transport's spec toolset now compiles each spec
-    # through the kernel, and what it says about `list_events` follows from how
-    # the adapter compiles the `fields` selection. Below this floor the adapter
-    # compiles it as a read the selector takes; at it, as a shape the presenter
-    # applies, which is what lets the toolset tell the model the selection
-    # applies to each item in `items` and never to the page envelope.
-    # Both tests in `test_selection_retry.py` fail below the floor: the one
-    # reading that sentence off the tool definition, and the run that depends
-    # on the model being told it.
+    # through the kernel, and two things the board's `fields` selection needs
+    # come from the adapter. An earlier release compiles the selection as a
+    # shape the presenter applies rather than a read the selector takes, which
+    # is what lets the toolset tell the model the selection applies to each
+    # item in `items` and never to the page envelope. This floor is where the
+    # serializer's refusal of a bad selection leaves as the kernel's
+    # `InvalidArguments` rather than DRF's `ValidationError`, and only the
+    # kernel's refusals become a retry the model can correct; DRF's ends the
+    # call as a failure. So the run test in `test_selection_retry.py` fails
+    # below this floor, and below the shape compile the tool-definition test
+    # beside it fails too.
     "djangorestframework-services>=0.62.0",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
@@ -279,16 +282,19 @@ dependencies = [
     # offered and gated under the registered one; no tool here is, so the
     # approval set keeps its spelling.
     #
-    # Raised to the transport that runs on django-spec-agents over the kernel,
-    # which two things here need. The runtime it pairs with serves the board's
-    # specs by compiling them through the kernel, and no lower transport
-    # admits that runtime. And it streams a retried tool call as the retry it
+    # Raised to the transport that streams a retried tool call as the retry it
     # is: the model library now records a tool's retry as the call's own return
     # marked `retried`, and below this floor that mark was forwarded onto the
     # tool result, so a client reading an outcome took a retry for a call that
-    # ended. `test_selection_retry.py` holds the board's half of that with the
-    # scripted model's matching arm. The board's specs are still the DRF
-    # adapter's, compiled by the kernel; they move once, when the board does.
+    # ended. `test_selection_retry.py` asserts the retried call carries no
+    # outcome, and the scripted model's matching arm is the other half.
+    #
+    # It also runs on the django-spec-agents release below, whose spec toolset
+    # takes the kernel's specs and does not support the DRF adapter's. The
+    # board's specs are still the adapter's: they are served only because the
+    # adapter compiles them through the kernel and, from its floor above,
+    # refuses with the kernel's classes. Do not copy that pairing; it ends when
+    # the board moves to django-spec-rest.
     "django-ag-ui[specs,harness]>=0.70.0",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
@@ -385,9 +391,10 @@ dependencies = [
     # whatever the kernel floor happens to pull.
     #
     # Raised with the transport, which requires it: the release that moves the
-    # spec toolset onto the kernel. It seeds a call's `request` from the run's
-    # deps, which both mounts here build with their transport's default, so a
-    # board spec reading the request keeps receiving it.
+    # spec toolset onto the kernel. A spec callable declaring `request` receives
+    # the run's request, from the deps the board mount's transport builds by
+    # default. The board's serializer reads only the query values, which it
+    # receives either way, so nothing here depends on which request it is.
     "django-spec-agents>=0.2.0",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
