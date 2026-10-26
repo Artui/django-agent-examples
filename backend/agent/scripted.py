@@ -939,6 +939,14 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
                 outcomes = []
                 names = []
                 retries = []
+            elif isinstance(part, ToolReturnPart) and part.outcome == "retried":
+                # From pydantic-ai 2.60 the same handed-back call is the call's
+                # own `ToolReturnPart`, marked `retried`, rather than the
+                # `RetryPromptPart` below. It is the same event, so it is read the
+                # same way: kept apart from `returns`, for the reasons the next
+                # arm gives. Both arms stay while the declared floor predates it.
+                said = part.content if isinstance(part.content, str) else str(part.content)
+                retries.append((part.tool_name, said))
             elif isinstance(part, ToolReturnPart):
                 returns.append(part.content)
                 outcomes.append(part.outcome)
