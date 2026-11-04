@@ -55,7 +55,7 @@ dependencies = [
     #
     # Raised once more, and it is declared here only because the transports
     # this backend reaches require it anyway: both the [spec-tools] route and
-    # the [drf-mcp] one now refuse, at startup, a tool no call could be served
+    # the MCP bridge now refuse, at startup, a tool no call could be served
     # through, and the refusal is built on what the kernel learned to say about
     # a spec's arguments, so a floor left below it would be one no resolve could
     # reach. What it buys the board is the same wording on every route for a
@@ -153,7 +153,7 @@ dependencies = [
     # someone learns a guarantee that was never there.
     #
     # A later move carries that refusal marking one route over: a tool bridged
-    # from `drf_mcp_server=` that its server refuses now reaches the browser
+    # from an `mcp_server=` that its server refuses now reaches the browser
     # marked failed, as a `service_specs=` tool's already did. This backend
     # bridges no MCP server, so nothing here changes. The [spec-tools] half moves
     # with it and does reach this route: a refusal an affordance issues ends with
@@ -178,10 +178,10 @@ dependencies = [
     # build; no spec here is `many=True`, so this suite reads the same either way.
     #
     # A later move is the whole of one route: the transport's own bridge and
-    # MCP floors rise together so a `drf_mcp_server=` agent follows tool
+    # MCP floors rise together so an agent given an MCP server follows tool
     # availability on every model step and is told, by name and reason, what an
     # operation condition left out. This gallery reaches none of it -- no mount
-    # here passes `drf_mcp_server=`, so the two floors it carries are unobservable
+    # here passes `mcp_server=`, so the two floors it carries are unobservable
     # from inside this repo, and the reason to take it is currency. The
     # `[spec-tools]` half is the same explanation written for the route this
     # backend does use, and it is unobservable here for a second, narrower
@@ -222,8 +222,7 @@ dependencies = [
     # quotes the serializer, and the next call gets the page.
     # `tests/test_selection_retry.py` drives exactly that through the scripted
     # model and fails below the floor, so it is held rather than asserted. The
-    # `[drf-mcp]` half moves with it for the other route, which no mount here
-    # uses.
+    # MCP half moves with it for the other route, which no mount here uses.
     #
     # The move after that reaches everything here, and it does so through a
     # dependency rather than through anything the transport does. Its
@@ -244,7 +243,7 @@ dependencies = [
     #
     # Raised again with the transport's two extras, which move together: a call
     # refused for leaving out a required argument is worded the same way on the
-    # [spec-tools] route as on the [drf-mcp] one, and a tool that could never
+    # [spec-tools] route as on the MCP bridge, and a tool that could never
     # serve a call is refused when the stack starts rather than on every call.
     # The wording is the one `service_specs=` already wrote, and this backend
     # hands that route a registry rather than a toolset built with its own
@@ -295,7 +294,26 @@ dependencies = [
     # adapter compiles them through the kernel and, from its floor above,
     # refuses with the kernel's classes. Do not copy that pairing; it ends when
     # the board moves to django-spec-rest.
-    "django-ag-ui[specs,harness]>=0.70.0",
+    #
+    # The last moves close the MCP route's changeover. The transport takes an
+    # `mcp_server=` that bridges a django-spec-mcp server in process, and has
+    # dropped the older keyword and extra that bridged a DRF one, so a mount
+    # still passing the old keyword now fails at construction rather than on
+    # its first request. No mount here passes either, and no file here imports
+    # the old bridge's package, so the removal needed nothing moved. The floor
+    # also takes the runtime release in which a permission refusal through that
+    # bridge ends the run instead of arriving as a failed call the model can
+    # answer by trying the next id. Nothing in this suite drives that route.
+    #
+    # The same stretch changes what a resumed or forked run is built on, and
+    # that one is this gallery's: the checkpoint panel resumes from a stored
+    # run in all four frontends. The run now holds its history on the server and
+    # takes only the client's new turn from the request, and a message keeps the
+    # id it streamed under across a reload and a fork. `test_checkpoints.py`
+    # drives resume and fork and passes unchanged at this floor, so the move
+    # needed no edit here; the guarantees themselves are held by the
+    # transport's own tests.
+    "django-ag-ui[specs,harness]>=0.74.0",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -341,12 +359,12 @@ dependencies = [
     # resolves is a claim this repo is not making on purpose.
     #
     # Raised again with the transport, and this one does change code: the
-    # drf-mcp bridge now asks a server on every model step which of its tools a
+    # MCP bridge now asks a server on every model step which of its tools a
     # listing would leave out, and names each one with the reason its operation
     # condition gives, instead of listing once when the run starts and
     # explaining nothing. It reaches this gallery no more than the last two did
     # -- every agent here takes its operations through `service_specs=`, and no
-    # mount passes `drf_mcp_server=` -- which is worth writing down rather than
+    # mount passes `mcp_server=` -- which is worth writing down rather than
     # leaving implied, because it means this repo demonstrates one of the two
     # routes a spec can reach an agent by and cannot notice a regression on the
     # other.
@@ -395,7 +413,16 @@ dependencies = [
     # the run's request, from the deps the board mount's transport builds by
     # default. The board's serializer reads only the query values, which it
     # receives either way, so nothing here depends on which request it is.
-    "django-spec-agents>=0.2.0",
+    #
+    # Raised with the transport, which requires it: the bridge for an MCP server
+    # now ends the run when the server refuses the acting user for permission,
+    # where it used to hand the model a failed call it could answer by trying
+    # the next id and learning from how the refusals differ. The same release
+    # corrects what a spec tool's schema advertises for a `Field` parameter and
+    # refuses at build a `many=True` spec whose list shares a name with a pool
+    # seed. No mount here bridges a server and no board spec is `many=True`, so
+    # the suite reads the same either side of the floor.
+    "django-spec-agents>=0.6.2",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -471,11 +498,11 @@ dependencies = [
     #   - A release that re-vendored nothing, so the pin moved alone and the
     #     frontends' ranges correctly stayed -- the corollary above holding
     #     rather than the invariant breaking. What it carried is the transport,
-    #     bridge and MCP floors for tool availability: a sidebar given
-    #     `drf_mcp_server=` follows which of that server's tools an operation
-    #     condition allows on every model step, and is told by name and reason
-    #     what was left out. This gallery's admin mount bridges no server, so the
-    #     whole of it passed over.
+    #     bridge and MCP floors for tool availability: a sidebar given an MCP
+    #     server follows which of that server's tools an operation condition
+    #     allows on every model step, and is told by name and reason what was
+    #     left out. This gallery's admin mount bridges no server, so the whole of
+    #     it passed over.
     #   - A release that re-vendored, the invariant's ordinary case: the
     #     component on the protocol's 1.0 client, which the four frontends'
     #     ranges moved to in the same change. Its point is the same as theirs --
@@ -572,7 +599,13 @@ dependencies = [
     #     default does. The admin mount here passes no `service_specs=`, so that
     #     half passes over; the bundle and the frontends' ranges stay where they
     #     are, and neither route owes any host wiring.
-    "django-admin-agent>=0.56.0",
+    #   - A release that vendors nothing either. It takes an MCP server only
+    #     through `mcp_server=` and drops the older keyword and extra, and it
+    #     floors the transport and runtime on the releases where a permission
+    #     refusal from that server ends the run. This admin mount bridges no
+    #     server, so the whole of it passes over: the bundle and the frontends'
+    #     ranges stay, and the surface owes no host wiring.
+    "django-admin-agent>=0.59.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
@@ -580,15 +613,22 @@ dependencies = [
     # exists at all -- this is the file whose own comment says so.
     #
     # `-slim`, not the `pydantic-ai` meta package: which provider extra to install
-    # is the reader's choice, and `agent/model.py` says how to make it. No floor
-    # above the major, because every surface named above has been there since the
-    # 2 line opened; the ceiling is there because a major is a different library.
+    # is the reader's choice, and `agent/model.py` says how to make it. The floor
+    # is where a published security advisory against the AG-UI adapter is fixed:
+    # a resumed or forked run hands the adapter its stored snapshot as history,
+    # and below the floor a client could arrange its own history so that a tool
+    # call it wrote ran with its own arguments before any model request. The
+    # checkpoint panel in all four frontends resumes and forks, so this backend
+    # is the shape that defect targets. The transport requires a newer release
+    # than this, so the resolve never lands below it today; the line is here so
+    # a copy of this file does not admit the exposed range if that stops being
+    # true. The ceiling is there because a major is a different library.
     #
     # No extra either, and that is load-bearing rather than tidy: naming
     # `[ag-ui]` here would bring back the cap the transport note above describes,
     # and the resolver would settle below that cap again without reporting a
     # conflict.
-    "pydantic-ai-slim>=2,<3",
+    "pydantic-ai-slim>=2.58,<3",
     # Declared because `agent/tools.py` builds a `StateSnapshotEvent` itself --
     # the AG-UI wire type that carries shared state back to the page. Rule 1
     # again: it is django-ag-ui's dependency, and this backend's import.
