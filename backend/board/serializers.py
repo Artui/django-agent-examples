@@ -41,11 +41,12 @@ class SelectableEventSerializer(EventSerializer):
 
     It reads `request.query_params`, which is the one channel both transports
     fill. Over HTTP the query string supplies it; under the agent, the `fields`
-    argument `board/specs.py` declares on `list_events` is popped from the tool
-    call and seeded there, so this class has no idea which transport it is
-    rendering for and does not need one. No selection library is involved on
-    purpose: the parsing is a split on commas, and the refusal is worded here,
-    by the serializer that knows what it can render.
+    shape `board/specs.py` declares on `list_events` is handed over by the
+    presenter as the query string of the request it renders under, so this class
+    has no idea which transport it is rendering for and does not need one. No
+    selection library is involved on purpose: the parsing is a split on commas,
+    and the refusal is worded here, by the serializer that knows what it can
+    render.
     """
 
     def to_representation(self, instance: Event) -> dict[str, object]:

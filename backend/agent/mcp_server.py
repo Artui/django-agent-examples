@@ -8,15 +8,14 @@ argument checks and permission answers are the ones an MCP client would get over
 HTTP, acting as the request's user, with no network hop. No `service_specs=` is
 passed, so every tool this agent has arrives through the bridge.
 
-The specs are the kernel's, declared here rather than taken from
-`board/specs.py`. Those are djangorestframework-services specs -- serializers,
-`permission_classes` -- and an MCP server registers a kernel spec, which states
-its own reads, shapes and permissions. So these two are written the kernel's way
-over the same `board/selectors.py` and `board/services.py` functions. The
-functions are shared with the drf-services route, and so is what they import;
-the specs, validator, presenters and permission checks here are the kernel's,
-so the server is handed nothing drf-services shaped. Two operations are enough
-to show the route: one read, and one write that can be refused two ways.
+The specs are declared here rather than taken from `board/specs.py`. Those are
+kernel specs too, with DRF in their seats -- serializers to validate and render,
+DRF permission classes to decide who may call. These two show the other way to
+fill the same seats: the kernel's own validator, presenters and permission
+checks, over the same `board/selectors.py` and `board/services.py` functions, so
+the server is handed nothing DRF-shaped. The functions are shared with the
+board's HTTP route, and so is what they import. Two operations are enough to
+show the route: one read, and one write that can be refused two ways.
 
 The server is never mounted over HTTP. `MCPServer.urls` refuses without an auth
 backend, and authorizing an MCP client is the deployment's job, not a gallery's;

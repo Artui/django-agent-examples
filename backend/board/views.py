@@ -8,13 +8,13 @@ drag the agent performs end in the same service.
 
 from __future__ import annotations
 
-from rest_framework.viewsets import GenericViewSet
-from rest_framework_services import (
+from django_spec_rest import (
     ActionSerializerResolver,
     SelectorListMixin,
     ServiceCreateMixin,
     service_action,
 )
+from rest_framework.viewsets import GenericViewSet
 
 from board.models import Event
 from board.serializers import EventSerializer

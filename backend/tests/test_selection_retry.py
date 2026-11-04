@@ -116,7 +116,7 @@ async def test_the_list_tool_tells_the_model_what_a_selection_applies_to(
 
     assert "list_events" in served, f"the model was never offered the list: {sorted(served)}"
     fields = served["list_events"].parameters_json_schema["properties"].get("fields")
-    assert fields is not None, "the `fields` argument the spec declares in `reads` is not on the tool"
+    assert fields is not None, "the `fields` argument the spec declares in `shapes` is not on the tool"
     description = fields["description"]
     # The board's own words first, then the transport's: the row is the board's
     # to describe, and the page it arrives in is the transport's.
@@ -147,9 +147,12 @@ def test_the_http_list_honours_the_same_selection(db: Any) -> None:
     assert narrowed.status_code == 200
     assert narrowed.json() == [{"title": "Write the release notes"}, {"title": "Standup"}]
     # Over HTTP the refusal is an ordinary 400 with the serializer's words, since
-    # there is no model to hand a retry to.
+    # there is no model to hand a retry to. The words arrive under
+    # `non_field_errors`: the presenter hands a render's refusal on as the
+    # kernel's `InvalidArguments`, which is always keyed, and a bare list of
+    # messages is keyed under that name.
     assert refused.status_code == 400
-    assert refused.json() == ["Unknown field `items`."]
+    assert refused.json() == {"non_field_errors": ["Unknown field `items`."]}
 
 
 def test_a_render_with_no_request_is_not_narrowed(db: Any) -> None:

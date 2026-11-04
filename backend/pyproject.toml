@@ -22,74 +22,26 @@ license = { text = "MIT" }
 dependencies = [
     "django>=5.2",
     "djangorestframework>=3.15",
-    # The service/selector layer. One spec set, declared once in a SpecRegistry,
-    # projected to HTTP (viewsets) and to the agent (spec tools). The floor is
-    # where schema generation stopped recursing without bound on a serializer
-    # that nests itself. The board declares nested serializers and both
-    # transports here build a schema per spec, so that crash was reachable from
-    # the demo rather than theoretical. It is also past where `ServiceNotFound`
-    # and `ServiceConflict` arrived, which the board raises.
+    # The service/selector layer over HTTP. The board's operations are kernel
+    # specs, declared once in a SpecRegistry, and this package serves them on a
+    # DRF viewset with DRF in three of their seats: a serializer validates the
+    # input, a serializer renders the result, and DRF permission classes decide
+    # who may call it. The same specs reach the agent as spec tools.
     #
-    # Raised since with the transport, whose [spec-tools] extra requires it
-    # through djangorestframework-pydantic-ai, so the floor declared here is not
-    # left below the one that resolves. That is the whole reason: nothing this
-    # suite observes moved with it.
+    # It replaced djangorestframework-services, and in one change, because the
+    # two never share a process: each registers DRF's `ValidationError`
+    # row-error reader with the kernel, and the kernel refuses the second.
     #
-    # Raised again on that reasoning, and this time what resolves it is a hard
-    # requirement rather than a tidy one: the spec toolset passes
-    # `many_as_argument` on every spec call, and that argument first exists at
-    # this floor, so below it every spec tool call raises `TypeError`. The
-    # package still imports, so the failure waits for a call rather than for a
-    # resolve. Still nothing this suite observes moved with it -- no spec the
-    # board declares is `many=True`.
-    #
-    # Raised once more on the same reasoning: the spec toolset now tells this
-    # package's schema reflection which arguments the transport fills, so that
-    # a selector parameter with no default is advertised as required and a
-    # service tool advertises the lookup its row is resolved through. The
-    # reflection learns that argument at this floor. No tool here has either --
-    # `list_events` takes only the user the transport supplies, and every write
-    # finds its row from an id in its own input -- and the tool definitions the
-    # model is handed were compared on both sides of the floor and are
-    # byte-for-byte the same.
-    #
-    # Raised once more, and it is declared here only because the transports
-    # this backend reaches require it anyway: both the [spec-tools] route and
-    # the MCP bridge now refuse, at startup, a tool no call could be served
-    # through, and the refusal is built on what the kernel learned to say about
-    # a spec's arguments, so a floor left below it would be one no resolve could
-    # reach. What it buys the board is the same wording on every route for a
-    # call that leaves out an argument, and a tool definition that states what
-    # the transport fills. Nothing this suite observes moved with it: the
-    # definitions the model is handed were compared on both sides of the floor
-    # and are byte-for-byte the same, and no spec the board declares is one the
-    # new startup refusal names.
-    #
-    # Raised again, and this time the suite observes it: the floor is where the
-    # DRF adapter sits over the kernel, and a spec declares the query values it
-    # reads in its own `reads`. That is where `list_events` names its `fields`
-    # selection, so a registry entry no longer carries a contract of its own for
-    # it. Below the floor `SelectorSpec` has no `reads`, so every test that
-    # imports the board dies at collection -- the opposite of the earlier floors
-    # above, which no test here could tell apart.
-    #
-    # Raised again because the transport's spec toolset now compiles each spec
-    # through the kernel, and two things the board's `fields` selection needs
-    # come from the adapter. An earlier release compiles the selection as a
-    # shape the presenter applies rather than a read the selector takes, which
-    # is what lets the toolset tell the model the selection applies to each
-    # item in `items` and never to the page envelope. This floor is where the
-    # serializer's refusal of a bad selection leaves as the kernel's
-    # `InvalidArguments` rather than DRF's `ValidationError`, and only the
-    # kernel's refusals become a retry the model can correct; DRF's ends the
-    # call as a failure. So the run test in `test_selection_retry.py` fails
-    # below this floor, and below the shape compile the tool-definition test
-    # beside it fails too.
-    "djangorestframework-services>=0.62.0",
+    # The floor is the first release whose presenter hands a call's `shapes` to
+    # the serializer as the query string of the request it renders under, which
+    # is how the `fields` selection `list_events` declares reaches
+    # `SelectableEventSerializer` under the agent as `?fields=` does over HTTP.
+    # `test_selection_retry.py` holds both halves.
+    "django-spec-rest>=0.6.0",
     # Declared because `board/serializers.py` imports `DataclassSerializer`
     # directly: the board's operation *inputs* are dataclasses, so one declaration
     # validates an HTTP body and reflects into the schema the agent sees. It also
-    # arrives under djangorestframework-services, which is rule 1's case exactly.
+    # arrives under django-spec-rest, which is rule 1's case exactly.
     "djangorestframework-dataclasses>=1.3.1",
     # The AG-UI transport. [specs] is the in-process bridge that turns the
     # same specs into agent tools with no MCP hop, and `approval_prompts` is what
@@ -238,8 +190,9 @@ dependencies = [
     # the transport: the lock upgrade that adopts it names `pydantic-ai-slim`
     # and `pydantic-ai-harness` as well, and reading the lock is how to tell it
     # worked. The [spec-tools] half makes a call
-    # missing a required argument one retry, which this board cannot produce,
-    # for the reason the djangorestframework-services note above gives.
+    # missing a required argument one retry, which this board cannot produce:
+    # `list_events` takes only the user the transport supplies, and every write
+    # finds its row from an id in its own input.
     #
     # Raised again with the transport's two extras, which move together: a call
     # refused for leaving out a required argument is worded the same way on the
@@ -289,11 +242,7 @@ dependencies = [
     # outcome, and the scripted model's matching arm is the other half.
     #
     # It also runs on the django-spec-agents release below, whose spec toolset
-    # takes the kernel's specs and does not support the DRF adapter's. The
-    # board's specs are still the adapter's: they are served only because the
-    # adapter compiles them through the kernel and, from its floor above,
-    # refuses with the kernel's classes. Do not copy that pairing; it ends when
-    # the board moves to django-spec-rest.
+    # takes the kernel's specs, which is what the board's are.
     #
     # The last moves close the MCP route's changeover. The transport takes an
     # `mcp_server=` that bridges a django-spec-mcp server in process, and has
@@ -428,19 +377,19 @@ dependencies = [
     # refusal is the half `/mcp-agent/` shows, and `test_mcp_bridge.py` holds it,
     # as the transport note above says.
     "django-spec-agents>=0.6.2",
-    # The spec kernel, declared because `agent/mcp_server.py` writes the MCP
-    # server's operations in it. An MCP server registers a kernel spec, never the
-    # djangorestframework-services one `board/specs.py` declares, so the two sets
-    # are written apart over the same selector and service function. It arrives
-    # under every family package here as well, which is rule 1's case.
+    # The spec kernel, declared because both spec sets are written in it:
+    # `board/specs.py` with DRF in its seats, and `agent/mcp_server.py` with the
+    # kernel's own validator, presenters and permission checks, over the same
+    # selector and service function. `board/services.py` raises its errors. It
+    # arrives under every family package here as well, which is rule 1's case.
     #
-    # The floor is the one django-spec-mcp and the transport's [specs] extra
-    # both require; lower would be a floor no resolve reaches. The whole suite
+    # The floor is the highest any package here requires of it, which is
+    # django-spec-rest's; lower would be a floor no resolve reaches. The whole suite
     # passes on it, and that is the claim worth checking here: the floor job pins
     # every declared dependency at its floor, so declaring the kernel moves that
     # job's kernel from the newest release to this one for every test, the
     # board's included.
-    "django-service-specs>=0.23.0",
+    "django-service-specs>=0.24.0",
     # The MCP server `/mcp-agent/` bridges, declared because
     # `agent/mcp_server.py` builds one; the transport's [mcp] extra pulls it too.
     # The floor is the release that extra's bridge requires. `test_mcp_bridge.py`

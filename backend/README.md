@@ -66,18 +66,22 @@ property the split exists for.
 
 Two consequences worth knowing:
 
-- **Every spec sets `permission_classes`.** Off HTTP there is no viewset and no
+- **Every spec sets `permissions`.** The board's are DRF permission classes in a
+  `DRFPermissionCheck`. Off HTTP there is no viewset and no
   `DEFAULT_PERMISSION_CLASSES` to inherit, so an unset one would be callable by
-  whatever the model decided to call. `AGUIServer` refuses to start on a spec
-  that leaves it unset, which is the behaviour you want to meet at deploy time.
+  whatever the model decided to call. The `SpecRegistry` refuses to register a
+  spec that leaves it unset, so `board/specs.py` fails at import, which is the
+  behaviour you want to meet at deploy time.
 - **A service's docstring is the tool description.** The spec toolset warns at
   startup about an operation without one, because a model picks tools almost
   entirely by description.
 
 A read-shaping argument is declared there too. `list_events` declares a `fields`
-query param in its spec's `reads`, because over HTTP the query string supplies `?fields=` and under the agent nothing does: the transport
-advertises it on the tool and seeds it into `request.query_params`, where
-`SelectableEventSerializer` reads it on either transport. A name no event has is
+parameter in its spec's `shapes`, because over HTTP the query string supplies
+`?fields=` and under the agent nothing does: the transport advertises it on the
+tool, and the presenter hands the call's shapes to the serializer as the query
+string of the request it renders under, so `SelectableEventSerializer` reads it
+from `request.query_params` on either transport. A name no event has is
 refused by the serializer in its own words -- a `400` over HTTP, and under the
 agent a retry that also says the selection applies to each item in `items`, never
 to the page around them. *just the titles on the board* shows that retry: the
@@ -150,9 +154,10 @@ authorizing an outside MCP client is the deployment's job.
 
 An MCP server registers a kernel spec, so the two operations are declared there
 the kernel's way over the same `board/selectors.py` and `board/services.py`
-functions, not taken from `board/specs.py`, whose specs are drf-services ones.
+functions, not taken from `board/specs.py`, whose specs put DRF in their seats.
 The functions, and what they import, are shared; the specs, validator,
-presenters and permission checks are the kernel's. A blank title is the one
+presenters and permission checks here are the kernel's own, so the server is
+handed nothing DRF-shaped. A blank title is the one
 input rule the dataclass does not state, so `title_is_set` adds it there, and
 a blank title is refused on every route.
 
