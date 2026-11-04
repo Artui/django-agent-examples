@@ -1,7 +1,7 @@
 """Write side: plain callables plus the state rules that guard them.
 
-Nothing here imports from `rest_framework`. The exceptions are
-`rest_framework_services` ones, which every transport already maps: to a
+Nothing here imports from `rest_framework`. The exceptions are the kernel's
+(`django_service_specs`), which every transport already maps: to a
 response over HTTP, to a tool error the model can read under the agent.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from rest_framework_services import ServiceConflict, ServiceError, ServiceNotFound
+from django_service_specs import ServiceConflict, ServiceError, ServiceNotFound
 
 from board.models import Event
 from board.serializers import CreateEventInput, MoveEventInput, ReorderEventInput

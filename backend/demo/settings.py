@@ -37,8 +37,6 @@ INSTALLED_APPS = [
     # DRF token auth: the frontends send `Authorization: Token <key>`, so no
     # cookie is involved and the browser's origin does not have to match.
     "rest_framework.authtoken",
-    # Ships in INSTALLED_APPS so its checks run.
-    "rest_framework_services",
     # The reference conversation store, so chat history survives a reload and
     # the web component's history drawer has something to list.
     "django_spec_agents.contrib.store",

@@ -91,7 +91,7 @@ also shows what a batch of gated writes looks like.
 | Make the widget look like the host | four different mechanisms, one per app (below) |
 | Run the whole thing in another language | the component's `strings`, in the Svelte app |
 | Dictate instead of typing | `transcription_backend=` and the composer's `data-transcribe-url` |
-| Narrow a read, and recover from narrowing the wrong thing | a `QueryParam` on the registry entry, and the retry the transport sends back |
+| Narrow a read, and recover from narrowing the wrong thing | a `fields` shape on the list spec, and the retry the transport sends back |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
