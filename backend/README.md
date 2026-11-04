@@ -69,8 +69,9 @@ Two consequences worth knowing:
 - **Every spec sets `permissions`.** The board's are DRF permission classes in a
   `DRFPermissionCheck`. Off HTTP there is no viewset and no
   `DEFAULT_PERMISSION_CLASSES` to inherit, so an unset one would be callable by
-  whatever the model decided to call. `AGUIServer` refuses to start on a spec
-  that leaves it unset, which is the behaviour you want to meet at deploy time.
+  whatever the model decided to call. The `SpecRegistry` refuses to register a
+  spec that leaves it unset, so `board/specs.py` fails at import, which is the
+  behaviour you want to meet at deploy time.
 - **A service's docstring is the tool description.** The spec toolset warns at
   startup about an operation without one, because a model picks tools almost
   entirely by description.

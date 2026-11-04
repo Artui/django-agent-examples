@@ -5,8 +5,8 @@ route in `board/views.py` and an agent tool in `agent/server.py`. DRF fills thre
 of its seats -- a serializer validates the input, a serializer renders the
 result, and DRF permission classes decide who may call it. `permissions` is set
 on every one of them, not inherited -- off HTTP there is no viewset and no
-`DEFAULT_PERMISSION_CLASSES` to fall back to, and the kernel refuses to dispatch
-a spec that declares none.
+`DEFAULT_PERMISSION_CLASSES` to fall back to, and the registry refuses to
+register a spec that declares none, so this module fails at import.
 """
 
 from __future__ import annotations
