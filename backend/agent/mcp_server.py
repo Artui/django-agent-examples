@@ -12,9 +12,11 @@ The specs are the kernel's, declared here rather than taken from
 `board/specs.py`. Those are djangorestframework-services specs -- serializers,
 `permission_classes` -- and an MCP server registers a kernel spec, which states
 its own reads, shapes and permissions. So these two are written the kernel's way
-over the same `board/selectors.py` and `board/services.py` functions, and
-nothing in this module imports from DRF. Two operations are enough to show the
-route: one read, and one write that can be refused two ways.
+over the same `board/selectors.py` and `board/services.py` functions. The
+functions are shared with the drf-services route, and so is what they import;
+the specs, validator, presenters and permission checks here are the kernel's,
+so the server is handed nothing drf-services shaped. Two operations are enough
+to show the route: one read, and one write that can be refused two ways.
 
 The server is never mounted over HTTP. `MCPServer.urls` refuses without an auth
 backend, and authorizing an MCP client is the deployment's job, not a gallery's;
@@ -35,6 +37,7 @@ from django_service_specs import (
     SelectorKind,
     SelectorSpec,
     ServiceSpec,
+    ServiceValidationError,
 )
 from django_spec_agents import ScopedConversationStore, ToolGuardConfig
 from django_spec_agents.contrib.store.default_conversation_store import (
@@ -42,6 +45,7 @@ from django_spec_agents.contrib.store.default_conversation_store import (
 )
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 from django_spec_mcp import MCPServer
+from django_spec_mcp.config import build_mcp_config
 
 from agent.auth import token_user
 from agent.model import build_demo_model
@@ -57,8 +61,10 @@ in one sentence.
 
 
 class SignedIn(PermissionCheck):
-    """Any active, signed-in user. The kernel ships no such check, by design:
-    what counts as signed in is the project's, and here it is Django's."""
+    """Any signed-in user. The endpoint already answers 401 without a token, so
+    this refuses nobody who gets this far; it is here because the server
+    refuses to register a tool that declares no permission at all, and a read
+    open to every caller should say so rather than leave it unset."""
 
     def has_permission(self, principal: Any, spec: Any) -> bool:
         return bool(getattr(principal, "is_authenticated", False))
@@ -71,9 +77,7 @@ class HoldsPermission(PermissionCheck):
         self.codename = codename
 
     def has_permission(self, principal: Any, spec: Any) -> bool:
-        return bool(getattr(principal, "is_authenticated", False)) and principal.has_perm(
-            self.codename
-        )
+        return principal.has_perm(self.codename)
 
 
 @dataclass
@@ -90,6 +94,15 @@ class EventRow:
     position: int
 
 
+def title_is_set(*, user: Any, data: CreateEventInput) -> None:
+    """The one rule the board's input serializer adds that the dataclass does
+    not state: a title may not be blank. `DataclassValidator` takes an empty
+    string as a string, so without this the route would book an untitled event
+    the other two refuse."""
+    if not data.title.strip():
+        raise ServiceValidationError({"title": ["This field may not be blank."]})
+
+
 list_events_spec = SelectorSpec(
     kind=SelectorKind.LIST,
     selector=list_events,
@@ -99,13 +112,13 @@ list_events_spec = SelectorSpec(
 
 create_event_spec = ServiceSpec(
     service=create_event,
-    # The board's own input dataclass. Its serializer adds no rule of its own,
-    # so the kernel's dataclass validator takes everything it took.
+    # The board's own input dataclass, which states every type the serializer
+    # checks; the blank title it also refuses is `title_is_set`'s.
     validator=DataclassValidator(CreateEventInput),
-    # The board's rule, and the reason a write here can be refused while the
-    # caller is entitled to make it: a taken slot is a failed call the model
-    # reads, and the run goes on.
-    preconditions=[slot_is_free],
+    # Then the board's rule, and the reason a write here can be refused while
+    # the caller is entitled to make it: a taken slot is a failed call the
+    # model reads, and the run goes on.
+    preconditions=[title_is_set, slot_is_free],
     presenter=DataclassPresenter(EventRow),
     # The other refusal, and the one that ends the run. Booking needs the model
     # permission, so a user without it is answered `-32006`, which the bridge
@@ -114,7 +127,13 @@ create_event_spec = ServiceSpec(
     permissions=[HoldsPermission("board.add_event")],
 )
 
-server = MCPServer(name="gallery-board")
+# Off by default, `tools/list` shows every tool to every caller and leaves the
+# refusal to the call. On, a user is listed only what their permissions allow,
+# which is what a deployment would want a model to be offered.
+server = MCPServer(
+    name="gallery-board",
+    config=build_mcp_config(filter_listings_by_permissions=True),
+)
 server.register_tool(
     list_events_spec,
     name="list_events",
@@ -136,11 +155,11 @@ server.register_tool(
         "Add an event to the board: scheduled when given a day and an hour, "
         "otherwise in the backlog."
     ),
-    # Listed for everyone, including a user the call will refuse. Without it
-    # `tools/list` hides a tool whose permission check fails, so the model never
-    # sees the write and the refusal is unreachable; with it the model is offered
-    # a write it may be refused, and a refusal ends the run. A deployment that
-    # would rather the tool not exist for such a user leaves this off.
+    # Listed for everyone, including a user the call will refuse, as the one
+    # exception to the filter above. Without it the model never sees the write
+    # and the refusal is unreachable; with it the model is offered a write it
+    # may be refused, and a refusal ends the run. A deployment that would rather
+    # the tool not exist for such a user leaves this off.
     always_listed=True,
 )
 

@@ -445,9 +445,10 @@ dependencies = [
     # `agent/mcp_server.py` builds one; the transport's [mcp] extra pulls it too.
     # The floor is the release that extra's bridge requires. `test_mcp_bridge.py`
     # passes the same on every release from it to the newest, so nothing it
-    # observes is newer: a write listed to a user its call refuses
-    # (`always_listed`), the `-32006` the bridge turns into an ended run, and the
-    # page envelope a read arrives in are all there at the floor.
+    # observes is newer: listings filtered by permission with a write listed
+    # past the filter (`always_listed`), the `-32006` the bridge turns into an
+    # ended run, and the page envelope a read arrives in are all there at the
+    # floor.
     "django-spec-mcp>=0.2.0",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.

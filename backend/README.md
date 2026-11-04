@@ -151,7 +151,10 @@ authorizing an outside MCP client is the deployment's job.
 An MCP server registers a kernel spec, so the two operations are declared there
 the kernel's way over the same `board/selectors.py` and `board/services.py`
 functions, not taken from `board/specs.py`, whose specs are drf-services ones.
-Nothing in that module imports DRF.
+The functions, and what they import, are shared; the specs, validator,
+presenters and permission checks are the kernel's. A blank title is the one
+input rule the dataclass does not state, so `title_is_set` adds it there, and
+a blank title is refused on every route.
 
 The two routes stream a call the same way, by design. They differ in three
 places, and `tests/test_mcp_bridge.py` holds each over the wire:
@@ -166,8 +169,10 @@ places, and `tests/test_mcp_bridge.py` holds each over the wire:
   board mount. A user without `board.add_event` is answered `-32006`, which the
   bridge raises as Django's `PermissionDenied`: the run ends on `RUN_ERROR`, the
   model is never asked to answer it, and the reason goes to the audit log.
-  `create_event` is registered `always_listed=True` so that second refusal is
-  reachable at all; without it `tools/list` hides the write from that user.
+  The server lists a user only the tools their permissions allow
+  (`filter_listings_by_permissions`), and `create_event` is registered
+  `always_listed=True` so that second refusal is reachable at all; without it
+  `tools/list` hides the write from that user.
 
 No frontend selects this mount; a client sees it by setting the chat element's
 `endpoint` to `/mcp-agent/` and its `data-tools-url` to `/mcp-agent/tools/`.
