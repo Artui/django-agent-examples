@@ -14,8 +14,10 @@ dependencies = [
     { name = "ag-ui-protocol" },
     { name = "django" },
     { name = "django-admin-agent" },
-    { name = "django-ag-ui", extra = ["harness", "specs"] },
+    { name = "django-ag-ui", extra = ["harness", "mcp", "specs"] },
+    { name = "django-service-specs" },
     { name = "django-spec-agents" },
+    { name = "django-spec-mcp" },
     { name = "djangorestframework" },
     { name = "djangorestframework-dataclasses" },
     { name = "djangorestframework-services" },
@@ -36,8 +38,10 @@ requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.19" },
     { name = "django", specifier = ">=5.2" },
     { name = "django-admin-agent", specifier = ">=0.59.0" },
-    { name = "django-ag-ui", extras = ["specs", "harness"], specifier = ">=0.74.0" },
+    { name = "django-ag-ui", extras = ["specs", "harness", "mcp"], specifier = ">=0.74.0" },
+    { name = "django-service-specs", specifier = ">=0.23.0" },
     { name = "django-spec-agents", specifier = ">=0.6.2" },
+    { name = "django-spec-mcp", specifier = ">=0.2.0" },
     { name = "djangorestframework", specifier = ">=3.15" },
     { name = "djangorestframework-dataclasses", specifier = ">=1.3.1" },
     { name = "djangorestframework-services", specifier = ">=0.62.0" },
@@ -170,6 +174,9 @@ wheels = [
 harness = [
     { name = "pydantic-ai-harness" },
 ]
+mcp = [
+    { name = "django-spec-agents", extra = ["mcp"] },
+]
 specs = [
     { name = "django-spec-agents", extra = ["specs"] },
 ]
@@ -202,8 +209,24 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+mcp = [
+    { name = "django-spec-mcp" },
+]
 specs = [
     { name = "django-service-specs" },
+]
+
+[[package]]
+name = "django-spec-mcp"
+version = "0.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-service-specs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/93/6e/20c7031a1fde5736958de08bd7f28d341594d71039d5eebacc1ae0d7bf5d/django_spec_mcp-0.8.0.tar.gz", hash = "sha256:feef506552b5fbff8f0c2ba5675d1d5abf96a2f1935d10e91b900b8bc53e8b1b", size = 973887, upload-time = "2026-11-03T13:20:48.478Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/44/f2/987175c01b58c9d0255362990c4820dbae67029062da152ee08fcb5d53c1/django_spec_mcp-0.8.0-py3-none-any.whl", hash = "sha256:6437247e094338b22c02ba84fcdd1bad46c0684426df38b78e3c31d7e433ef35", size = 410541, upload-time = "2026-11-03T13:20:46.473Z" },
 ]
 
 [[package]]

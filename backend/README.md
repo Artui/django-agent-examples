@@ -24,6 +24,7 @@ ASGI is not optional — the agent endpoint streams.
 | `board/views.py` | HTTP routes over those same specs. |
 | `agent/server.py` | The `AGUIServer` every single-page app points at. |
 | `agent/admin_server.py` | The `AdminAgentServer` the admin sidebar points at. |
+| `agent/mcp_server.py` | Two board operations served by an MCP server, and an agent that reaches them. |
 | `board/admin.py` | An ordinary `ModelAdmin`; the agent drives admin's own DOM. |
 | `demo/demo_login.py` | A demo-only one-click sign-in, so no password is typed anywhere. |
 | `agent/tools.py` | Server-side tools that are not board operations. |
@@ -51,6 +52,8 @@ ASGI is not optional — the agent endpoint streams.
 | `POST /agent/transcribe/` | A clip in, a transcript out; scripted, so no provider. |
 | `/admin/` | The board through `django.contrib.admin`, with the agent in its chrome. |
 | `POST /admin-agent/` | The admin's own AG-UI endpoint: session principal, CSRF on. |
+| `POST /mcp-agent/` | An AG-UI endpoint whose tools come from an MCP server, not the specs. |
+| `GET /mcp-agent/tools/` | Its label catalog, read off the server's registrations. |
 | `GET /demo-login/` | Demo only, DEBUG only: signs the seeded user in. |
 
 ## One declaration, two transports
@@ -134,6 +137,45 @@ Static files are the admin's other requirement, and the reason `demo/urls.py` ad
 `staticfiles_urlpatterns()`: the agent endpoint streams, so this runs under an ASGI
 server, and a bare ASGI server serves no static files. The component's bundle is a
 static file, so without that the sidebar is simply absent.
+
+## The other route: an MCP server
+
+`agent/mcp_server.py` reaches the board a second way. It builds a django-spec-mcp
+`MCPServer`, registers two operations on it, and hands it to
+`AGUIServer(mcp_server=...)` with no `service_specs=`. The bridge then calls the
+server's own `tools/list` and `tools/call` in process, as the user the endpoint
+resolved, so the schemas, argument checks and permission answers are the ones an
+MCP client would get, with no network hop. The server is not mounted over HTTP:
+authorizing an outside MCP client is the deployment's job.
+
+An MCP server registers a kernel spec, so the two operations are declared there
+the kernel's way over the same `board/selectors.py` and `board/services.py`
+functions, not taken from `board/specs.py`, whose specs are drf-services ones.
+The functions, and what they import, are shared; the specs, validator,
+presenters and permission checks are the kernel's. A blank title is the one
+input rule the dataclass does not state, so `title_is_set` adds it there, and
+a blank title is refused on every route.
+
+The two routes stream a call the same way, by design. They differ in three
+places, and `tests/test_mcp_bridge.py` holds each over the wire:
+
+- **The labels.** The catalog at `/mcp-agent/tools/` carries the `title` and
+  `description` the server registered, where `/agent/tools/` carries a
+  prettified name and the service's docstring.
+- **The gate.** The mount names no tool in `require_approval`. The bridge marks
+  `create_event` destructive from the annotations the server lists, and the tool
+  guard defers it on that alone.
+- **The refusals.** A taken slot is a failed call the model reads, as on the
+  board mount. A user without `board.add_event` is answered `-32006`, which the
+  bridge raises as Django's `PermissionDenied`: the run ends on `RUN_ERROR`, the
+  model is never asked to answer it, and the reason goes to the audit log.
+  The server lists a user only the tools their permissions allow
+  (`filter_listings_by_permissions`), and `create_event` is registered
+  `always_listed=True` so that second refusal is reachable at all; without it
+  `tools/list` hides the write from that user.
+
+No frontend selects this mount; a client sees it by setting the chat element's
+`endpoint` to `/mcp-agent/` and its `data-tools-url` to `/mcp-agent/tools/`.
 
 ## Errors
 

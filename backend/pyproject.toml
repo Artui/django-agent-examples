@@ -299,11 +299,15 @@ dependencies = [
     # `mcp_server=` that bridges a django-spec-mcp server in process, and has
     # dropped the older keyword and extra that bridged a DRF one, so a mount
     # still passing the old keyword now fails at construction rather than on
-    # its first request. No mount here passes either, and no file here imports
-    # the old bridge's package, so the removal needed nothing moved. The floor
-    # also takes the runtime release in which a permission refusal through that
-    # bridge ends the run instead of arriving as a failed call the model can
-    # answer by trying the next id. Nothing in this suite drives that route.
+    # its first request. No mount here passed the old keyword, and no file here
+    # imports the old bridge's package, so the removal needed nothing moved. The
+    # floor also takes the runtime release in which a permission refusal through
+    # that bridge ends the run instead of arriving as a failed call the model
+    # can answer by trying the next id.
+    #
+    # `/mcp-agent/` drives that route (`agent/mcp_server.py`), and [mcp] is the
+    # extra it needs. `test_mcp_bridge.py` goes red if the refusal is handed
+    # back as a failed call: the run then finishes and the model answers it.
     #
     # The same stretch changes what a resumed or forked run is built on, and
     # that one is this gallery's: the checkpoint panel resumes from a stored
@@ -313,7 +317,7 @@ dependencies = [
     # drives resume and fork and passes unchanged at this floor, so the move
     # needed no edit here; the guarantees themselves are held by the
     # transport's own tests.
-    "django-ag-ui[specs,harness]>=0.74.0",
+    "django-ag-ui[specs,harness,mcp]>=0.74.0",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -420,9 +424,32 @@ dependencies = [
     # the next id and learning from how the refusals differ. The same release
     # corrects what a spec tool's schema advertises for a `Field` parameter and
     # refuses at build a `many=True` spec whose list shares a name with a pool
-    # seed. No mount here bridges a server and no board spec is `many=True`, so
-    # the suite reads the same either side of the floor.
+    # seed. No board spec is `many=True`, so those two halves pass over. The
+    # refusal is the half `/mcp-agent/` shows, and `test_mcp_bridge.py` holds it,
+    # as the transport note above says.
     "django-spec-agents>=0.6.2",
+    # The spec kernel, declared because `agent/mcp_server.py` writes the MCP
+    # server's operations in it. An MCP server registers a kernel spec, never the
+    # djangorestframework-services one `board/specs.py` declares, so the two sets
+    # are written apart over the same selector and service function. It arrives
+    # under every family package here as well, which is rule 1's case.
+    #
+    # The floor is the one django-spec-mcp and the transport's [specs] extra
+    # both require; lower would be a floor no resolve reaches. The whole suite
+    # passes on it, and that is the claim worth checking here: the floor job pins
+    # every declared dependency at its floor, so declaring the kernel moves that
+    # job's kernel from the newest release to this one for every test, the
+    # board's included.
+    "django-service-specs>=0.23.0",
+    # The MCP server `/mcp-agent/` bridges, declared because
+    # `agent/mcp_server.py` builds one; the transport's [mcp] extra pulls it too.
+    # The floor is the release that extra's bridge requires. `test_mcp_bridge.py`
+    # passes the same on every release from it to the newest, so nothing it
+    # observes is newer: listings filtered by permission with a write listed
+    # past the filter (`always_listed`), the `-32006` the bridge turns into an
+    # ended run, and the page envelope a read arrives in are all there at the
+    # floor.
+    "django-spec-mcp>=0.2.0",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #

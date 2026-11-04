@@ -47,8 +47,14 @@ async def run(
     thread: str = "thread-test",
     tools: list[dict[str, Any]] | None = None,
     state: dict[str, Any] | None = None,
+    path: str = "/agent/",
+    auth: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
-    """POST one `RunAgentInput` and collect the events it streams back."""
+    """POST one `RunAgentInput` and collect the events it streams back.
+
+    `path` is the mount, the board's by default; `auth` is the header, the demo
+    user's by default.
+    """
     payload: dict[str, Any] = {
         "threadId": thread,
         "runId": f"run-{uuid.uuid4().hex[:8]}",
@@ -61,10 +67,10 @@ async def run(
     if resume is not None:
         payload["resume"] = resume
     response = await AsyncClient().post(
-        "/agent/",
+        path,
         data=json.dumps(payload),
         content_type="application/json",
-        headers=AUTH,
+        headers=AUTH if auth is None else auth,
     )
     assert response.status_code == 200, response.content[:400]
     events: list[dict[str, Any]] = []
