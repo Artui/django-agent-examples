@@ -179,7 +179,7 @@ async def test_a_blank_title_is_refused_as_the_other_routes_refuse_it() -> None:
 
     answer = await server.acall_tool("create_event", {"title": "  "}, user=demo)
 
-    assert answer["isError"] is True, answer
+    assert answer.get("isError") is True, answer
     assert "may not be blank" in json.dumps(answer)
     assert not await Event.objects.filter(title__regex=r"^\s*$").aexists()
 
