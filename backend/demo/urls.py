@@ -1,9 +1,11 @@
-"""Four mounts, two of them agents.
+"""Five mounts, three of them agents.
 
 `/api/` and `/agent/` serve the single-page apps: token auth, no cookie, JSON and
 SSE. `/admin/` and `/admin-agent/` serve the admin: a session principal, CSRF on,
 server-rendered pages. Both agent mounts are the same class underneath and neither
 knows about the other — which is what makes running them side by side worth doing.
+`/mcp-agent/` is the SPA mount's auth on the other route a spec reaches an agent
+by: the board's read and booking served by an MCP server and bridged in process.
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 
 from agent.admin_server import agent as admin_agent
+from agent.mcp_server import agent as mcp_agent
 from agent.server import agent as spa_agent
 from demo.demo_login import demo_login
 
@@ -22,6 +25,7 @@ urlpatterns = [
     path("agent/", spa_agent.urls),
     path("admin/", admin.site.urls),
     path("admin-agent/", admin_agent.urls),
+    path("mcp-agent/", mcp_agent.urls),
 ]
 
 # The agent endpoint streams, so this project runs under an ASGI server — and a
