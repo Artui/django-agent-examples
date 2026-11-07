@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from agent.scripted import build_scripted_model
+from agent.scripted import build_scripted_model, build_scripted_planner
 
 
 def build_demo_model() -> Any:
@@ -23,6 +23,17 @@ def build_demo_model() -> Any:
         # environment.
         return configured
     return build_scripted_model()
+
+
+def build_planner_model() -> Any:
+    """The planner sub-agent's model: the same choice, its own script.
+
+    A delegated run is a separate run with a separate model, so the offline
+    stand-in needs a script of its own -- the parent's script answers a person,
+    and the planner is answering the parent.
+    """
+    configured = os.environ.get("DEMO_MODEL", "").strip()
+    return configured or build_scripted_planner()
 
 
 def is_offline() -> bool:
