@@ -349,8 +349,9 @@ body {
    component never parameterised — here, a header that is a bar in the page's
    card colour with a rule under it, where the Angular and Svelte apps fill it
    with the accent, and square bubbles instead of rounded ones. The component
-   exposes them by putting a `part` attribute on every element it renders; nothing else about its internals is
-   reachable, which is the trade: a stable name, and only where one exists.
+   exposes them by putting a `part` attribute on every element it renders;
+   nothing else about its internals is reachable, which is the trade: a stable
+   name, and only where one exists.
 
    Note the specificity floor. A part rule competes with the component's own
    shadow CSS, and the outside wins on equal specificity, so these need no

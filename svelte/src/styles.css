@@ -31,8 +31,8 @@
      DOM unresolved: it then picks by the panel's scheme, which is the chat's
      own (light, since this app sets no theme on it), where `--accent` picks
      by the page's. The two colours are `--accent` in each scheme; the dark
-     halves are there for a theme set on the element. White on the dark one is about 2.5:1, so the text on it is the
-     page's dark paper. */
+     halves are there for a theme set on the element. White on the dark one is
+     about 2.5:1, so the text on it is the page's dark paper. */
   --ag-ui-accent: light-dark(#3d5afe, #8a9dff);
   --ag-ui-header-bg: light-dark(#3d5afe, #8a9dff);
   --ag-ui-launcher-bg: light-dark(#3d5afe, #8a9dff);

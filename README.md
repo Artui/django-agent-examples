@@ -64,9 +64,9 @@ Ask the assistant:
   sub-agent, and the tool card shows the planner working until it answers
 
 Or press the **What is on this day?** chip, in a fresh chat, or from `/` once a
-message is sent. In the day view it sends *What is on
-Thu 13?*, because the page filled the day in; in the week view it refuses to send
-and says which value is missing.
+message is sent. In the day view it sends *What is on Thu 13?*, because the page
+filled the day in; in the week view it refuses to send and says which value is
+missing.
 
 Or attach [`samples/week.csv`](samples/week.csv) with the clip in the composer and
 say *import these events*. The file uploads out of band, the agent reads it
