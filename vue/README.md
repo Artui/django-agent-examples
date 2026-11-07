@@ -87,8 +87,8 @@ The gallery themes each app a different way, and this one uses parts. Custom
 properties (see [the React app](../react/README.md)) can only change what the
 component chose to expose as a variable; a part is a stable name on an element,
 so a host can restyle things the component never parameterised. Here the header
-stops being a filled accent bar and becomes a plain one in the page's colours,
-and the bubbles go square:
+becomes a bar in the page's own card colours with a rule under it, where the
+Angular and Svelte apps fill it with the accent, and the bubbles go square:
 
 ```css
 ag-ui-chat::part(header) {

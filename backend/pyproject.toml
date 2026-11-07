@@ -67,18 +67,14 @@ dependencies = [
     # checkpoint panel lists runs from. Both extras belong to one requirement --
     # naming django-ag-ui twice would leave whichever uv resolves last.
     # The floor is where a delegated sub-agent's lifetime moved onto the
-    # protocol's own SUBAGENT_STARTED / _FINISHED / _ERROR events, and what it
-    # buys is currency rather than a capability: this backend delegates to no
-    # sub-agent, so nothing here emits those events at all. The reason to take
-    # it anyway is the one this repo exists for -- a gallery demonstrates the
-    # family at the versions that just shipped, and the transport is the thing
-    # it demonstrates most directly.
-    #
-    # The comment this replaced claimed the floor was for progress "the
-    # frontends now draw". They can draw it; nothing here produces one. Checked
-    # in a browser rather than argued: the React app and the admin surface both
-    # render a delegating agent's panel only if something delegates, and no
-    # scenario in this repo does.
+    # protocol's own SUBAGENT_STARTED / _FINISHED / _ERROR events, and this
+    # backend emits them: the board and admin mounts both delegate to the planner
+    # sub-agent in `agent/delegation.py`, through a `SubAgents` capability wrapped
+    # in this package's `SubAgentObserver`. `tests/test_delegation.py` reads the
+    # three off both mounts' streams and checks that `SUBAGENT_STARTED` names the
+    # `delegate_task` call already on screen, which is what lets the component
+    # draw the planner on that card rather than in a row of its own. All four
+    # frontends and the admin sidebar draw it, checked in a browser.
     #
     # Three things this floor buys, none of them restating which release each
     # was -- the number lives in the pin, and a comment that repeats it is one
@@ -118,13 +114,14 @@ dependencies = [
     #
     # A later move is an SSE heartbeat and a delegated sub-agent stopped when
     # the client that asked for it disconnects. Neither reaches this suite:
-    # nothing here delegates, and no test is silent for the fifteen seconds a
-    # beat waits for. The heartbeat does reach anyone deploying what this gallery
-    # demonstrates, which is the ordinary case rather than an exotic one -- an AWS
-    # Application Load Balancer and nginx each close an idle stream at sixty
-    # seconds by default, and an agent thinking about a real question is quieter
-    # than that. So this is the rarer kind of currency floor: unobservable from
-    # inside the repo and load-bearing the moment the demo becomes a deployment.
+    # no test disconnects while the planner is working, and none is silent for
+    # the fifteen seconds a beat waits for. The heartbeat does reach anyone
+    # deploying what this gallery demonstrates, which is the ordinary case
+    # rather than an exotic one -- an AWS Application Load Balancer and nginx
+    # each close an idle stream at sixty seconds by default, and an agent
+    # thinking about a real question is quieter than that. So this is the
+    # rarer kind of currency floor: unobservable from inside the repo and
+    # load-bearing the moment the demo becomes a deployment.
     # The [spec-tools] half moves to a release where a `many=True` service spec
     # is a tool taking its list under one named argument rather than a refusal at
     # build; no spec here is `many=True`, so this suite reads the same either way.
@@ -267,6 +264,15 @@ dependencies = [
     # needed no edit here; the guarantees themselves are held by the
     # transport's own tests.
     "django-ag-ui[specs,harness,mcp]>=0.74.0",
+    # Declared because `agent/delegation.py` imports `SubAgent` and `SubAgents`
+    # from it directly: the planner sub-agent both agent mounts delegate to is a
+    # pydantic-ai-harness capability, which django-ag-ui's `SubAgentObserver`
+    # wraps. It also arrives under django-ag-ui's [harness] extra, which is rule
+    # 1's case exactly. The floor is the first release whose package exports
+    # both names, with the `event_stream_handler` the observer installs itself
+    # on; the one below it has them only under `pydantic_ai_harness.subagents`,
+    # so the import as written fails.
+    "pydantic-ai-harness>=0.21",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.
     #
@@ -581,7 +587,16 @@ dependencies = [
     #     refusal from that server ends the run. This admin mount bridges no
     #     server, so the whole of it passes over: the bundle and the frontends'
     #     ranges stay, and the surface owes no host wiring.
-    "django-admin-agent>=0.59.0",
+    #   - A release that re-vendored, so the frontends' ranges moved with it,
+    #     and the first since the component's default look became Quiet. On
+    #     the admin route a run's tool calls fold into one step row by default,
+    #     the delegation to the planner included, and the sidebar takes Django
+    #     admin's own primary colour as its accent and the admin's font, with a
+    #     focus outline that holds its contrast on that accent. The four
+    #     frontends make the same look change through their own tokens, each
+    #     app's note says how. The admin's release carries no transport or
+    #     runtime floor this gallery does not already take.
+    "django-admin-agent>=0.60.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
