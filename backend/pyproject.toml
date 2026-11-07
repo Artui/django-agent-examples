@@ -585,7 +585,16 @@ dependencies = [
     #     refusal from that server ends the run. This admin mount bridges no
     #     server, so the whole of it passes over: the bundle and the frontends'
     #     ranges stay, and the surface owes no host wiring.
-    "django-admin-agent>=0.59.0",
+    #   - A release that re-vendored, so the frontends' ranges moved with it,
+    #     and the first since the component's default look became Quiet. On
+    #     the admin route a run's tool calls fold into one step row by default,
+    #     the delegation to the planner included, and the sidebar takes Django
+    #     admin's own primary colour as its accent and the admin's font, with a
+    #     focus outline that holds its contrast on that accent. The four
+    #     frontends make the same look change through their own tokens, each
+    #     app's note says how. The admin's release carries no transport or
+    #     runtime floor this gallery does not already take.
+    "django-admin-agent>=0.60.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
