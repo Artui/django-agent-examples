@@ -29,17 +29,24 @@
      The tokens are written with `light-dark()` rather than read from
      `--accent`, because a custom property hands the function to the shadow
      DOM unresolved: it then picks by the panel's scheme, which is the chat's
-     own (light unless its theme or its toggle says otherwise), where
-     `--accent` picks by the page's. The two colours are `--accent` in each
-     scheme. White on the dark one is about 2.5:1, so the text on it is the
+     own (light, since this app sets no theme on it), where `--accent` picks
+     by the page's. The two colours are `--accent` in each scheme; the dark
+     halves are there for a theme set on the element. White on the dark one is about 2.5:1, so the text on it is the
      page's dark paper. */
   --ag-ui-accent: light-dark(#3d5afe, #8a9dff);
   --ag-ui-header-bg: light-dark(#3d5afe, #8a9dff);
   --ag-ui-launcher-bg: light-dark(#3d5afe, #8a9dff);
   --ag-ui-header-fg: light-dark(#ffffff, #14161b);
   --ag-ui-launcher-fg: light-dark(#ffffff, #14161b);
-  /* Quiet sets a font stack of its own; this keeps the page's. */
-  --ag-ui-font: inherit;
+  /* The step row's focus outline is the accent at half strength by default,
+     about 2.3:1 on the white panel for this accent; the system's text colour
+     holds it above 3:1 in either scheme. */
+  --ag-ui-ring: CanvasText;
+  /* Quiet sets a font stack of its own. `inherit` would not undo it: in a custom
+     property it inherits the property, which nothing above sets, so the
+     component falls back to its stack. The page's stack goes in by name. */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ag-ui-font: var(--font-ui);
   --radius: 10px;
 }
 
@@ -57,12 +64,18 @@
 }
 
 /* Quiet paints the header's buttons in the panel's own grey, which no token
-   reaches and which reads at about 1.3:1 on the accent header above. A part
+   reaches and which reads at about 1.2:1 on the accent header above. A part
    rule from the page outranks the component's own rule, so the buttons take
-   the header's text colour, hovered or not. */
+   the header's text colour. Quiet's hover square is the panel's near-white
+   (near-black in dark), on which that text colour vanishes, so the hover is a
+   tint of the text colour instead. */
 ag-ui-chat::part(header-button),
 ag-ui-chat::part(header-button):hover {
   color: var(--ag-ui-header-fg);
+}
+
+ag-ui-chat::part(header-button):hover {
+  background: color-mix(in srgb, var(--ag-ui-header-fg) 18%, transparent);
 }
 
 * {
@@ -71,7 +84,7 @@ ag-ui-chat::part(header-button):hover {
 
 body {
   margin: 0;
-  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.5 var(--font-ui);
   color: var(--ink);
   background: var(--paper);
 }
