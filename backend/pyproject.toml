@@ -270,7 +270,8 @@ dependencies = [
     # wraps. It also arrives under django-ag-ui's [harness] extra, which is rule
     # 1's case exactly. The floor is the first release whose package exports
     # both names, with the `event_stream_handler` the observer installs itself
-    # on; the one below it has neither, so the import fails.
+    # on; the one below it has them only under `pydantic_ai_harness.subagents`,
+    # so the import as written fails.
     "pydantic-ai-harness>=0.21",
     # Declared because this backend imports it directly -- `ToolGuardConfig`,
     # `AgentDeps`, and `contrib.store` both as an app and as an import path.

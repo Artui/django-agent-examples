@@ -63,7 +63,8 @@ Ask the assistant:
 - *ask the planner when Friday is free* — the agent hands the question to a
   sub-agent, and the tool card shows the planner working until it answers
 
-Or press the **What is on this day?** chip. In the day view it sends *What is on
+Or press the **What is on this day?** chip, in a fresh chat, or from `/` once a
+message is sent. In the day view it sends *What is on
 Thu 13?*, because the page filled the day in; in the week view it refuses to send
 and says which value is missing.
 
