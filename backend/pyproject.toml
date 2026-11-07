@@ -115,12 +115,13 @@ dependencies = [
     # A later move is an SSE heartbeat and a delegated sub-agent stopped when
     # the client that asked for it disconnects. Neither reaches this suite:
     # no test disconnects while the planner is working, and none is silent for
-    # the fifteen seconds a beat waits for. The heartbeat does reach anyone deploying what this gallery
-    # demonstrates, which is the ordinary case rather than an exotic one -- an AWS
-    # Application Load Balancer and nginx each close an idle stream at sixty
-    # seconds by default, and an agent thinking about a real question is quieter
-    # than that. So this is the rarer kind of currency floor: unobservable from
-    # inside the repo and load-bearing the moment the demo becomes a deployment.
+    # the fifteen seconds a beat waits for. The heartbeat does reach anyone
+    # deploying what this gallery demonstrates, which is the ordinary case
+    # rather than an exotic one -- an AWS Application Load Balancer and nginx
+    # each close an idle stream at sixty seconds by default, and an agent
+    # thinking about a real question is quieter than that. So this is the
+    # rarer kind of currency floor: unobservable from inside the repo and
+    # load-bearing the moment the demo becomes a deployment.
     # The [spec-tools] half moves to a release where a `many=True` service spec
     # is a tool taking its list under one named argument rather than a refusal at
     # build; no spec here is `many=True`, so this suite reads the same either way.
