@@ -204,8 +204,9 @@ stream carries, inside that one tool call:
 | `SUBAGENT_FINISHED` | The planner is done; its answer is the call's `TOOL_CALL_RESULT`. |
 
 The web component draws all three onto the card it already drew, with no setting
-on the page; the React app and the admin sidebar have been driven to it in a
-browser.
+on the page. Under its default step-group display that card is one click down,
+in the row the run's tool calls fold into. All four apps and the admin sidebar
+have been driven to it in a browser.
 `tests/test_delegation.py` reads them off both mounts' streams.
 
 ## Errors

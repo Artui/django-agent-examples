@@ -73,8 +73,8 @@ dependencies = [
     # in this package's `SubAgentObserver`. `tests/test_delegation.py` reads the
     # three off both mounts' streams and checks that `SUBAGENT_STARTED` names the
     # `delegate_task` call already on screen, which is what lets the component
-    # draw the planner on that card rather than in a row of its own. The React
-    # app and the admin sidebar both draw it, checked in a browser.
+    # draw the planner on that card rather than in a row of its own. All four
+    # frontends and the admin sidebar draw it, checked in a browser.
     #
     # Three things this floor buys, none of them restating which release each
     # was -- the number lives in the pin, and a comment that repeats it is one
