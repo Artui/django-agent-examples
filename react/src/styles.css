@@ -69,6 +69,15 @@
   }
 }
 
+/* Quiet paints the header's buttons in the panel's own grey, which no token
+   reaches and which reads at about 1.3:1 on the accent header above. A part
+   rule from the page outranks the component's own rule, so the buttons take
+   the header's text colour, hovered or not. */
+ag-ui-chat::part(header-button),
+ag-ui-chat::part(header-button):hover {
+  color: var(--ag-ui-header-fg);
+}
+
 * {
   box-sizing: border-box;
 }
