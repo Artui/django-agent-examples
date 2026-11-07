@@ -19,7 +19,24 @@
   --accent: #3d5afe;
   --accent-soft: #e8ecff;
   --danger: #b3261e;
-  --ag-ui-accent: var(--accent);
+  /* The chat's look: the component's Quiet theme in this app's accent. Quiet
+     draws the header, the launcher and the tool names in the panel's own
+     colours, so an accent alone no longer reaches them; the five tokens after it are
+     the component's documented way to put the accent back. They are written
+     with `light-dark()` rather than read from `--accent`, because a custom
+     property hands the function to the shadow DOM unresolved: it then picks by
+     the panel's scheme, which is the chat's own (light unless its theme or its
+     toggle says otherwise), where `--accent` picks by the page's. The two
+     colours are `--accent` in each scheme. White on the dark one is about
+     2.5:1, so the text on it is the page's dark paper. */
+  --ag-ui-accent: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-header-bg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-launcher-bg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-tool-fg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-header-fg: light-dark(#ffffff, #14161b);
+  --ag-ui-launcher-fg: light-dark(#ffffff, #14161b);
+  /* Quiet sets a font stack of its own; this keeps the page's. */
+  --ag-ui-font: inherit;
   --radius: 10px;
 }
 

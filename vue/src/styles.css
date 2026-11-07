@@ -20,7 +20,22 @@
   --accent: #3d5afe;
   --accent-soft: #e8ecff;
   --danger: #b3261e;
-  --ag-ui-accent: var(--accent);
+  /* The chat's accent under the component's Quiet theme, which draws the
+     launcher and the tool names in the panel's own colours, so an accent alone
+     no longer reaches them; the tokens after it put it back. The header is
+     this app's `::part()` block's, below, so no header token is set here.
+     They are written with `light-dark()` rather than read from `--accent`,
+     because a custom property hands the function to the shadow DOM
+     unresolved: it then picks by the panel's scheme, which is the chat's own
+     (light unless its theme says otherwise), where `--accent` picks by the
+     page's. The two colours are `--accent` in each scheme. White on the dark
+     one is about 2.5:1, so the text on it is the page's dark paper. */
+  --ag-ui-accent: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-launcher-bg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-tool-fg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-launcher-fg: light-dark(#ffffff, #14161b);
+  /* Quiet sets a font stack of its own; this keeps the page's. */
+  --ag-ui-font: inherit;
   --radius: 10px;
 }
 
@@ -322,9 +337,9 @@ body {
    ---------------------------------------------------------------------------
    Custom properties can only say what the component already asked to be told:
    a colour, a radius, a font. Parts are how a host reaches something the
-   component never parameterised — here, a header that is a plain bar in the
-   page's own colours instead of a filled accent block, and square bubbles
-   instead of rounded ones. The component exposes them by putting a `part`
+   component never parameterised — here, a header that is a bar in the page's
+   card colour with a rule under it, where the Angular and Svelte apps fill it
+   with the accent, and square bubbles instead of rounded ones. The component exposes them by putting a `part`
    attribute on every element it renders; nothing else about its internals is
    reachable, which is the trade: a stable name, and only where one exists.
 
@@ -344,8 +359,8 @@ ag-ui-chat::part(title) {
   letter-spacing: 0.01em;
 }
 
-/* The controls sat on an accent bar and now sit on the page's own surface, so
-   they have to take the page's ink rather than the white they were given. */
+/* The controls take the page's muted ink, as the bar they sit on takes the
+   page's card colour. */
 ag-ui-chat::part(header-button) {
   color: var(--ink-muted);
 }
