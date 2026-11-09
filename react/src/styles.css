@@ -47,19 +47,16 @@
      property it inherits the property, which nothing above sets, so the
      component falls back to its stack. The page's stack goes in by name. */
   --ag-ui-font: var(--font-ui);
-  /* The step row's focus outline is the accent at half strength by default,
-     about 2.3:1 on a white panel for this accent; the system's text colour
-     holds it above 3:1 in either scheme. */
-  --ag-ui-ring: CanvasText;
-  /* The component's Quiet theme draws the header and the launcher in the
-     panel's own colours, so the accent above no longer reaches them; these are
-     its documented tokens for putting it back. The tool names stay in the
-     panel's ink: under the step-group display this app keeps, the component
-     draws a grouped call in it whatever `--ag-ui-tool-fg` says. */
+  /* The component's Quiet theme draws the header, the launcher and the tool
+     names in the panel's own colours, so the accent above no longer reaches
+     them; these are its documented tokens for putting it back. The header's
+     buttons follow `--ag-ui-header-fg`, and their hover square is the
+     component's own. */
   --ag-ui-header-bg: var(--accent);
   --ag-ui-header-fg: var(--on-accent);
   --ag-ui-launcher-bg: var(--accent);
   --ag-ui-launcher-fg: var(--on-accent);
+  --ag-ui-tool-fg: var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -75,21 +72,6 @@
     --on-accent: #14161b;
     --danger: #ff8a80;
   }
-}
-
-/* Quiet paints the header's buttons in the panel's own grey, which no token
-   reaches and which reads at about 1.2:1 on the accent header above. A part
-   rule from the page outranks the component's own rule, so the buttons take
-   the header's text colour. The hover square is `--ag-ui-hover`, the soft
-   accent, on which that text colour vanishes, so the hover is a tint of the
-   text colour instead. */
-ag-ui-chat::part(header-button),
-ag-ui-chat::part(header-button):hover {
-  color: var(--ag-ui-header-fg);
-}
-
-ag-ui-chat::part(header-button):hover {
-  background: color-mix(in srgb, var(--ag-ui-header-fg) 18%, transparent);
 }
 
 * {
