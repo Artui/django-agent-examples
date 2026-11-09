@@ -205,8 +205,10 @@ stream carries, inside that one tool call:
 
 The web component draws all three onto the card it already drew, with no setting
 on the page. Under its default step-group display that card is one click down,
-in the row the run's tool calls fold into. All four apps and the admin sidebar
-have been driven to it in a browser.
+in the row the run's tool calls fold into. The admin sidebar draws the opened
+call as a compact row: the planner's steps stay on it, and its arguments and
+result are one click further. All four apps and the admin sidebar have been
+driven to it in a browser.
 `tests/test_delegation.py` reads them off both mounts' streams.
 
 ## Errors

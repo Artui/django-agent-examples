@@ -20,11 +20,10 @@
   --accent-soft: #e8ecff;
   --danger: #b3261e;
   /* The chat's look: the component's Quiet theme in this app's accent. Quiet
-     draws the header and the launcher in the panel's own colours, so an accent
-     alone no longer reaches them; the four tokens after it are the component's
-     documented way to put it back. The tool names stay in the panel's ink:
-     under the step-group display this app keeps, the component draws a grouped
-     call in it whatever `--ag-ui-tool-fg` says.
+     draws the header, the launcher and the tool names in the panel's own
+     colours, so an accent alone no longer reaches them; the five tokens after
+     it are the component's documented way to put it back. The header's buttons
+     follow `--ag-ui-header-fg`, and their hover square is the component's own.
 
      The tokens are written with `light-dark()` rather than read from
      `--accent`, because a custom property hands the function to the shadow
@@ -38,10 +37,7 @@
   --ag-ui-launcher-bg: light-dark(#3d5afe, #8a9dff);
   --ag-ui-header-fg: light-dark(#ffffff, #14161b);
   --ag-ui-launcher-fg: light-dark(#ffffff, #14161b);
-  /* The step row's focus outline is the accent at half strength by default,
-     about 2.3:1 on the white panel for this accent; the system's text colour
-     holds it above 3:1 in either scheme. */
-  --ag-ui-ring: CanvasText;
+  --ag-ui-tool-fg: light-dark(#3d5afe, #8a9dff);
   /* Quiet sets a font stack of its own. `inherit` would not undo it: in a custom
      property it inherits the property, which nothing above sets, so the
      component falls back to its stack. The page's stack goes in by name. */
@@ -61,21 +57,6 @@
     --accent-soft: #232a45;
     --danger: #ff8a80;
   }
-}
-
-/* Quiet paints the header's buttons in the panel's own grey, which no token
-   reaches and which reads at about 1.2:1 on the accent header above. A part
-   rule from the page outranks the component's own rule, so the buttons take
-   the header's text colour. Quiet's hover square is the panel's near-white
-   (near-black in dark), on which that text colour vanishes, so the hover is a
-   tint of the text colour instead. */
-ag-ui-chat::part(header-button),
-ag-ui-chat::part(header-button):hover {
-  color: var(--ag-ui-header-fg);
-}
-
-ag-ui-chat::part(header-button):hover {
-  background: color-mix(in srgb, var(--ag-ui-header-fg) 18%, transparent);
 }
 
 * {
