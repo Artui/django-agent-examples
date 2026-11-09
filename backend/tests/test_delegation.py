@@ -22,13 +22,35 @@ import pytest
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from django.test import AsyncClient
+from django.urls import path
+from django_ag_ui import AGUIServer
+from pydantic_ai_harness import SubAgent, SubAgents
 from rest_framework.authtoken.models import Token
 
+from agent.auth import token_user
+from agent.delegation import planner
+from agent.model import build_demo_model
 from agent.scripted import WEEKDAYS, Turn, _planner_respond, _this_week
+from agent.server import INSTRUCTIONS
+from agent.tools import registry as tool_registry
 from board.models import Event
+from board.specs import registry as spec_registry
 from tests.wire import calls, run, text, user_message
 
 SUBAGENT = "ag_ui.subagent"
+
+# The board mount as `delegation()` would build it without its observer: the
+# same planner behind a bare `SubAgents`. Mounted only by the test that names
+# this module as the URLconf.
+unwrapped = AGUIServer(
+    tool_registry,
+    model=build_demo_model(),
+    instructions=INSTRUCTIONS,
+    service_specs=spec_registry,
+    capabilities=[SubAgents(agents=[SubAgent(planner)])],
+    get_user=token_user,
+)
+urlpatterns = [path("unwrapped/", unwrapped.urls)]
 
 
 def _friday() -> str:
@@ -146,6 +168,35 @@ async def test_the_admin_agent_delegates_to_the_planner() -> None:
                 events.append(json.loads(line[6:]))
 
     _assert_delegated_to_the_planner(events)
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_an_unwrapped_delegation_still_answers_only_unseen(settings: Any) -> None:
+    """Without the observer the hand-off works and the browser hears nothing of it.
+
+    The child then runs unstreamed, so this is also what holds the scripted
+    planner to keeping its non-streamed half: without it the planner crashes
+    and the answer never comes back.
+    """
+    settings.ROOT_URLCONF = __name__
+    await _owner()
+
+    events = await run(user_message("ask the planner when Friday is free"), path="/unwrapped/")
+
+    order = [event["type"] for event in events]
+    assert "RUN_ERROR" not in order, order
+    assert order[-1] == "RUN_FINISHED", order
+    # One hand-off, made the same way as on the wrapped mount.
+    seen = _delegation(events)
+    assert seen["call"].arguments["agent_name"] == "planner"
+    # And nothing around it: no lifetime and no steps for the browser to draw.
+    assert seen["started"] == [] and seen["finished"] == [] and seen["failed"] == []
+    assert seen["steps"] == []
+    # The planner still read the board and its answer still reached the parent.
+    said = text(events)
+    assert "The planner says:" in said
+    assert "10:00" in said
+    assert "9:00" not in said and "16:00" not in said
 
 
 def test_the_planner_resolves_a_named_day_inside_the_week_on_screen() -> None:
