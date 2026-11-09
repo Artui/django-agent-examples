@@ -596,7 +596,14 @@ dependencies = [
     #     frontends make the same look change through their own tokens, each
     #     app's note says how. The admin's release carries no transport or
     #     runtime floor this gallery does not already take.
-    "django-admin-agent>=0.60.0",
+    #   - A release that re-vendored again, so the frontends' ranges moved with
+    #     it. On the admin route an opened step row now draws each call as a row
+    #     rather than a full card, with its arguments and result one click
+    #     further, and the sidebar follows the admin's light and dark. This
+    #     project sets neither `TOOL_GROUP_DISPLAY` nor `THEME`, so it takes both
+    #     defaults, and it leaves the new `COLLAPSE_TO` unset. Again no transport
+    #     or runtime floor this gallery does not already take.
+    "django-admin-agent>=0.61.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
