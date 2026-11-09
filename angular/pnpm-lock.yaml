@@ -24,8 +24,8 @@ importers:
         specifier: ^22.2.3
         version: 22.2.3(@angular/common@22.2.3(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(@angular/platform-browser@22.2.3(@angular/common@22.2.3(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@artooi/ag-ui-web-component':
-        specifier: '>=0.50.1 <1.0.0'
-        version: 0.50.1(zod@3.25.76)
+        specifier: '>=0.50.2 <1.0.0'
+        version: 0.50.2(zod@3.25.76)
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -199,8 +199,8 @@ packages:
       '@angular/platform-browser': 22.2.3
       rxjs: ^6.5.3 || ^7.4.0
 
-  '@artooi/ag-ui-web-component@0.50.1':
-    resolution: {integrity: sha512-usCWdKUpNZOto00zlT4wnEG3Mis+c7NCSV5Ap8Pb1vBZjggpDF+CaB3Q1X0OLBnikK/GBhiF1SV5gnOxyFfX0w==}
+  '@artooi/ag-ui-web-component@0.50.2':
+    resolution: {integrity: sha512-nvN3b2x2zdv3BwzorxlCSKGbnEWgpNnjK4RUQVAlRnGcHiB+d44ZQpW5M+EVmlr0yEAWzTfaPxcjYchxgSY/UQ==}
     engines: {node: '>=22'}
 
   '@babel/code-frame@8.0.6':
@@ -2097,7 +2097,7 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.8.1
 
-  '@artooi/ag-ui-web-component@0.50.1(zod@3.25.76)':
+  '@artooi/ag-ui-web-component@0.50.2(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 1.0.0
       '@ag-ui/core': 1.0.0(zod@3.25.76)

@@ -603,7 +603,11 @@ dependencies = [
     #     project sets neither `TOOL_GROUP_DISPLAY` nor `THEME`, so it takes both
     #     defaults, and it leaves the new `COLLAPSE_TO` unset. Again no transport
     #     or runtime floor this gallery does not already take.
-    "django-admin-agent>=0.61.0",
+    #   - A release that re-vendored for one fix, so the frontends' ranges moved
+    #     with it: a transcript pinned to its foot now comes to rest under the
+    #     last answer's Retry and Copy row rather than one row short. No setting
+    #     changed and neither route owes any host wiring.
+    "django-admin-agent>=0.61.1",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives
