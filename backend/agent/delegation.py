@@ -75,6 +75,11 @@ planner: Agent[AgentDeps, str] = Agent(
 )
 
 
+def planner_subagents() -> SubAgents:
+    """The bare delegation, with no observer: what `delegation()` wraps."""
+    return SubAgents(agents=[SubAgent(planner)])
+
+
 def delegation() -> SubAgentObserver:
     """A delegation capability for one mount: the planner, observed."""
-    return SubAgentObserver(SubAgents(agents=[SubAgent(planner)]))
+    return SubAgentObserver(planner_subagents())

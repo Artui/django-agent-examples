@@ -24,11 +24,10 @@ from django.contrib.auth import get_user_model
 from django.test import AsyncClient
 from django.urls import path
 from django_ag_ui import AGUIServer
-from pydantic_ai_harness import SubAgent, SubAgents
 from rest_framework.authtoken.models import Token
 
 from agent.auth import token_user
-from agent.delegation import planner
+from agent.delegation import planner_subagents
 from agent.model import build_demo_model
 from agent.scripted import WEEKDAYS, Turn, _planner_respond, _this_week
 from agent.server import INSTRUCTIONS
@@ -39,15 +38,15 @@ from tests.wire import calls, run, text, user_message
 
 SUBAGENT = "ag_ui.subagent"
 
-# The board mount as `delegation()` would build it without its observer: the
-# same planner behind a bare `SubAgents`. Mounted only by the test that names
+# A board mount whose delegation is the one `delegation()` wraps, left bare,
+# with only the options the hand-off reads. Mounted only by the test that names
 # this module as the URLconf.
 unwrapped = AGUIServer(
     tool_registry,
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
     service_specs=spec_registry,
-    capabilities=[SubAgents(agents=[SubAgent(planner)])],
+    capabilities=[planner_subagents()],
     get_user=token_user,
 )
 urlpatterns = [path("unwrapped/", unwrapped.urls)]
