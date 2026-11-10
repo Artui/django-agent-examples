@@ -27,6 +27,7 @@ ASGI is not optional — the agent endpoint streams.
 | `agent/mcp_server.py` | Two board operations served by an MCP server, and an agent that reaches them. |
 | `board/admin.py` | An ordinary `ModelAdmin`; the agent drives admin's own DOM. |
 | `demo/demo_login.py` | A demo-only one-click sign-in, so no password is typed anywhere. |
+| `agent/delegation.py` | The planner sub-agent, and the capability both agent mounts delegate to it with. |
 | `agent/tools.py` | Server-side tools that are not board operations. |
 | `agent/scripted.py` | The offline model. |
 | `agent/transcribe.py` | The offline speech-to-text, on the same terms. |
@@ -181,6 +182,34 @@ places, and `tests/test_mcp_bridge.py` holds each over the wire:
 
 No frontend selects this mount; a client sees it by setting the chat element's
 `endpoint` to `/mcp-agent/` and its `data-tools-url` to `/mcp-agent/tools/`.
+
+## Delegating to a sub-agent
+
+The board mount and the admin mount can each hand one question to a second agent,
+the **planner**, which finds the free hours on a day of the board. Ask either one
+*ask the planner when Friday is free*.
+
+The planner runs in a run of its own: its own model, its one `free_hours` tool,
+and none of the conversation that asked. pydantic-ai-harness's `SubAgents` gives
+the parent the `delegate_task` tool that starts it; django-ag-ui's
+`SubAgentObserver`, wrapped around that capability, is what tells the browser.
+Without the wrapper the hand-off still works and the chat shows a
+`delegate_task` card that waits silently until the answer arrives. With it the
+stream carries, inside that one tool call:
+
+| Event | What it says |
+| --- | --- |
+| `SUBAGENT_STARTED` | The planner is working, on the card whose `toolCallId` is its `parentToolCallId`. |
+| `CUSTOM` `ag_ui.subagent` | One per tool call the planner makes, and one per result. |
+| `SUBAGENT_FINISHED` | The planner is done; its answer is the call's `TOOL_CALL_RESULT`. |
+
+The web component draws all three onto the card it already drew, with no setting
+on the page. Under its default step-group display that card is one click down,
+in the row the run's tool calls fold into. The admin sidebar draws the opened
+call as a compact row: the planner's steps stay on it, and its arguments and
+result are one click further. All four apps and the admin sidebar have been
+driven to it in a browser.
+`tests/test_delegation.py` reads them off both mounts' streams.
 
 ## Errors
 

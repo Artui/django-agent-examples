@@ -60,10 +60,13 @@ Ask the assistant:
 - *put the onboarding doc first in the backlog*
 - *show only the Basalt room*
 - *move standup to Friday* — a day and no hour, so it asks which slot
+- *ask the planner when Friday is free* — the agent hands the question to a
+  sub-agent, and the tool card shows the planner working until it answers
 
-Or press the **What is on this day?** chip. In the day view it sends *What is on
-Thu 13?*, because the page filled the day in; in the week view it refuses to send
-and says which value is missing.
+Or press the **What is on this day?** chip, in a fresh chat, or from `/` once a
+message is sent. In the day view it sends *What is on Thu 13?*, because the page
+filled the day in; in the week view it refuses to send and says which value is
+missing.
 
 Or attach [`samples/week.csv`](samples/week.csv) with the clip in the composer and
 say *import these events*. The file uploads out of band, the agent reads it
@@ -92,6 +95,7 @@ also shows what a batch of gated writes looks like.
 | Run the whole thing in another language | the component's `strings`, in the Svelte app |
 | Dictate instead of typing | `transcription_backend=` and the composer's `data-transcribe-url` |
 | Narrow a read, and recover from narrowing the wrong thing | a `fields` shape on the list spec, and the retry the transport sends back |
+| Hand a question to a sub-agent, and show it working | `SubAgents` wrapped in `SubAgentObserver`, on the board and admin mounts |
 
 All four apps implement the first nine, and every one of them has been driven
 agent-side in a browser rather than only compiled. The admin surface adds two more
@@ -158,6 +162,8 @@ Ask it:
 - *rename Retro to Sprint retro* — find the row, open its form, type into the
   field, save: four tools across two full page reloads, with a confirmation at
   each write
+- *ask the planner when Friday is free* — the same sub-agent the board mount
+  delegates to, drawn in the sidebar on the `delegate_task` card
 
 **Serving static files is not optional, and a bare ASGI server does not.** The
 agent endpoint streams, so the project runs under uvicorn; `runserver` would serve

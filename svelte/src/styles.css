@@ -19,7 +19,30 @@
   --accent: #3d5afe;
   --accent-soft: #e8ecff;
   --danger: #b3261e;
-  --ag-ui-accent: var(--accent);
+  /* The chat's look: the component's Quiet theme in this app's accent. Quiet
+     draws the header, the launcher and the tool names in the panel's own
+     colours, so an accent alone no longer reaches them; the five tokens after
+     it are the component's documented way to put it back. The header's buttons
+     follow `--ag-ui-header-fg`, and their hover square is the component's own.
+
+     The tokens are written with `light-dark()` rather than read from
+     `--accent`, because a custom property hands the function to the shadow
+     DOM unresolved: it then picks by the panel's scheme, which is the chat's
+     own (light, since this app sets no theme on it), where `--accent` picks
+     by the page's. The two colours are `--accent` in each scheme; the dark
+     halves are there for a theme set on the element. White on the dark one is
+     about 2.5:1, so the text on it is the page's dark paper. */
+  --ag-ui-accent: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-header-bg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-launcher-bg: light-dark(#3d5afe, #8a9dff);
+  --ag-ui-header-fg: light-dark(#ffffff, #14161b);
+  --ag-ui-launcher-fg: light-dark(#ffffff, #14161b);
+  --ag-ui-tool-fg: light-dark(#3d5afe, #8a9dff);
+  /* Quiet sets a font stack of its own. `inherit` would not undo it: in a custom
+     property it inherits the property, which nothing above sets, so the
+     component falls back to its stack. The page's stack goes in by name. */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ag-ui-font: var(--font-ui);
   --radius: 10px;
 }
 
@@ -42,7 +65,7 @@
 
 body {
   margin: 0;
-  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.5 var(--font-ui);
   color: var(--ink);
   background: var(--paper);
 }

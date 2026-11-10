@@ -19,6 +19,7 @@ from django_spec_agents.contrib.store.default_step_store import DefaultStepStore
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.auth import token_user
+from agent.delegation import delegation
 from agent.model import build_demo_model
 from agent.tools import registry as tool_registry
 from agent.transcribe import ScriptedTranscriptionBackend
@@ -63,6 +64,9 @@ agent = AGUIServer(
     # The board's operations, declared once in board/specs.py, reaching the
     # agent as tools with no MCP hop in the path.
     service_specs=spec_registry,
+    # A sub-agent, the planner, which this agent can hand a question to. The
+    # wrapper is what makes the hand-off visible: see `agent/delegation.py`.
+    capabilities=[delegation()],
     skills=skills,
     # Scoped, because the admin mount keeps its conversations in the same table
     # for the same person: unscoped, each drawer listed the other's threads, and

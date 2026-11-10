@@ -71,6 +71,21 @@ export const CHAT: Record<string, string> = {
   details: "Details",
   thinking: "Denkt nach",
   toolRunning: "läuft...",
+  // The row a run's consecutive tool calls fold into, which is the component's
+  // default display, so it labels every run that calls a tool. `toolStepRepeat`
+  // is left out: its "({n})" reads the same in German.
+  toolGroupSteps: "{count} Schritte",
+  toolGroupWorking: "Arbeitet {count} Schritte ab",
+  toolGroupWorked: "{count} Schritte abgearbeitet",
+  toolGroupWaiting: "{count} offen",
+  toolGroupFailed: "{count} fehlgeschlagen",
+  toolGroupDeclined: "{count} abgelehnt",
+  // The planner sub-agent's row, on a run that delegates to it.
+  subAgentWorking: "Arbeitet...",
+  subAgentDelegatedTo: "An {agent} übergeben",
+  subAgentFinished: "{agent} ist fertig",
+  subAgentFailed: "Der Unteragent ist fehlgeschlagen",
+  subAgentSteps: "Schritte des Unteragenten",
   connectionLost: "Verbindung verloren.",
   skillNeeds: "„{title}“ braucht {fields} — unten ausfüllen und senden.",
 };

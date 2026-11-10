@@ -25,6 +25,7 @@ from django_spec_agents.contrib.store.default_conversation_store import (
 )
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
+from agent.delegation import delegation
 from agent.model import build_demo_model
 
 INSTRUCTIONS = """
@@ -36,6 +37,10 @@ or a filter reloads the page. Say what changed, in one sentence.
 agent = AdminAgentServer(
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
+    # The same planner the board mount delegates to, in a capability of its own.
+    # Here the sidebar draws the hand-off, and the planner's answer reads the
+    # same table the changelist shows.
+    capabilities=[delegation()],
     # One table, one person, two agents: the demo user is staff here and holds
     # the board mount's token there, and a store keys a thread by owner and id.
     # Unscoped, the sidebar's drawer listed the board's conversations and

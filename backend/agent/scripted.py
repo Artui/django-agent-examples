@@ -32,7 +32,10 @@ from typing import Any
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
+    ModelResponse,
     RetryPromptPart,
+    TextPart,
+    ToolCallPart,
     ToolReturnPart,
     UserPromptPart,
 )
@@ -61,7 +64,8 @@ HELP = (
     "- *book a design sync on Friday at 14:00*\n"
     "- *note: ship the gallery this week* (the shared week note, which the React app"
     " is the one that draws)\n"
-    "- attach `samples/week.csv` and say *import these events*"
+    "- attach `samples/week.csv` and say *import these events*\n"
+    "- *ask the planner when Friday is free* (a sub-agent answers it)"
 )
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -162,6 +166,11 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if "open_changelist" in available:
         return _admin_respond(turn, available, text)
 
+    # Before every verb below: "ask the planner to find a free hour" holds
+    # "find", which the scroll branch would otherwise take.
+    if _PLANNER.search(text):
+        return _delegate_script(turn, available)
+
     # Before every verb below, because with a file in hand the verb is about the
     # file: "add these to the board" is an import, not a booking.
     #
@@ -206,13 +215,18 @@ ADMIN_HELP = (
     "- *open the events list*\n"
     "- *how many events are there?*\n"
     "- *rename standup to Morning standup*\n"
-    "- *what is registered in the admin?*"
+    "- *what is registered in the admin?*\n"
+    "- *ask the planner when Friday is free* (a sub-agent answers it)"
 )
 
 MODEL = {"app_label": "board", "model": "event"}
 
 
 def _admin_respond(turn: Turn, available: set[str], text: str) -> list[Any]:
+    # First, as on the board: "open", "show" and "what" all belong to branches
+    # below, and a question for the planner may contain any of them.
+    if _PLANNER.search(text):
+        return _delegate_script(turn, available)
     if re.search(r"\b(rename|retitle|call it|change the title)\b", text):
         return _rename_script(turn, available)
     if re.search(r"\b(open|list|show|go to)\b", text) and "admin" not in text:
@@ -871,6 +885,75 @@ def _titles(content: Any) -> list[str]:
     # The page says whether it is the whole board, so the answer can too.
     suffix = ", and there are more on the next page." if more else "."
     return [f"The titles on the board are {_join(titles)}{suffix}"]
+
+
+# --- delegation ---------------------------------------------------------------
+
+_PLANNER = re.compile(r"\bplanner\b")
+
+
+def _delegate_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Hand the question to the planner sub-agent, then report what it said.
+
+    The task is the user's own sentence, unedited. A delegated run never sees
+    the parent's conversation, so whatever the planner needs has to be in the
+    task -- and the sentence the user typed already names the day.
+    """
+    if "delegate_task" not in available:
+        return [_missing_tools("delegate_task")]
+    if turn.round == 0:
+        return [_call("delegate_task", {"agent_name": "planner", "task": turn.prompt})]
+    if turn.last_outcome != "success":
+        return [f"The planner could not answer that: {turn.last}"]
+    return [f"The planner says: {turn.last}"]
+
+
+def build_scripted_planner() -> FunctionModel:
+    """The planner sub-agent's stand-in model, in the same two-rule shape.
+
+    Both halves of a `FunctionModel`, where the parent's has only the streamed
+    one. The parent is always streamed by the transport; a child is streamed
+    only when something handles its events. `SubAgentObserver` does, and a
+    `SubAgents` left unwrapped does not, so with only the streamed half the
+    planner would crash rather than answer quietly -- and a test showing the
+    observer is what draws the hand-off would be measuring the crash.
+    """
+    return FunctionModel(
+        function=_planner_function, stream_function=_planner_stream, model_name="scripted-planner"
+    )
+
+
+def _planner_function(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+    [chunk] = _planner_respond(_read_turn(messages, ()), datetime.date.today())
+    if isinstance(chunk, str):
+        return ModelResponse(parts=[TextPart(chunk)])
+    return ModelResponse(
+        parts=[ToolCallPart(delta.name or "", delta.json_args) for delta in chunk.values()]
+    )
+
+
+async def _planner_stream(messages: list[ModelMessage], info: AgentInfo) -> AsyncIterator[Any]:
+    turn = _read_turn(messages, ())
+    for chunk in _planner_respond(turn, datetime.date.today()):
+        yield chunk
+
+
+def _planner_respond(turn: Turn, today: datetime.date) -> list[Any]:
+    """One tool call for the day the task names, then the answer in a sentence.
+
+    The day resolves inside the week the board shows, as an imported file's
+    does: a person asking when Friday is free is looking at a grid with one
+    Friday in it.
+    """
+    weekday = _named_weekday(turn.prompt) or WEEKDAYS[today.weekday()]
+    if turn.round == 0:
+        return [_call("free_hours", {"day": _this_week(weekday, today)})]
+    answer = turn.last if isinstance(turn.last, dict) else {}
+    hours = answer.get("free") or []
+    label = f"{weekday.capitalize()} {answer.get('day', '')}".strip()
+    if not hours:
+        return [f"{label} is fully booked."]
+    return [f"{label} is free at " + _join([f"{hour}:00" for hour in hours]) + "."]
 
 
 # --- helpers ------------------------------------------------------------------

@@ -7,8 +7,8 @@
  * 2. The `--ag-ui-*` block below is this app's theming mechanism, and each app in
  *    the gallery uses a different one: custom properties here, `::part()` in Vue,
  *    host-supplied slots in Angular, and a translated string map in Svelte. All
- *    four reach the same shadow DOM from outside it, and only the first is a
- *    matter of colour.
+ *    four reach the same shadow DOM from outside it. The other three set a few
+ *    colour tokens too; this one sets the whole palette through them.
  */
 
 :root {
@@ -20,8 +20,10 @@
   --line: #dfe3ea;
   --accent: #3d5afe;
   --accent-soft: #e8ecff;
+  --on-accent: #ffffff;
   --danger: #b3261e;
   --radius: 10px;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Custom properties, the cheapest of the four mechanisms: the component
      declares every colour as `var(--ag-ui-x, fallback)`, so setting the outer
@@ -41,7 +43,20 @@
   --ag-ui-hover: var(--accent-soft);
   --ag-ui-msg-radius: var(--radius);
   --ag-ui-composer-radius: var(--radius);
-  --ag-ui-font: inherit;
+  /* Quiet sets a font stack of its own. `inherit` would not undo it: in a custom
+     property it inherits the property, which nothing above sets, so the
+     component falls back to its stack. The page's stack goes in by name. */
+  --ag-ui-font: var(--font-ui);
+  /* The component's Quiet theme draws the header, the launcher and the tool
+     names in the panel's own colours, so the accent above no longer reaches
+     them; these are its documented tokens for putting it back. The header's
+     buttons follow `--ag-ui-header-fg`, and their hover square is the
+     component's own. */
+  --ag-ui-header-bg: var(--accent);
+  --ag-ui-header-fg: var(--on-accent);
+  --ag-ui-launcher-bg: var(--accent);
+  --ag-ui-launcher-fg: var(--on-accent);
+  --ag-ui-tool-fg: var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,6 +68,8 @@
     --line: #2c313b;
     --accent: #8a9dff;
     --accent-soft: #232a45;
+    /* White on this accent is about 2.5:1. */
+    --on-accent: #14161b;
     --danger: #ff8a80;
   }
 }
@@ -63,7 +80,7 @@
 
 body {
   margin: 0;
-  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.5 var(--font-ui);
   color: var(--ink);
   background: var(--paper);
 }
