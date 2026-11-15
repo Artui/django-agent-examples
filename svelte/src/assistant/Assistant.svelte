@@ -14,7 +14,8 @@
    * remedy for configuration that lands late. It costs one extra round of catalog
    * fetches.
    */
-  import { type PageMap, type RouteMap, defineAgUiChat } from "@artooi/ag-ui-web-component";
+  import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+  import { defineChat } from "@artooi/agents-web-components/chat";
   import { authHeaders } from "../api";
   import { BOARD, CHAT } from "../i18n";
 
@@ -61,7 +62,7 @@
     if (host === undefined) {
       return;
     }
-    defineAgUiChat();
+    defineChat();
     const chat = document.createElement("ag-ui-chat") as ChatElement;
 
     // Read once, at connect: set before the element is inserted.

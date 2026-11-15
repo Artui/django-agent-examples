@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RouteMap } from "@artooi/ag-ui-web-component";
+  import type { RouteMap } from "@artooi/agents-web-components";
   import Assistant from "./assistant/Assistant.svelte";
   import AgendaView from "./board/AgendaView.svelte";
   import Backlog from "./board/Backlog.svelte";

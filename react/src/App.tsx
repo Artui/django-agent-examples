@@ -1,4 +1,4 @@
-import type { RouteMap } from "@artooi/ag-ui-web-component";
+import type { RouteMap } from "@artooi/agents-web-components";
 import { useMemo, useState } from "react";
 import {
   Navigate,

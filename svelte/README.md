@@ -24,7 +24,7 @@ goes out at that same moment and is deliberately not deferred. So
 let host: HTMLDivElement | undefined = $state();
 
 $effect(() => {
-  defineAgUiChat();
+  defineChat();
   const chat = document.createElement("ag-ui-chat") as ChatElement;
   chat.setAttribute("endpoint", "/agent/");
   chat.headers = authHeaders();

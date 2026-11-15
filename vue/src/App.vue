@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RouteMap } from "@artooi/ag-ui-web-component";
+import type { RouteMap } from "@artooi/agents-web-components";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Assistant from "./assistant/Assistant.vue";

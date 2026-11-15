@@ -3,7 +3,7 @@
 One demo app, built once per frontend framework, against one shared Django
 backend: a **scheduling board** the user can drag around and the agent can drive.
 The point is not the board. The point is that the same
-[`<ag-ui-chat>`](https://github.com/Artui/ag-ui-web-component) element, the same
+[`<ag-ui-chat>`](https://github.com/Artui/agents-web-components) element, the same
 AG-UI endpoint, and the same service specs work inside each framework's own
 idioms, and that you can watch an agent scroll, drag, navigate and read a real
 host page.
@@ -432,7 +432,7 @@ call those runs successful.
 
 Each app is expected to:
 
-- install the published `@artooi/ag-ui-web-component`, not a local build;
+- install the published `@artooi/agents-web-components`, not a local build;
 - proxy `/api` and `/agent` to `127.0.0.1:8000` from its own dev server, so the
   browser sees one origin and CORS stays out of the demo;
 - send the demo token in the `Authorization` header, both from its own API calls
