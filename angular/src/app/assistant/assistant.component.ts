@@ -22,7 +22,8 @@ import {
   ViewChild,
   input,
 } from "@angular/core";
-import { type PageMap, type RouteMap, defineAgUiChat } from "@artooi/ag-ui-web-component";
+import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+import { defineChat } from "@artooi/agents-web-components/chat";
 import { authHeaders } from "../api";
 
 /** This app's own marks, in place of the component's text glyphs. */
@@ -98,7 +99,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // `static: true` gives us the host div in ngOnInit, before the view is
     // rendered — which is where the element has to be configured.
-    defineAgUiChat();
+    defineChat();
     const chat = document.createElement("ag-ui-chat") as ChatElement;
 
     chat.setAttribute("endpoint", "/agent/");

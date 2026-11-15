@@ -1,6 +1,6 @@
 import { Component, computed, signal } from "@angular/core";
 import { Router } from "@angular/router";
-import type { RouteMap } from "@artooi/ag-ui-web-component";
+import type { RouteMap } from "@artooi/agents-web-components";
 import { AssistantComponent } from "./assistant/assistant.component";
 import { AgendaComponent } from "./board/agenda.component";
 import { BacklogComponent } from "./board/backlog.component";

@@ -28,7 +28,7 @@ insertion.)
 
 ```tsx
 useEffect(() => {
-  defineAgUiChat();
+  defineChat();
   const chat = document.createElement("ag-ui-chat") as ChatElement;
   chat.setAttribute("endpoint", "/agent/");
   chat.setAttribute("data-page-actions", "scroll,drag");
@@ -44,7 +44,7 @@ reassigned on every render (`latest.current = props`) is what bridges the two
 lifetimes. Recreating the element when the board changes would work and would also
 throw the conversation away on every keystroke.
 
-`defineAgUiChat()` is idempotent and is an explicit call rather than an import
+`defineChat()` is idempotent and is an explicit call rather than an import
 side effect, so calling it inside an effect is safe under Strict Mode's
 double-invoked effects.
 

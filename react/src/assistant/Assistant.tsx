@@ -13,7 +13,8 @@
  * that gap without recreating the element (which would discard the transcript).
  */
 
-import { type PageMap, type RouteMap, defineAgUiChat } from "@artooi/ag-ui-web-component";
+import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+import { defineChat } from "@artooi/agents-web-components/chat";
 import { useEffect, useRef } from "react";
 import { authHeaders } from "../api";
 
@@ -82,7 +83,7 @@ export function Assistant(props: AssistantProps) {
     // Registering the custom element is an explicit call, not an import side
     // effect, and it is idempotent — so calling it here is safe under Strict
     // Mode's double-invoked effects.
-    defineAgUiChat();
+    defineChat();
     const chat = document.createElement("ag-ui-chat") as ChatElement;
 
     // --- read once, at connect: set them before the element is inserted -----

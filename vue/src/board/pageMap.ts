@@ -10,7 +10,7 @@
  * stays at the call site and this file is identical in every app in the gallery.
  */
 
-import type { PageMap } from "@artooi/ag-ui-web-component";
+import type { PageMap } from "@artooi/agents-web-components";
 import type { EventRow } from "../api";
 import {
   HOURS,

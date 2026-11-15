@@ -16,7 +16,8 @@
  * element by hand and append it afterwards; both are the same idea.)
  */
 import { onBeforeUnmount, ref } from "vue";
-import { type PageMap, type RouteMap, defineAgUiChat } from "@artooi/ag-ui-web-component";
+import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+import { defineChat } from "@artooi/agents-web-components/chat";
 import { authHeaders } from "../api";
 
 const props = defineProps<{
@@ -57,7 +58,7 @@ const chat = ref<ChatElement | null>(null);
 
 // Registering the custom element is an explicit call, not an import side effect,
 // and it is idempotent.
-defineAgUiChat();
+defineChat();
 
 /** Everything the element must know before it connects. */
 const vConfigure = {

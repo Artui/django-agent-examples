@@ -23,7 +23,7 @@ deliberately not deferred. So `assistant.component.ts` creates the element itsel
 @ViewChild("host", { static: true }) private host!: ElementRef<HTMLDivElement>;
 
 ngOnInit(): void {
-  defineAgUiChat();
+  defineChat();
   const chat = document.createElement("ag-ui-chat") as ChatElement;
   chat.setAttribute("endpoint", "/agent/");
   chat.headers = authHeaders();
