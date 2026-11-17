@@ -14,10 +14,11 @@
    * remedy for configuration that lands late. It costs one extra round of catalog
    * fetches.
    */
-  import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+  import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
   import { defineChat } from "@artooi/agents-web-components/chat";
   import { authHeaders } from "../api";
   import { BOARD, CHAT } from "../i18n";
+  import { router } from "../router.svelte";
 
   let {
     getPageMap,
@@ -47,7 +48,8 @@
     routeMap: RouteMap;
     navigate: (path: string) => void;
     confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
-    strings: Record<string, string>;
+    strings: Partial<UiStrings>;
+    refreshPlace: () => void;
     registerPageState: (binding: {
       name: string;
       read: () => unknown;
@@ -57,6 +59,8 @@
   };
 
   let host: HTMLDivElement | undefined = $state();
+  // Plain, not `$state`: the effect below must not rebuild the element.
+  let element: ChatElement | undefined;
 
   $effect(() => {
     if (host === undefined) {
@@ -154,7 +158,18 @@
     });
 
     host.appendChild(chat);
-    return () => chat.remove();
+    element = chat;
+    return () => {
+      element = undefined;
+      chat.remove();
+    };
+  });
+
+  // The element re-reads the place on focus, popstate and before each run, not
+  // on `pushState`, so without this the place chip shows the last view until then.
+  $effect(() => {
+    void router.path;
+    element?.refreshPlace();
   });
 </script>
 

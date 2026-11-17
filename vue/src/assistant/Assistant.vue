@@ -15,8 +15,9 @@
  * element connects already knowing who it is. (React's answer is to create the
  * element by hand and append it afterwards; both are the same idea.)
  */
-import { onBeforeUnmount, ref } from "vue";
-import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+import { onBeforeUnmount, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
 import { defineChat } from "@artooi/agents-web-components/chat";
 import { authHeaders } from "../api";
 
@@ -45,7 +46,8 @@ type ChatElement = HTMLElement & {
   routeMap: RouteMap;
   navigate: (path: string) => void;
   confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
-  strings: Record<string, string>;
+  strings: Partial<UiStrings>;
+  refreshPlace: () => void;
   registerPageState: (binding: {
     name: string;
     read: () => unknown;
@@ -55,6 +57,14 @@ type ChatElement = HTMLElement & {
 };
 
 const chat = ref<ChatElement | null>(null);
+
+// The element re-reads the place on focus, popstate and before each run, not on
+// `pushState`, so without this the place chip shows the last view until then.
+const route = useRoute();
+watch(
+  () => route.path,
+  () => chat.value?.refreshPlace(),
+);
 
 // Registering the custom element is an explicit call, not an import side effect,
 // and it is idempotent.
