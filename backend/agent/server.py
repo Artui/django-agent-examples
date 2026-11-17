@@ -162,5 +162,9 @@ agent = AGUIServer(
             "move_event": "Move this event, saving straight away?",
             "reorder_event": "Reorder the backlog?",
         },
+        # `RUN_FINISHED` carries the run's token usage, which the React app's
+        # `show-usage` draws under each finished turn. Per endpoint like the rest:
+        # the MCP mount and the admin keep the default and send none.
+        include_usage=True,
     ),
 )

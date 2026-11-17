@@ -104,6 +104,11 @@ export function Assistant(props: AssistantProps) {
     chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
+    // A muted token-count line under each finished turn, from the usage the
+    // board mount puts on `RUN_FINISHED` (`include_usage=True` in
+    // `agent/server.py`). Only this app shows it, so the other three show the
+    // element without it.
+    chat.setAttribute("show-usage", "");
     // Opting in to the two built-in page actions. Without this the agent has no
     // way to scroll or drag: the host decides its own interaction surface.
     chat.setAttribute("data-page-actions", "scroll,drag");
