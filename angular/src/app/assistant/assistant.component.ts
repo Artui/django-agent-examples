@@ -20,9 +20,12 @@ import {
   OnDestroy,
   OnInit,
   ViewChild,
+  inject,
   input,
 } from "@angular/core";
-import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+import { NavigationEnd, Router } from "@angular/router";
+import { Subscription, filter } from "rxjs";
+import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
 import { defineChat } from "@artooi/agents-web-components/chat";
 import { authHeaders } from "../api";
 
@@ -63,7 +66,8 @@ type ChatElement = HTMLElement & {
   routeMap: RouteMap;
   navigate: (path: string) => void;
   confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
-  strings: Record<string, string>;
+  strings: Partial<UiStrings>;
+  refreshPlace: () => void;
   registerPageState: (binding: {
     name: string;
     read: () => unknown;
@@ -95,6 +99,11 @@ export class AssistantComponent implements OnInit, OnDestroy {
   @ViewChild("host", { static: true }) private host!: ElementRef<HTMLDivElement>;
 
   private chat: ChatElement | null = null;
+  // The element re-reads the place on focus, popstate and before each run, not
+  // on `pushState`, so without this the place chip shows the last view until then.
+  private readonly navigations: Subscription = inject(Router)
+    .events.pipe(filter((event) => event instanceof NavigationEnd))
+    .subscribe(() => this.chat?.refreshPlace());
 
   ngOnInit(): void {
     // `static: true` gives us the host div in ngOnInit, before the view is
@@ -202,6 +211,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.navigations.unsubscribe();
     this.chat?.remove();
   }
 }

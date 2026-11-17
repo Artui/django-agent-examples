@@ -19,6 +19,8 @@
  * seam into the shadow DOM, and that seam is one object either way.
  */
 
+import type { UiStrings } from "@artooi/agents-web-components";
+
 /** The board's own visible text. */
 export const BOARD = {
   title: "Terminplan",
@@ -37,7 +39,7 @@ export const BOARD = {
  * The component's own strings. Keys are `UiStrings`; anything omitted keeps the
  * English default.
  */
-export const CHAT: Record<string, string> = {
+export const CHAT: Partial<UiStrings> = {
   inputPlaceholder: "Frag mich etwas...",
   answerPlaceholder: "Antwort...",
   send: "Senden",
@@ -88,4 +90,26 @@ export const CHAT: Record<string, string> = {
   subAgentSteps: "Schritte des Unteragenten",
   connectionLost: "Verbindung verloren.",
   skillNeeds: "„{title}“ braucht {fields} — unten ausfüllen und senden.",
+  // The place chip in the composer, which every app gets from its `routeMap`.
+  placeShared: "Der Assistent erfährt, dass du auf {label} bist",
+  placeWithheld: "{label} wird mit deiner nächsten Nachricht nicht gesendet",
+  placeStopSharing: "Diese Seite nicht mehr teilen",
+  placeShareAgain: "Diese Seite wieder teilen",
+  // The conversation list's date headings.
+  threadsToday: "Heute",
+  threadsPreviousWeek: "Letzte 7 Tage",
+  threadsOlder: "Älter",
+  // Only drawn by a placement that can maximise; this app is `embedded`.
+  maximize: "Maximieren",
+  restore: "Wiederherstellen",
+  thoughtFor: "{seconds} s nachgedacht",
+  // A failed run, by the code django-ag-ui sends.
+  runErrorTimedOut: "Die Antwort hat zu lange gedauert und wurde abgebrochen.",
+  runErrorInterrupted: "Die Antwort wurde unterbrochen, bevor sie fertig war.",
+  runErrorFailed: "Die Antwort ist fehlgeschlagen. Versuch es gleich noch einmal.",
+  runErrorNewChat: "Neues Gespräch beginnen",
+  // The token line under a turn, drawn only where `show-usage` is set.
+  usageBoth: "{input} ein · {output} aus (Tokens)",
+  usageInput: "{input} ein (Tokens)",
+  usageOutput: "{output} aus (Tokens)",
 };

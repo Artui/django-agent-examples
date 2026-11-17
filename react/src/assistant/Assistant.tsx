@@ -13,9 +13,10 @@
  * that gap without recreating the element (which would discard the transcript).
  */
 
-import type { PageMap, RouteMap } from "@artooi/agents-web-components";
+import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
 import { defineChat } from "@artooi/agents-web-components/chat";
 import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { authHeaders } from "../api";
 
 export interface AssistantProps {
@@ -55,7 +56,8 @@ type ChatElement = HTMLElement & {
   routeMap: RouteMap;
   navigate: (path: string) => void;
   confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
-  strings: Record<string, string>;
+  strings: Partial<UiStrings>;
+  refreshPlace: () => void;
   registerPageState: (binding: {
     name: string;
     read: () => unknown;
@@ -78,6 +80,14 @@ export function Assistant(props: AssistantProps) {
       element.current.sharedState = { ...element.current.sharedState, note: props.note };
     }
   }, [props.note]);
+
+  // The element re-reads the place on focus, popstate and before each run, not
+  // on `pushState`, so the place chip would show the last view until then. The
+  // first render has no element yet; it reads the place itself at connect.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    element.current?.refreshPlace();
+  }, [pathname]);
 
   useEffect(() => {
     // Registering the custom element is an explicit call, not an import side
