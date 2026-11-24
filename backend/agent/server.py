@@ -8,7 +8,12 @@ hook that establishes who is acting.
 from __future__ import annotations
 
 from django_ag_ui import AGUIServer, SkillRegistry, build_ag_ui_config
-from django_spec_agents import ScopedConversationStore, ToolGuardConfig
+from django_spec_agents import (
+    ApprovalReviewerConfig,
+    ReviewedApprovals,
+    ScopedConversationStore,
+    ToolGuardConfig,
+)
 from django_spec_agents.contrib.store.default_attachment_store import (
     DefaultAttachmentStore,
 )
@@ -20,7 +25,7 @@ from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLog
 
 from agent.auth import token_user
 from agent.delegation import delegation
-from agent.model import build_demo_model
+from agent.model import build_demo_model, build_reviewer_model
 from agent.tools import registry as tool_registry
 from agent.transcribe import ScriptedTranscriptionBackend
 from board.specs import registry as spec_registry
@@ -66,7 +71,34 @@ agent = AGUIServer(
     service_specs=spec_registry,
     # A sub-agent, the planner, which this agent can hand a question to. The
     # wrapper is what makes the hand-off visible: see `agent/delegation.py`.
-    capabilities=[delegation()],
+    #
+    # And a second model that may answer an approval card in the person's place.
+    # The guard below still defers every gated write; the reviewer is asked one
+    # yes/no question about each call it is named for, and a `no` runs the call
+    # in the same run, marked `reviewer:<model>` on its result, which the tool
+    # card draws as "approved by a reviewer model". A `yes`, an `unsure` or a
+    # failed review leaves the card up exactly as before. It never denies.
+    #
+    # It is named for `create_event` only, and its question separates the two
+    # kinds of booking: a card in the backlog takes nothing from anyone and is
+    # one drag from gone, so the reviewer clears it, while a booking on the week
+    # takes a slot and still waits for the person. Moves and reorders are not
+    # named, so they always ask. The mount takes it as a capability because the
+    # transport does not forward `approval_reviewer` into the agent config, and
+    # the capability orders itself before the handler that raises the card.
+    capabilities=[
+        delegation(),
+        ReviewedApprovals(
+            ApprovalReviewerConfig(
+                model=build_reviewer_model(),
+                question=(
+                    "Does this booking take a time slot on the week, rather than only "
+                    "adding a card to the backlog?"
+                ),
+                tools=["create_event"],
+            )
+        ),
+    ],
     skills=skills,
     # Scoped, because the admin mount keeps its conversations in the same table
     # for the same person: unscoped, each drawer listed the other's threads, and

@@ -137,8 +137,9 @@ async def test_reusing_the_source_run_id_is_refused_in_the_stream(caplog) -> Non
     """The documented hazard, checked instead of trusted — and it is guarded.
 
     The ledger is keyed on `(run_id, tool_call_id)`, so continuing a run under its
-    own id would write a second history into the first run's rows. It does not: the
-    harness refuses, by name, and the source's records are untouched. Worth knowing
+    own id would write a second history into the first run's rows. It does not:
+    pydantic-ai refuses the reused id by name, before the harness's own store guard
+    is reached, and the source's records are untouched. Worth knowing
     the guard exists, because the warning to send a fresh id reads like the only
     thing standing between you and a corrupted ledger.
 
@@ -178,7 +179,8 @@ async def test_reusing_the_source_run_id_is_refused_in_the_stream(caplog) -> Non
     # detail passes the assertion above and leaves the refusal reaching nobody,
     # which is exactly what the default null audit logger does.
     assert any(
-        "already in the store" in record.getMessage() for record in caplog.records
+        "already appears in `message_history`" in record.getMessage()
+        for record in caplog.records
     ), "the refusal names the guard in the audit record"
 
 

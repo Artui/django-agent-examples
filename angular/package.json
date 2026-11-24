@@ -13,7 +13,7 @@
     "@angular/core": "^22.2.4",
     "@angular/platform-browser": "^22.2.4",
     "@angular/router": "^22.2.4",
-    "@artooi/agents-web-components": ">=0.2.1 <1.0.0",
+    "@artooi/agents-web-components": ">=0.14.0 <1.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.9.1"
   },

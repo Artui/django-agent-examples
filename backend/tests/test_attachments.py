@@ -90,8 +90,12 @@ async def test_an_id_the_client_made_up_reads_nothing() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-async def test_importing_defers_one_call_per_row_and_writes_nothing_yet() -> None:
-    """Three rows, three gated calls, one run — and three cards to answer."""
+async def test_importing_defers_the_dated_rows_and_the_reviewer_clears_the_backlog_row() -> None:
+    """Three rows, three gated calls, one run — and two cards to answer.
+
+    The row with no slot only adds a card to the backlog, which the reviewer
+    clears in the same run; the two that take a slot on the week wait.
+    """
     await _seed()
     ref = await upload(WEEK_CSV, name="week.csv", mime="text/csv")
 
@@ -104,11 +108,12 @@ async def test_importing_defers_one_call_per_row_and_writes_nothing_yet() -> Non
         "create_event",
     ], "reading is not gated, so it ran; the writes did not"
     pending = interrupts(events)
-    assert len(pending) == 3
+    assert len(pending) == 2
     assert [interrupt["metadata"]["x-confirm"] for interrupt in pending] == [
         "Add this event to the board?"
-    ] * 3, "each card asks in words rather than spelling out the call"
-    assert not await Event.objects.filter(title__in=_CSV_TITLES).aexists()
+    ] * 2, "each card asks in words rather than spelling out the call"
+    assert not await Event.objects.filter(title__in=_CSV_TITLES[:2]).aexists()
+    assert await Event.objects.filter(title="Refresh the status page", day=None).aexists()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -158,7 +163,7 @@ async def test_answering_the_cards_differently_imports_only_what_was_approved() 
 
 
 @pytest.mark.django_db(transaction=True)
-async def test_refusing_every_card_leaves_the_board_alone() -> None:
+async def test_refusing_every_card_leaves_only_what_the_reviewer_cleared() -> None:
     await _seed()
     ref = await upload(WEEK_CSV, name="week.csv", mime="text/csv")
     messages = [user_message("import these events", [ref])]
@@ -166,8 +171,11 @@ async def test_refusing_every_card_leaves_the_board_alone() -> None:
 
     settled = await run(*messages, *transcript(deferred), resume=deny(deferred))
 
-    assert not await Event.objects.filter(title__in=_CSV_TITLES).aexists()
-    assert "nothing from week.csv" in text(settled).lower()
+    assert not await Event.objects.filter(title__in=_CSV_TITLES[:2]).aexists()
+    assert await Event.objects.filter(title="Refresh the status page").aexists()
+    answer = text(settled)
+    assert "Added Refresh the status page from week.csv" in answer
+    assert "turned down 2" in answer
 
 
 @pytest.mark.django_db(transaction=True)
