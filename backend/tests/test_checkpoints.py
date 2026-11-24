@@ -143,6 +143,7 @@ async def test_reusing_the_source_run_id_is_refused_at_the_claim() -> None:
     )
 
     assert response.status_code == 409
+    assert json.loads(response.content)["error"] == "that run id was used before"
     rows = await _runs()
     assert [row["run_id"] for row in rows] == [source], "nothing new was recorded"
     assert rows[0]["continuable"] is True, "and the source can still be continued"

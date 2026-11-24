@@ -194,8 +194,8 @@ agent = AGUIServer(
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.
     get_user=token_user,
-    # Stated, because the skill editor alone reads an unstated value as `False`; every
-    # other endpoint here already resolved `None` to `True`, so only the editor changes.
+    # Stated, because the skill and routines editors read an unstated value as `False`;
+    # every other endpoint already resolved `None` to `True`.
     csrf_exempt=True,
     # The server-side half of confirmation, and it is a different mechanism from
     # the one the apps already show. `confirmPredicate` gates a *page action* in

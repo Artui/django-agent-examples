@@ -117,16 +117,16 @@ export class AssistantComponent implements OnInit, OnDestroy {
 
     chat.setAttribute("endpoint", BASE);
     chat.setAttribute("data-tools-url", `${BASE}tools/`);
-    chat.setAttribute("data-skills-url", `${BASE}skills/`);
-    // The skill editor lives on the board mount only: the MCP mount stores no skills.
+    // Skills, attachments and transcription live on the board mount only: the MCP mount has none.
     if (BASE === "/agent/") {
+      chat.setAttribute("data-skills-url", `${BASE}skills/`);
+      chat.setAttribute("data-attachments-url", `${BASE}attachments/`);
+      chat.setAttribute("data-transcribe-url", `${BASE}transcribe/`);
       chat.setAttribute("data-skill-editor-url", "/agent/skills/editor/");
       chat.setAttribute("data-skill-editor-button", "");
     }
     chat.setAttribute("data-threads-url", `${BASE}threads/`);
-    chat.setAttribute("data-attachments-url", `${BASE}attachments/`);
     chat.setAttribute("data-runs-url", `${BASE}runs/`);
-    chat.setAttribute("data-transcribe-url", `${BASE}transcribe/`);
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     chat.setAttribute("data-page-actions", "scroll,drag");

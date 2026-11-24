@@ -208,16 +208,6 @@ def _skill_script(
     if listed and not tried and "load_capability" in available:
         return [_call("load_capability", {"id": name})]
     return None
-    name = pick.group(1)
-    loaded = re.search(
-        rf"^# Skill: {re.escape(name)}\n\n(.*?)(?=\n# |\Z)", instructions, re.DOTALL | re.M
-    )
-    if loaded is not None:
-        return [f"Using your skill /{name}. It says:\n\n{loaded.group(1).strip()}"]
-    listed = re.search(rf"^- {re.escape(name)}:", instructions, re.M) is not None
-    if turn.round == 0 and listed and "load_capability" in available:
-        return [_call("load_capability", {"id": name})]
-    return None
 
 
 def _respond(turn: Turn, available: set[str]) -> list[Any]:

@@ -239,7 +239,7 @@ make routines   # run_due_routines and sweep_spec_runs, once a minute
 In a deployment, the second is a cron line or a systemd timer, not a shell loop:
 
 ```cron
-* * * * * cd backend && uv run python manage.py run_due_routines && uv run python manage.py sweep_spec_runs
+* * * * * cd /path/to/backend; uv run python manage.py run_due_routines; uv run python manage.py sweep_spec_runs
 ```
 
 SQLite ignores the row lock `run_due_routines` takes, so run one sweep at a time here;
