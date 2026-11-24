@@ -61,6 +61,7 @@ async def test_the_board_agent_starts_a_child_session_on_the_mcp_agent() -> None
     await _seed()
 
     events = await run(user_message(ASK), thread="t-parent")
+    await _settled(AsyncClient(), "t-parent")
 
     receipt = _receipt(events)
     assert receipt["agent_id"] == "mcp"

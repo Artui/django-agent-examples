@@ -68,7 +68,8 @@ HELP = (
     "- *note: ship the gallery this week* (the shared week note, which the React app"
     " is the one that draws)\n"
     "- attach `samples/week.csv` and say *import these events*\n"
-    "- *ask the planner when Friday is free* (a sub-agent answers it)"
+    "- *ask the planner when Friday is free* (a sub-agent answers it)\n"
+    "- *ask the MCP agent what is on the board* (a child session on another agent)"
 )
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -223,7 +224,6 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     """The whole script: one utterance plus a round number in, one response out."""
     text = turn.prompt.lower()
 
-    # A child session's report, woken into this thread: answer from it, whatever it says.
     if text.startswith("<task_output"):
         return _report_script(turn)
 
@@ -234,7 +234,6 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if "open_changelist" in available:
         return _admin_respond(turn, available, text)
 
-    # Before the planner and every verb below, for the same reason as the planner.
     if _MCP_AGENT.search(text):
         return _child_session_script(turn, available)
     # Before every verb below: "ask the planner to find a free hour" holds
@@ -991,8 +990,8 @@ def _child_session_script(turn: Turn, available: set[str]) -> list[Any]:
     if thread is None:
         return [f"The MCP agent could not take that: {getattr(receipt, 'reason', receipt)}"]
     return [
-        "I have asked the MCP agent in a thread of its own. Its answer lands here when it "
-        "reports; open its thread from the card to watch it work."
+        "I have asked the MCP agent in a thread of its own; open it from the card to watch. "
+        "When it reports I answer here, which shows once this thread is opened again."
     ]
 
 
