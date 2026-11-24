@@ -277,7 +277,16 @@ dependencies = [
     # that fixes three advisories on the AG-UI adapter path every run here takes
     # (GHSA-r879-rxgj-3g75, GHSA-4cj4-hgwf-4hc4, GHSA-7494-925c-rrxv). The
     # floor on pydantic-ai-slim below moves with it.
-    "django-ag-ui[specs,harness,mcp]>=0.79.0",
+    #
+    # Raised to the transport that runs a turn under its AG-UI `run_id` as
+    # pydantic-ai's own, and the gallery now depends on that in two places. A
+    # resume that reuses the source run's id is refused by pydantic-ai before the
+    # harness store sees it, and `test_checkpoints.py` reads that refusal by name.
+    # Below this floor the store's guard refuses the same id instead, which is the
+    # same outcome in other words. The board mount's approval reviewer needs the
+    # `answered_by` mark this transport stamps on a reviewer-cleared result, which
+    # is what the tool card draws. `test_approval.py` reads the mark off the wire.
+    "django-ag-ui[specs,harness,mcp]>=0.86.0",
     # Declared because `agent/delegation.py` imports `SubAgent` and `SubAgents`
     # from it directly: the planner sub-agent both agent mounts delegate to is a
     # pydantic-ai-harness capability, which django-ag-ui's `SubAgentObserver`
@@ -396,7 +405,11 @@ dependencies = [
     # seed. No board spec is `many=True`, so those two halves pass over. The
     # refusal is the half `/mcp-agent/` shows, and `test_mcp_bridge.py` holds it,
     # as the transport note above says.
-    "django-spec-agents>=0.6.2",
+    #
+    # Raised with the transport, which requires it, and the gallery now imports
+    # from it directly: `ReviewedApprovals` and `ApprovalReviewerConfig`, the
+    # approval reviewer the board mount composes in `agent/server.py`.
+    "django-spec-agents>=0.25.0",
     # The spec kernel, declared because both spec sets are written in it:
     # `board/specs.py` with DRF in its seats, and `agent/mcp_server.py` with the
     # kernel's own validator, presenters and permission checks, over the same
@@ -404,12 +417,12 @@ dependencies = [
     # arrives under every family package here as well, which is rule 1's case.
     #
     # The floor is the highest any package here requires of it, which is
-    # django-spec-rest's; lower would be a floor no resolve reaches. The whole suite
-    # passes on it, and that is the claim worth checking here: the floor job pins
-    # every declared dependency at its floor, so declaring the kernel moves that
-    # job's kernel from the newest release to this one for every test, the
-    # board's included.
-    "django-service-specs>=0.24.0",
+    # django-spec-agents' [specs] extra at its floor; lower would be a floor no
+    # resolve reaches. The whole suite passes on it, and that is the claim worth
+    # checking here: the floor job pins every declared dependency at its floor,
+    # so declaring the kernel moves that job's kernel from the newest release to
+    # this one for every test, the board's included.
+    "django-service-specs>=0.34.2",
     # The MCP server `/mcp-agent/` bridges, declared because
     # `agent/mcp_server.py` builds one; the transport's [mcp] extra pulls it too.
     # The floor is the release that extra's bridge requires. `test_mcp_bridge.py`
@@ -418,7 +431,7 @@ dependencies = [
     # past the filter (`always_listed`), the `-32006` the bridge turns into an
     # ended run, and the page envelope a read arrives in are all there at the
     # floor.
-    "django-spec-mcp>=0.2.0",
+    "django-spec-mcp>=0.14.0",
     # The admin surface: the same board through django.contrib.admin, with the
     # agent in the admin sidebar and the vendored web-component bundle.
     #
@@ -621,7 +634,13 @@ dependencies = [
     #     with it: a transcript pinned to its foot now comes to rest under the
     #     last answer's Retry and Copy row rather than one row short. No setting
     #     changed and neither route owes any host wiring.
-    "django-admin-agent>=0.62.0",
+    #   - A release that re-vendored, so the frontends' ranges moved with it,
+    #     and the first adoption of the component since the frontends' own
+    #     floor, which had stayed at the bundle the gallery started on. The
+    #     sidebar gains the header's More menu and the reworded run-failure
+    #     sentence; its skill editor, MCP Apps proxy and routine model are
+    #     opt-ins this project leaves unset, so the surface owes no host wiring.
+    "django-admin-agent>=0.63.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives

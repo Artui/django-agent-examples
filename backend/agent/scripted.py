@@ -956,6 +956,47 @@ def _planner_respond(turn: Turn, today: datetime.date) -> list[Any]:
     return [f"{label} is free at " + _join([f"{hour}:00" for hour in hours]) + "."]
 
 
+def build_scripted_reviewer() -> FunctionModel:
+    """The approval reviewer's stand-in, which answers the question `agent/server.py` asks.
+
+    The reviewer is a second model asked one yes/no question about a gated call, where
+    `no` runs the call without the person and `yes` leaves the approval card up. This
+    one reads the call it was shown and says `yes` when a booking takes a slot on the
+    week, and `no` when it only adds a card to the backlog, which is what the question
+    asks. It never sees the person's words as instructions, and neither should a real
+    reviewer: the harness frames the call as data.
+    """
+    return FunctionModel(function=_reviewer_function, model_name="scripted-reviewer")
+
+
+def _reviewer_function(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+    answer = "yes" if _books_a_slot(_flatten_prompt(messages)) else "no"
+    if not info.output_tools:
+        return ModelResponse(parts=[TextPart(answer)])
+    output = info.output_tools[0]
+    [key] = output.parameters_json_schema.get("properties", {"response": None})
+    return ModelResponse(parts=[ToolCallPart(output.name, {key: answer})])
+
+
+def _books_a_slot(prompt: str) -> bool:
+    """Whether the `<tool_call>` the reviewer was shown puts an event on the week."""
+    block = re.search(r"<tool_call>\s*(\{.*\})\s*</tool_call>", prompt, re.DOTALL)
+    if block is None:
+        return True
+    call = json.loads(block.group(1))
+    return (call.get("arguments") or {}).get("day") is not None
+
+
+def _flatten_prompt(messages: list[ModelMessage]) -> str:
+    return "\n".join(
+        part.content
+        for message in messages
+        if isinstance(message, ModelRequest)
+        for part in message.parts
+        if isinstance(part, UserPromptPart) and isinstance(part.content, str)
+    )
+
+
 # --- helpers ------------------------------------------------------------------
 
 

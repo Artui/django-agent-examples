@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from agent.scripted import build_scripted_model, build_scripted_planner
+from agent.scripted import build_scripted_model, build_scripted_planner, build_scripted_reviewer
 
 
 def build_demo_model() -> Any:
@@ -34,6 +34,12 @@ def build_planner_model() -> Any:
     """
     configured = os.environ.get("DEMO_MODEL", "").strip()
     return configured or build_scripted_planner()
+
+
+def build_reviewer_model() -> Any:
+    """The approval reviewer's model: the same choice, its own script, as the planner's."""
+    configured = os.environ.get("DEMO_MODEL", "").strip()
+    return configured or build_scripted_reviewer()
 
 
 def is_offline() -> bool:

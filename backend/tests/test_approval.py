@@ -37,10 +37,14 @@ from tests.wire import (
 
 @pytest.mark.django_db(transaction=True)
 async def test_a_gated_write_defers_instead_of_running() -> None:
-    """The run finishes on an interrupt, and the row is not there yet."""
+    """The run finishes on an interrupt, and the row is not there yet.
+
+    A booking on the week, because the reviewer clears one that only adds a card
+    to the backlog: see the two reviewer tests below.
+    """
     await _seed()
 
-    events = await run(user_message("add a design sync to the backlog"))
+    events = await run(user_message("book a design sync on 2026-08-14 at 14:00"))
 
     assert tool_calls(events) == ["create_event"], "the model still calls the tool"
     pending = interrupts(events)
@@ -55,14 +59,14 @@ async def test_a_gated_write_defers_instead_of_running() -> None:
 async def test_approving_the_interrupt_runs_the_tool_and_the_agent_reports_it() -> None:
     """The resumed run executes the write and hands the result back to the model."""
     await _seed()
-    messages = [user_message("add a design sync to the backlog")]
+    messages = [user_message("book a design sync on 2026-08-14 at 14:00")]
     deferred = await run(*messages)
 
     resumed = await run(*messages, *transcript(deferred), resume=approve(deferred))
 
     event = await Event.objects.aget(title="Design sync")
-    assert event.day is None, "no day and hour means the backlog, which is the service's rule"
-    assert "backlog" in text(resumed).lower()
+    assert (str(event.day), event.start_hour) == ("2026-08-14", 14)
+    assert "booked design sync" in text(resumed).lower()
     assert interrupts(resumed) == [], "the resumed run finishes normally"
 
 
@@ -70,7 +74,7 @@ async def test_approving_the_interrupt_runs_the_tool_and_the_agent_reports_it() 
 async def test_denying_the_interrupt_writes_nothing_and_the_agent_says_so() -> None:
     """A denial arrives as a tool return, so the model reads it like any result."""
     await _seed()
-    messages = [user_message("add a design sync to the backlog")]
+    messages = [user_message("book a design sync on 2026-08-14 at 14:00")]
     deferred = await run(*messages)
 
     settled = await run(*messages, *transcript(deferred), resume=deny(deferred))
@@ -122,6 +126,41 @@ async def test_a_weekday_booking_lands_on_that_weekday() -> None:
     event = await Event.objects.aget(title="Design sync")
     assert event.day is not None
     assert event.day.weekday() == 4, "Friday"
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_the_reviewer_clears_a_backlog_booking_without_asking() -> None:
+    """A second model answered the card, and the result says which one did.
+
+    The guard deferred the call as it always does; the reviewer was asked whether
+    the booking takes a slot on the week, said no, and the call ran in the same
+    run. The mark on the result is what the tool card draws.
+    """
+    await _seed()
+
+    events = await run(user_message("add a design sync to the backlog"))
+
+    assert tool_calls(events) == ["create_event"]
+    assert interrupts(events) == [], "no card: the reviewer answered it"
+    event = await Event.objects.aget(title="Design sync")
+    assert event.day is None, "no day and hour means the backlog, which is the service's rule"
+    assert "backlog" in text(events).lower()
+    [result] = [event for event in events if event["type"] == "TOOL_CALL_RESULT"]
+    assert result["metadata"]["answered_by"].startswith("reviewer:"), (
+        "marked as the reviewer's answer, not the person's"
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_the_reviewer_leaves_a_booking_on_the_week_to_the_person() -> None:
+    """Its `yes` is not a refusal: the card is up and nothing has run."""
+    await _seed()
+
+    events = await run(user_message("book a design sync on Friday at 14:00"))
+
+    assert len(interrupts(events)) == 1
+    assert [event for event in events if event["type"] == "TOOL_CALL_RESULT"] == []
+    assert not await Event.objects.filter(title="Design sync").aexists()
 
 
 async def _seed() -> None:
