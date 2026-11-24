@@ -100,6 +100,10 @@ export function Assistant(props: AssistantProps) {
     chat.setAttribute("endpoint", "/agent/");
     chat.setAttribute("data-tools-url", "/agent/tools/");
     chat.setAttribute("data-skills-url", "/agent/skills/");
+    // The skill editor: a Skills button in the header and Manage skills at the foot of
+    // the / palette. What a caller may write is the server's policy, not the page's.
+    chat.setAttribute("data-skill-editor-url", "/agent/skills/editor/");
+    chat.setAttribute("data-skill-editor-button", "");
     chat.setAttribute("data-threads-url", "/agent/threads/");
     // The clip in the composer. Without this attribute the endpoint is still
     // mounted and the button is not built at all, so uploads are opt-in per host

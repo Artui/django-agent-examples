@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django_spec_agents.skills import AbstractSkill, SkillPolicy
 
 
 class Event(models.Model):
@@ -42,3 +43,54 @@ class Event(models.Model):
     @property
     def scheduled(self) -> bool:
         return self.day is not None and self.start_hour is not None
+
+
+class Organisation(models.Model):
+    """The tenant a skill is shared in: the smallest one that makes "company skill" honest."""
+
+    name = models.CharField(max_length=120)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Membership(models.Model):
+    """A user's one organisation and whether they administer it, which decides company writes."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, related_name="membership", on_delete=models.CASCADE
+    )
+    organisation = models.ForeignKey(
+        Organisation, related_name="memberships", on_delete=models.CASCADE
+    )
+    is_admin = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        role = "admin" if self.is_admin else "member"
+        return f"{self.user} ({role} of {self.organisation})"
+
+
+class Skill(AbstractSkill):
+    """A stored skill in one organisation: personal with an `owner`, the company's without one."""
+
+    organisation = models.ForeignKey(Organisation, related_name="skills", on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        related_name="skills",
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        ordering = ("organisation", "name", "pk")
+
+    def __str__(self) -> str:
+        scope = "company" if self.owner_id is None else f"personal to {self.owner}"
+        return f"/{self.name} ({scope})"
+
+    @classmethod
+    def skill_policy(cls) -> SkillPolicy[Skill] | None:
+        from board.skill_policy import OrganisationSkillPolicy
+
+        return OrganisationSkillPolicy()

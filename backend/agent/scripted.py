@@ -167,8 +167,54 @@ async def _stream(messages: list[ModelMessage], info: AgentInfo) -> AsyncIterato
             await sleep(SLOW_PACE)
             yield f"{word} "
         return
-    for chunk in _respond(turn, available):
+    picked = _skill_script(messages, available, info.instructions or "")
+    for chunk in picked if picked is not None else _respond(turn, available):
         yield chunk
+
+
+def _skill_script(
+    messages: Sequence[ModelMessage], available: set[str], instructions: str
+) -> list[Any] | None:
+    """A `/name` stored-skill pick: load it if offered, then answer from its `# Skill:` body."""
+    texts = [
+        part.content if isinstance(part.content, str) else _flatten(part.content)
+        for message in messages
+        if isinstance(message, ModelRequest)
+        for part in message.parts
+        if isinstance(part, UserPromptPart)
+    ]
+    said = [index for index, text in enumerate(texts) if not text.startswith("<system>")]
+    if not said:
+        return None
+    pick = re.match(r"/([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s|$)", texts[said[-1]].strip())
+    if pick is None:
+        return None
+    name = pick.group(1)
+    context = "\n".join([instructions, *texts[said[-1] + 1 :]])
+    loaded = re.search(
+        rf"^# Skill: {re.escape(name)}\n\n(.*?)(?=\n# |\n</|\Z)", context, re.S | re.M
+    )
+    if loaded is not None:
+        return [f"Using your skill /{name}. It says:\n\n{loaded.group(1).strip()}"]
+    listed = re.search(rf"^- {re.escape(name)}:", instructions, re.M) is not None
+    tried = any(
+        isinstance(part, ToolReturnPart) and part.tool_name == "load_capability"
+        for message in messages[-1:]
+        for part in message.parts
+    )
+    if listed and not tried and "load_capability" in available:
+        return [_call("load_capability", {"id": name})]
+    return None
+    name = pick.group(1)
+    loaded = re.search(
+        rf"^# Skill: {re.escape(name)}\n\n(.*?)(?=\n# |\Z)", instructions, re.DOTALL | re.M
+    )
+    if loaded is not None:
+        return [f"Using your skill /{name}. It says:\n\n{loaded.group(1).strip()}"]
+    listed = re.search(rf"^- {re.escape(name)}:", instructions, re.M) is not None
+    if turn.round == 0 and listed and "load_capability" in available:
+        return [_call("load_capability", {"id": name})]
+    return None
 
 
 def _respond(turn: Turn, available: set[str]) -> list[Any]:

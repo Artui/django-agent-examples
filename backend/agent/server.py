@@ -29,6 +29,7 @@ from agent.delegation import delegation
 from agent.model import build_demo_model, build_reviewer_model
 from agent.tools import registry as tool_registry
 from agent.transcribe import ScriptedTranscriptionBackend
+from board.models import Skill
 from board.specs import registry as spec_registry
 
 INSTRUCTIONS = """
@@ -107,6 +108,12 @@ agent = AGUIServer(
         ),
     ],
     skills=skills,
+    # Stored skills: the catalog adds each caller's, every run is offered them, the agent
+    # gets the authoring tools, and `skills/editor/` lets the page write them. Who may
+    # write where is `board/skill_policy.py`; the mount reserves the registry's names.
+    skill_policy=Skill.skill_policy(),
+    skill_editor=True,
+    skill_authoring=True,
     # Scoped, because the admin mount keeps its conversations in the same table
     # for the same person: unscoped, each drawer listed the other's threads, and
     # opening one continued it under the wrong agent. See `admin_server.py`.
@@ -176,6 +183,9 @@ agent = AGUIServer(
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.
     get_user=token_user,
+    # Stated, because the skill editor alone reads an unstated value as `False`; every
+    # other endpoint here already resolved `None` to `True`, so only the editor changes.
+    csrf_exempt=True,
     # The server-side half of confirmation, and it is a different mechanism from
     # the one the apps already show. `confirmPredicate` gates a *page action* in
     # the browser: the element asks before it dispatches, and the server never

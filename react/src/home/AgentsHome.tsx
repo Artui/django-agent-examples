@@ -62,6 +62,8 @@ export function AgentsHome({ onBoard }: { onBoard: () => void }) {
     chat.setAttribute("title-text", "Agents home");
     // Runs outlive this page, so a thread left mid-answer is joined again when opened.
     chat.setAttribute("data-detach-runs", "");
+    // A Skills button, for the agent in front whose directory entry names a skill editor.
+    chat.setAttribute("data-skill-editor-button", "");
     chat.headers = authHeaders();
     // The MCP agent's views are read through its own mount, whichever agent is in front.
     registerMcpApps(chat as unknown as Parameters<typeof registerMcpApps>[0], {

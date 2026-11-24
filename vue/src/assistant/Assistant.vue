@@ -160,6 +160,8 @@ onBeforeUnmount(() => {
       :endpoint="BASE"
       :data-tools-url="`${BASE}tools/`"
       :data-skills-url="`${BASE}skills/`"
+      :data-skill-editor-url="BASE === '/agent/' ? '/agent/skills/editor/' : undefined"
+      :data-skill-editor-button="BASE === '/agent/' ? '' : undefined"
       :data-threads-url="`${BASE}threads/`"
       :data-attachments-url="`${BASE}attachments/`"
       :data-runs-url="`${BASE}runs/`"
