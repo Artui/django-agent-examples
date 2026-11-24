@@ -16,7 +16,7 @@ class Router {
       this.path = window.location.pathname;
     });
     if (window.location.pathname === "/") {
-      window.history.replaceState({}, "", "/week");
+      window.history.replaceState({}, "", `/week${window.location.search}`);
     }
   }
 

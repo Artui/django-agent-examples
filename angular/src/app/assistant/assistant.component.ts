@@ -27,7 +27,11 @@ import { NavigationEnd, Router } from "@angular/router";
 import { Subscription, filter } from "rxjs";
 import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
 import { defineChat } from "@artooi/agents-web-components/chat";
+import { registerMcpApps, type McpAppsHost } from "@artooi/agents-web-components/mcp-apps";
 import { authHeaders } from "../api";
+
+// The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
+const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
 
 /** This app's own marks, in place of the component's text glyphs. */
 const HISTORY_PATH = "M4 6h16M4 12h16M4 18h10";
@@ -111,13 +115,18 @@ export class AssistantComponent implements OnInit, OnDestroy {
     defineChat();
     const chat = document.createElement("ag-ui-chat") as ChatElement;
 
-    chat.setAttribute("endpoint", "/agent/");
-    chat.setAttribute("data-tools-url", "/agent/tools/");
-    chat.setAttribute("data-skills-url", "/agent/skills/");
-    chat.setAttribute("data-threads-url", "/agent/threads/");
-    chat.setAttribute("data-attachments-url", "/agent/attachments/");
-    chat.setAttribute("data-runs-url", "/agent/runs/");
-    chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
+    chat.setAttribute("endpoint", BASE);
+    chat.setAttribute("data-tools-url", `${BASE}tools/`);
+    // Skills, attachments and transcription live on the board mount only: the MCP mount has none.
+    if (BASE === "/agent/") {
+      chat.setAttribute("data-skills-url", `${BASE}skills/`);
+      chat.setAttribute("data-attachments-url", `${BASE}attachments/`);
+      chat.setAttribute("data-transcribe-url", `${BASE}transcribe/`);
+      chat.setAttribute("data-skill-editor-url", "/agent/skills/editor/");
+      chat.setAttribute("data-skill-editor-button", "");
+    }
+    chat.setAttribute("data-threads-url", `${BASE}threads/`);
+    chat.setAttribute("data-runs-url", `${BASE}runs/`);
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     chat.setAttribute("data-page-actions", "scroll,drag");
@@ -129,6 +138,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
     // the component renders the card, the answer returns as the tool result.
     chat.askUser = true;
     chat.headers = authHeaders();
+    registerMcpApps(chat as unknown as McpAppsHost, { url: `${BASE}mcp-apps/` });
 
     // This app's theming mechanism, and the third of four in the gallery: slots.
     // React retints with custom properties and Vue restyles with `::part()`, and

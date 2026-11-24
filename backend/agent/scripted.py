@@ -23,10 +23,12 @@ from __future__ import annotations
 import csv
 import datetime
 import io
+import html
 import json
 import re
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
+from asyncio import sleep
 from typing import Any
 
 from pydantic_ai.messages import (
@@ -34,6 +36,7 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     RetryPromptPart,
+    TextContent,
     TextPart,
     ToolCallPart,
     ToolReturnPart,
@@ -65,7 +68,8 @@ HELP = (
     "- *note: ship the gallery this week* (the shared week note, which the React app"
     " is the one that draws)\n"
     "- attach `samples/week.csv` and say *import these events*\n"
-    "- *ask the planner when Friday is free* (a sub-agent answers it)"
+    "- *ask the planner when Friday is free* (a sub-agent answers it)\n"
+    "- *ask the MCP agent what is on the board* (a child session on another agent)"
 )
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -144,6 +148,16 @@ class Turn:
         )
 
 
+SLOW_CUE = "slowly"
+SLOW_PACE = 0.5
+SLOW_ANSWER = (
+    "Here is an answer that takes its time, one word at a time, so there is room to "
+    "switch threads while it streams, come back, or reload the page and find it still "
+    "going. A run that asked to detach keeps writing on the server whether or not anyone "
+    "is watching, and a browser that returns replays what it missed and follows the rest."
+)
+
+
 def build_scripted_model() -> FunctionModel:
     return FunctionModel(stream_function=_stream, model_name="scripted-demo")
 
@@ -151,13 +165,57 @@ def build_scripted_model() -> FunctionModel:
 async def _stream(messages: list[ModelMessage], info: AgentInfo) -> AsyncIterator[Any]:
     turn = _read_turn(messages, _attached(info.instructions))
     available = {definition.name for definition in info.function_tools}
-    for chunk in _respond(turn, available):
+    if SLOW_CUE in turn.prompt.lower() and "open_changelist" not in available:
+        for word in SLOW_ANSWER.split():
+            await sleep(SLOW_PACE)
+            yield f"{word} "
+        return
+    picked = _skill_script(messages, available, info.instructions or "")
+    for chunk in picked if picked is not None else _respond(turn, available):
         yield chunk
+
+
+def _skill_script(
+    messages: Sequence[ModelMessage], available: set[str], instructions: str
+) -> list[Any] | None:
+    """A `/name` stored-skill pick: load it if offered, then answer from its `# Skill:` body."""
+    texts = [
+        part.content if isinstance(part.content, str) else _flatten(part.content)
+        for message in messages
+        if isinstance(message, ModelRequest)
+        for part in message.parts
+        if isinstance(part, UserPromptPart)
+    ]
+    said = [index for index, text in enumerate(texts) if not text.startswith("<system>")]
+    if not said:
+        return None
+    pick = re.match(r"/([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s|$)", texts[said[-1]].strip())
+    if pick is None:
+        return None
+    name = pick.group(1)
+    context = "\n".join([instructions, *texts[said[-1] + 1 :]])
+    loaded = re.search(
+        rf"^# Skill: {re.escape(name)}\n\n(.*?)(?=\n# |\n</|\Z)", context, re.S | re.M
+    )
+    if loaded is not None:
+        return [f"Using your skill /{name}. It says:\n\n{loaded.group(1).strip()}"]
+    listed = re.search(rf"^- {re.escape(name)}:", instructions, re.M) is not None
+    tried = any(
+        isinstance(part, ToolReturnPart) and part.tool_name == "load_capability"
+        for message in messages[-1:]
+        for part in message.parts
+    )
+    if listed and not tried and "load_capability" in available:
+        return [_call("load_capability", {"id": name})]
+    return None
 
 
 def _respond(turn: Turn, available: set[str]) -> list[Any]:
     """The whole script: one utterance plus a round number in, one response out."""
     text = turn.prompt.lower()
+
+    if text.startswith("<task_output"):
+        return _report_script(turn)
 
     # Which surface is this? The tools the client declared say so, and they differ
     # completely: the board apps register page actions, the admin registers
@@ -166,6 +224,8 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if "open_changelist" in available:
         return _admin_respond(turn, available, text)
 
+    if _MCP_AGENT.search(text):
+        return _child_session_script(turn, available)
     # Before every verb below: "ask the planner to find a free hour" holds
     # "find", which the scroll branch would otherwise take.
     if _PLANNER.search(text):
@@ -188,6 +248,8 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
         return _book_script(turn, available)
     if re.search(r"\b(move|reschedule|drag|shift)\b", text) and "backlog" not in text:
         return _move_script(turn, available)
+    if re.search(r"\b(draw|show) the board\b", text):
+        return _view_script(turn, available)
     if re.search(r"\b(scroll|jump|show me|find|where is)\b", text):
         return _scroll_script(turn, available)
     if re.search(r"\b(agenda|day view|week view|switch to|open the)\b", text):
@@ -206,6 +268,15 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if re.search(r"\b(what|which|list|how many|summar|overview|busy)\b", text):
         return _overview_script(turn, available)
     return [HELP]
+
+
+def _view_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Draw the board as a view: the tool's result is the view's, so the reply is short."""
+    if turn.round == 0 and "show_board" in available:
+        return [_call("show_board", {})]
+    if "show_board" not in available:
+        return [_missing_tools("show_board")]
+    return ["There is the board, drawn above."]
 
 
 # --- the admin surface --------------------------------------------------------
@@ -890,6 +961,35 @@ def _titles(content: Any) -> list[str]:
 # --- delegation ---------------------------------------------------------------
 
 _PLANNER = re.compile(r"\bplanner\b")
+_MCP_AGENT = re.compile(r"\bmcp agent\b")
+_REPORT = re.compile(r"^<task_output[^>]*>\n?(.*?)\n?</task_output>", re.DOTALL)
+
+
+def _child_session_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Start a child session on the MCP agent with the question alone, then say where it went."""
+    if "start_session" not in available:
+        return [_missing_tools("start_session")]
+    if turn.round == 0:
+        question = _MCP_AGENT.split(turn.prompt.lower(), maxsplit=1)[-1].strip(" ,:")
+        task = question or "what is on the board?"
+        return [_call("start_session", {"agent": "mcp", "prompt": task})]
+    receipt = turn.last
+    thread = getattr(receipt, "thread_id", None) or (
+        receipt.get("thread_id") if isinstance(receipt, dict) else None
+    )
+    if thread is None:
+        return [f"The MCP agent could not take that: {getattr(receipt, 'reason', receipt)}"]
+    return [
+        "I have asked the MCP agent in a thread of its own; open it from the card to watch. "
+        "When it reports I answer here, which shows once this thread is opened again."
+    ]
+
+
+def _report_script(turn: Turn) -> list[Any]:
+    """Answer the user from a child's `<task_output>` report, which arrives as the prompt."""
+    found = _REPORT.search(turn.prompt)
+    said = html.unescape(found.group(1)).strip() if found else turn.prompt
+    return [f"The MCP agent reports: {said}"]
 
 
 def _delegate_script(turn: Turn, available: set[str]) -> list[Any]:
@@ -1107,7 +1207,12 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
 
 
 def _flatten(content: Sequence[Any]) -> str:
-    return " ".join(item for item in content if isinstance(item, str))
+    """The text of a multi-part prompt; a child's report arrives as `TextContent`."""
+    return " ".join(
+        item if isinstance(item, str) else item.content
+        for item in content
+        if isinstance(item, (str, TextContent))
+    )
 
 
 def _as_page(content: Any) -> dict[str, Any]:

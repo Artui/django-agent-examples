@@ -1,4 +1,4 @@
-"""Five mounts, three of them agents.
+"""Six mounts, three of them agents, and the directory that lists them.
 
 `/api/` and `/agent/` serve the single-page apps: token auth, no cookie, JSON and
 SSE. `/admin/` and `/admin-agent/` serve the admin: a session principal, CSRF on,
@@ -6,6 +6,7 @@ server-rendered pages. Both agent mounts are the same class underneath and neith
 knows about the other — which is what makes running them side by side worth doing.
 `/mcp-agent/` is the SPA mount's auth on the other route a spec reaches an agent
 by: the board's read and booking served by an MCP server and bridged in process.
+`/agents-home/` is the directory and inbox over all three, read by the React home.
 """
 
 from __future__ import annotations
@@ -14,11 +15,16 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
+from django_ag_ui import AgentsDirectory
 
 from agent.admin_server import agent as admin_agent
 from agent.mcp_server import agent as mcp_agent
 from agent.server import agent as spa_agent
 from demo.demo_login import demo_login
+
+# One directory over the three agents. Each mount admits the caller its own way,
+# so the token-authenticated home lists `board` and `mcp`, and a staff session `admin`.
+agents_home = AgentsDirectory([spa_agent, admin_agent, mcp_agent])
 
 urlpatterns = [
     path("api/", include("board.urls")),
@@ -26,6 +32,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("admin-agent/", admin_agent.urls),
     path("mcp-agent/", mcp_agent.urls),
+    path("agents-home/", agents_home.urls),
 ]
 
 # The agent endpoint streams, so this project runs under an ASGI server — and a

@@ -100,6 +100,10 @@ export function Assistant(props: AssistantProps) {
     chat.setAttribute("endpoint", "/agent/");
     chat.setAttribute("data-tools-url", "/agent/tools/");
     chat.setAttribute("data-skills-url", "/agent/skills/");
+    // The skill editor: a Skills button in the header and Manage skills at the foot of
+    // the / palette. What a caller may write is the server's policy, not the page's.
+    chat.setAttribute("data-skill-editor-url", "/agent/skills/editor/");
+    chat.setAttribute("data-skill-editor-button", "");
     chat.setAttribute("data-threads-url", "/agent/threads/");
     // The clip in the composer. Without this attribute the endpoint is still
     // mounted and the button is not built at all, so uploads are opt-in per host
@@ -112,6 +116,10 @@ export function Assistant(props: AssistantProps) {
     // The mic, on the same terms as the clip: built only when a host points at
     // an endpoint, so an app that says nothing gets no dead control.
     chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
+    // A run outlives the page: switching threads or reloading mid-answer leaves it
+    // going on the server, and opening that thread again joins it. It needs the
+    // threads URL above and a mount with a run store (`agent/server.py`).
+    chat.setAttribute("data-detach-runs", "");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     // A muted token-count line under each finished turn, from the usage the
@@ -223,6 +231,21 @@ export function Assistant(props: AssistantProps) {
       if (detail.tools.some((tool) => tool.side === "server")) {
         latest.current.reload();
       }
+    });
+
+    // A child-session link on a card names the agent the child runs on. This chat is the
+    // board agent's only, so a child on another agent opens in the agents home, which
+    // holds every mount; the board's own threads still open in place.
+    chat.addEventListener("ag-ui-open-thread", (event) => {
+      const { agentId, threadId } = (
+        event as CustomEvent<{ agentId: string | null; threadId: string }>
+      ).detail;
+      if (agentId === null || agentId === "board") {
+        return;
+      }
+      event.preventDefault();
+      const query = new URLSearchParams({ agent: agentId, thread: threadId });
+      latest.current.navigate(`/home?${query}`);
     });
 
     host.current?.appendChild(chat);

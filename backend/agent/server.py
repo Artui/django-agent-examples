@@ -24,10 +24,12 @@ from django_spec_agents.contrib.store.default_step_store import DefaultStepStore
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.auth import token_user
+from agent.child_sessions import child_sessions, drain, inbound_queue, run_store, runner
 from agent.delegation import delegation
 from agent.model import build_demo_model, build_reviewer_model
 from agent.tools import registry as tool_registry
 from agent.transcribe import ScriptedTranscriptionBackend
+from board.models import Routine, Skill
 from board.specs import registry as spec_registry
 
 INSTRUCTIONS = """
@@ -62,8 +64,12 @@ skills.add(
     chip=True,
 )
 
+
 agent = AGUIServer(
     tool_registry,
+    id="board",
+    name="Board assistant",
+    description="Books, moves and reads events on the scheduling board.",
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
     # The board's operations, declared once in board/specs.py, reaching the
@@ -86,8 +92,17 @@ agent = AGUIServer(
     # named, so they always ask. The mount takes it as a capability because the
     # transport does not forward `approval_reviewer` into the agent config, and
     # the capability orders itself before the handler that raises the card.
+    #
+    # Beside the inline hand-off, a durable one: `start_session` opens a whole thread on
+    # the MCP agent, which runs headless and reports into this thread's inbox when it
+    # settles; the report wakes this thread, and `drain` hands it to the model. The tool
+    # result names the child's thread, which is what the card links to after a reload.
+    toolsets=[child_sessions()],
+    inbound_queue=inbound_queue,
+    child_threads=runner,
     capabilities=[
         delegation(),
+        drain("board"),
         ReviewedApprovals(
             ApprovalReviewerConfig(
                 model=build_reviewer_model(),
@@ -100,6 +115,16 @@ agent = AGUIServer(
         ),
     ],
     skills=skills,
+    # Stored skills: the catalog adds each caller's, every run is offered them, the agent
+    # gets the authoring tools, and `skills/editor/` lets the page write them. Who may
+    # write where is `board/skill_policy.py`; the mount reserves the registry's names.
+    skill_policy=Skill.skill_policy(),
+    skill_editor=True,
+    skill_authoring=True,
+    # Routines: `routines/` lets the page list, write, pause and fire the caller's
+    # routines on this mount, and each firing's thread names its routine in `threads/`.
+    # The model, its policy and its queue are `board/`; `make routines` fires them.
+    routine_model=Routine,
     # Scoped, because the admin mount keeps its conversations in the same table
     # for the same person: unscoped, each drawer listed the other's threads, and
     # opening one continued it under the wrong agent. See `admin_server.py`.
@@ -136,6 +161,13 @@ agent = AGUIServer(
     # under two names: both seed a *new* run from a saved snapshot, and the verb
     # only says what the user meant by it.
     step_store=DefaultStepStore,
+    # Runs outlive their connection. With a store the mount claims each thread for
+    # one run at a time (a second start is a 409 naming it), logs the run's events,
+    # and serves `threads/<id>/events/` and `cancel/`, which is what lets a client
+    # that asked to detach come back to a run still going. A browser opts in per
+    # run (`data-detach-runs`); a run that did not ask is still cancelled when its
+    # client leaves. The same store is what a headless run records into.
+    run_store=run_store,
     # Voice input, and the last of the gallery's offline stand-ins. Setting this
     # mounts `transcribe/` and turns the composer's mic on; leaving it unset is why
     # the mic does not exist at all rather than existing and failing -- the same
@@ -162,6 +194,9 @@ agent = AGUIServer(
     # does not apply. A cookie-authenticated deployment must instead pass
     # `csrf_exempt=False` and send the CSRF token from the client.
     get_user=token_user,
+    # Stated, because the skill and routines editors read an unstated value as `False`;
+    # every other endpoint already resolved `None` to `True`.
+    csrf_exempt=True,
     # The server-side half of confirmation, and it is a different mechanism from
     # the one the apps already show. `confirmPredicate` gates a *page action* in
     # the browser: the element asks before it dispatches, and the server never
@@ -198,5 +233,8 @@ agent = AGUIServer(
         # `show-usage` draws under each finished turn. Per endpoint like the rest:
         # the MCP mount and the admin keep the default and send none.
         include_usage=True,
+        # A detached run needs a ceiling, or the mount refuses to let it outlive
+        # its client: nothing else would ever stop one that hangs.
+        run_timeout_seconds=300,
     ),
 )

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help init backend react test build clean
+.PHONY: help init backend worker routines react test build clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -16,6 +16,16 @@ init: ## Install everything and seed the demo database
 
 backend: ## Run the shared backend and the admin surface on :8000 (ASGI, required)
 	cd backend && uv run uvicorn demo.asgi:application --port 8000 --reload
+
+worker: ## Run the task worker that runs each routine's firing (Django Tasks, database queue)
+	cd backend && uv run python manage.py db_worker
+
+routines: ## Every minute, fire the routines that came due and sweep lost firings
+	cd backend && while true; do \
+		uv run python manage.py run_due_routines; \
+		uv run python manage.py sweep_spec_runs; \
+		sleep 60; \
+	done
 
 react: ## Run the React app on :5173
 	cd react && pnpm dev

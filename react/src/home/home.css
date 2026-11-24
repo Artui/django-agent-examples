@@ -1,0 +1,78 @@
+/* The recipe's box: a 52px header, a 292px rail, the page chat in what is left.
+   At 640px and below the rail is a 220px strip under the header. */
+.home-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1rem;
+  background: var(--card);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  /* A fixed header is its own stacking context: one above the page chat, or the
+     chat paints over the inbox popover. */
+  z-index: calc(var(--ag-ui-z-index, 2147483000) + 1);
+}
+
+.home-header h1 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.home-header select {
+  font: inherit;
+}
+
+.home-badge {
+  margin-left: auto;
+}
+
+.home-rail {
+  position: fixed;
+  inset: 52px auto 0 0;
+  width: 292px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+}
+
+.home ag-ui-chat {
+  --ag-ui-inset: 52px 0 0 292px;
+  --ag-ui-width: calc(100vw - 292px);
+  --ag-ui-height: calc(100dvh - 52px);
+}
+
+@media (max-width: 640px) {
+  .home-header {
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+    white-space: nowrap;
+  }
+
+  .home-header h1,
+  .home-label {
+    display: none;
+  }
+
+  .home-header select {
+    max-width: 6.5rem;
+  }
+
+  .home-rail {
+    inset: 52px 0 auto 0;
+    width: auto;
+    height: 220px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .home ag-ui-chat {
+    --ag-ui-inset: 272px 0 0 0;
+    --ag-ui-width: 100vw;
+    --ag-ui-height: calc(100dvh - 272px);
+  }
+}

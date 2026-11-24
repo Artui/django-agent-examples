@@ -7,18 +7,43 @@ from __future__ import annotations
 
 import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.utils import timezone
+from django_spec_agents.routines import WeeklySchedule, next_fire_at, schedule_to_json
 from rest_framework.authtoken.models import Token
 
-from board.models import Event
+from board.models import Event, Membership, Organisation, Routine, Skill
 
 DEMO_USERNAME = "demo"
 # A fixed, obviously-fake token so the frontends can ship a working default and
 # the gallery needs no setup step. Nothing here is a secret; the database is a
 # local SQLite file seeded from this command.
 DEMO_TOKEN = "demo-token-not-a-secret"
+# A second person in the demo user's organisation who is not its admin, so the
+# skill policy has someone to refuse: run an app with `VITE_DEMO_TOKEN` set to this.
+MEMBER_USERNAME = "member"
+MEMBER_TOKEN = "member-token-not-a-secret"
+ORGANISATION = "Demo Co"
+COMPANY_SKILL = {
+    "name": "meeting-brief",
+    "description": "Brief me before a meeting: who, what, and what to bring.",
+    "body": "Answer in three short lines: who is in the room, what is decided, what to bring.",
+}
+
+# The demo user's one routine: each Monday morning it books the week's review.
+# `create_event` is gated on the board mount, so the grant is pinned destructive and
+# each firing's booking runs unasked, recorded on its thread as the routine's.
+ROUTINE = {
+    "name": "Monday week review",
+    "agent_id": "board",
+    "prompt": "Book a week review on Monday at 17:00",
+    "timezone": "Europe/London",
+    "preapproved_tools": [{"name": "create_event", "destructive": True}],
+}
+ROUTINE_SCHEDULE = WeeklySchedule(weekdays=frozenset({0}), at=datetime.time(8, 0))
 
 SCHEDULED = [
     ("Standup", 0, 9, 1, "Aurora"),
@@ -75,6 +100,7 @@ class Command(BaseCommand):
             user.is_superuser = True
             user.save(update_fields=["is_staff", "is_superuser"])
         Token.objects.get_or_create(user=user, defaults={"key": DEMO_TOKEN})
+        _seed_organisation(user_model, user)
 
         if options["reset"]:
             Event.objects.filter(owner=user).delete()
@@ -110,3 +136,35 @@ class Command(BaseCommand):
 def _monday_of_this_week() -> datetime.date:
     today = datetime.date.today()
     return today - datetime.timedelta(days=today.weekday())
+
+
+def _seed_organisation(user_model: Any, admin: Any) -> None:
+    """One organisation, the demo user its admin, a plain member, and one company skill."""
+    organisation, _ = Organisation.objects.get_or_create(name=ORGANISATION)
+    Membership.objects.get_or_create(
+        user=admin, defaults={"organisation": organisation, "is_admin": True}
+    )
+    member, created = user_model.objects.get_or_create(
+        username=MEMBER_USERNAME, defaults={"email": "member@example.com", "is_active": True}
+    )
+    if created:
+        member.set_unusable_password()
+        member.save(update_fields=["password"])
+    Token.objects.get_or_create(user=member, defaults={"key": MEMBER_TOKEN})
+    Membership.objects.get_or_create(user=member, defaults={"organisation": organisation})
+    Skill.objects.get_or_create(
+        organisation=organisation, owner=None, name=COMPANY_SKILL["name"], defaults=COMPANY_SKILL
+    )
+    Routine.objects.get_or_create(
+        organisation=organisation,
+        principal=admin,
+        name=ROUTINE["name"],
+        defaults={
+            **ROUTINE,
+            "schedule": schedule_to_json(ROUTINE_SCHEDULE),
+            "created_by": admin,
+            "next_fire_at": next_fire_at(
+                ROUTINE_SCHEDULE, ZoneInfo(ROUTINE["timezone"]), timezone.now()
+            ),
+        },
+    )
