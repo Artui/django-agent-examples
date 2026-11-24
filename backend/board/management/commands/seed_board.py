@@ -7,12 +7,15 @@ from __future__ import annotations
 
 import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.utils import timezone
+from django_spec_agents.routines import WeeklySchedule, next_fire_at, schedule_to_json
 from rest_framework.authtoken.models import Token
 
-from board.models import Event, Membership, Organisation, Skill
+from board.models import Event, Membership, Organisation, Routine, Skill
 
 DEMO_USERNAME = "demo"
 # A fixed, obviously-fake token so the frontends can ship a working default and
@@ -29,6 +32,18 @@ COMPANY_SKILL = {
     "description": "Brief me before a meeting: who, what, and what to bring.",
     "body": "Answer in three short lines: who is in the room, what is decided, what to bring.",
 }
+
+# The demo user's one routine: each Monday morning it books the week's review.
+# `create_event` is gated on the board mount, so the grant is pinned destructive and
+# each firing's booking runs unasked, recorded on its thread as the routine's.
+ROUTINE = {
+    "name": "Monday week review",
+    "agent_id": "board",
+    "prompt": "Book a week review on Monday at 17:00",
+    "timezone": "Europe/London",
+    "preapproved_tools": [{"name": "create_event", "destructive": True}],
+}
+ROUTINE_SCHEDULE = WeeklySchedule(weekdays=frozenset({0}), at=datetime.time(8, 0))
 
 SCHEDULED = [
     ("Standup", 0, 9, 1, "Aurora"),
@@ -139,4 +154,17 @@ def _seed_organisation(user_model: Any, admin: Any) -> None:
     Membership.objects.get_or_create(user=member, defaults={"organisation": organisation})
     Skill.objects.get_or_create(
         organisation=organisation, owner=None, name=COMPANY_SKILL["name"], defaults=COMPANY_SKILL
+    )
+    Routine.objects.get_or_create(
+        organisation=organisation,
+        principal=admin,
+        name=ROUTINE["name"],
+        defaults={
+            **ROUTINE,
+            "schedule": schedule_to_json(ROUTINE_SCHEDULE),
+            "created_by": admin,
+            "next_fire_at": next_fire_at(
+                ROUTINE_SCHEDULE, ZoneInfo(ROUTINE["timezone"]), timezone.now()
+            ),
+        },
     )

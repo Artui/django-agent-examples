@@ -211,6 +211,40 @@ result are one click further. All four apps and the admin sidebar have been
 driven to it in a browser.
 `tests/test_delegation.py` reads them off both mounts' streams.
 
+## Routines
+
+A routine is a stored prompt the board agent runs on a schedule, as the member who
+wrote it. `seed_board` seeds one: every Monday at 08:00 (Europe/London) it books the
+week's review. Its grant pre-approves `create_event`, which the board mount gates, so
+each firing books unasked and the tool result is recorded as answered by the
+routine. A firing that reaches a gated tool its routine was not granted parks its
+thread instead, and the thread shows under "Needs you" in the agents home.
+
+- `board/models.py` has `Routine`, scoped to the organisation. `board/routine_policy.py`
+  decides who sees, writes and fires one: a member sees and writes their own, and a
+  firing runs only while its principal is still in that organisation.
+- `board/spec_tasks.py` binds the firing spec to django-spec-tasks on Django Tasks'
+  database backend (`TASKS` in `demo/settings.py`), so a firing is a row in the same
+  SQLite file and no broker is involved.
+- The board mount serves the routines editor under `/agent/routines/`, and each row
+  of `/agent/threads/` names the routine whose firing started it.
+
+Nothing fires until two processes run beside the backend:
+
+```bash
+make worker     # db_worker: runs each queued firing
+make routines   # run_due_routines and sweep_spec_runs, once a minute
+```
+
+In a deployment, the second is a cron line or a systemd timer, not a shell loop:
+
+```cron
+* * * * * cd backend && uv run python manage.py run_due_routines && uv run python manage.py sweep_spec_runs
+```
+
+SQLite ignores the row lock `run_due_routines` takes, so run one sweep at a time here;
+on PostgreSQL two overlapping sweeps fire a routine once.
+
 ## Errors
 
 Business-rule failures raise `ServiceError` (or `ServiceValidationError`), never a

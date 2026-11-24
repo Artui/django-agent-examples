@@ -286,7 +286,14 @@ dependencies = [
     # same outcome in other words. The board mount's approval reviewer needs the
     # `answered_by` mark this transport stamps on a reviewer-cleared result, which
     # is what the tool card draws. `test_approval.py` reads the mark off the wire.
-    "django-ag-ui[specs,harness,mcp]>=0.86.0",
+    #
+    # Raised to the transport whose `AgentsDirectory` lists several mounts for the
+    # React agents home, whose waiting inbox rows name the parked run so the home
+    # answers "Needs you" in place, and whose directory entries declare each
+    # mount's capabilities, which the component's provider reads. The lowest
+    # resolution stopped importing `demo/urls.py` below the first of these;
+    # `test_routines.py` reads a parked firing's run id off the inbox row.
+    "django-ag-ui[specs,harness,mcp]>=0.88.1",
     # Declared because `agent/delegation.py` imports `SubAgent` and `SubAgents`
     # from it directly: the planner sub-agent both agent mounts delegate to is a
     # pydantic-ai-harness capability, which django-ag-ui's `SubAgentObserver`
@@ -670,6 +677,15 @@ dependencies = [
     # the AG-UI wire type that carries shared state back to the page. Rule 1
     # again: it is django-ag-ui's dependency, and this backend's import.
     "ag-ui-protocol>=0.1.19",
+    # Routines fire through a task queue. `board/spec_tasks.py` binds the
+    # routine firing spec to django-spec-tasks, whose row is the record of each
+    # firing; `[django-tasks]` is the Django Tasks backport, which Django below
+    # 6.0 needs for `django.tasks`.
+    "django-spec-tasks[django-tasks]>=0.2.0",
+    # The database backend for Django Tasks, and its `db_worker`: a queue with
+    # no broker, in the same SQLite file as the board. Neither django-tasks nor
+    # Django ships a durable backend. No `[compat]` extra: it caps Django below 6.
+    "django-tasks-db>=0.13.0",
     # ASGI is required: the agent endpoint streams.
     "uvicorn>=0.34",
 ]

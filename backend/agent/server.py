@@ -29,7 +29,7 @@ from agent.delegation import delegation
 from agent.model import build_demo_model, build_reviewer_model
 from agent.tools import registry as tool_registry
 from agent.transcribe import ScriptedTranscriptionBackend
-from board.models import Skill
+from board.models import Routine, Skill
 from board.specs import registry as spec_registry
 
 INSTRUCTIONS = """
@@ -121,6 +121,10 @@ agent = AGUIServer(
     skill_policy=Skill.skill_policy(),
     skill_editor=True,
     skill_authoring=True,
+    # Routines: `routines/` lets the page list, write, pause and fire the caller's
+    # routines on this mount, and each firing's thread names its routine in `threads/`.
+    # The model, its policy and its queue are `board/`; `make routines` fires them.
+    routine_model=Routine,
     # Scoped, because the admin mount keeps its conversations in the same table
     # for the same person: unscoped, each drawer listed the other's threads, and
     # opening one continued it under the wrong agent. See `admin_server.py`.

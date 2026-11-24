@@ -21,6 +21,8 @@ dependencies = [
     { name = "django-spec-agents" },
     { name = "django-spec-mcp" },
     { name = "django-spec-rest" },
+    { name = "django-spec-tasks", extra = ["django-tasks"] },
+    { name = "django-tasks-db" },
     { name = "djangorestframework" },
     { name = "djangorestframework-dataclasses" },
     { name = "pydantic-ai-harness" },
@@ -41,11 +43,13 @@ requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.19" },
     { name = "django", specifier = ">=5.2" },
     { name = "django-admin-agent", specifier = ">=0.63.0" },
-    { name = "django-ag-ui", extras = ["specs", "harness", "mcp"], specifier = ">=0.86.0" },
+    { name = "django-ag-ui", extras = ["specs", "harness", "mcp"], specifier = ">=0.88.1" },
     { name = "django-service-specs", specifier = ">=0.34.2" },
     { name = "django-spec-agents", specifier = ">=0.25.0" },
     { name = "django-spec-mcp", specifier = ">=0.14.0" },
     { name = "django-spec-rest", specifier = ">=0.6.0" },
+    { name = "django-spec-tasks", extras = ["django-tasks"], specifier = ">=0.2.0" },
+    { name = "django-tasks-db", specifier = ">=0.13.0" },
     { name = "djangorestframework", specifier = ">=3.15" },
     { name = "djangorestframework-dataclasses", specifier = ">=1.3.1" },
     { name = "pydantic-ai-harness", specifier = ">=0.21" },
@@ -267,6 +271,69 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7a/8a/69f582ff3c6859855d48903393d14acb0a7c9805376d46233d50c4fbe6cf/django_spec_rest-0.17.0.tar.gz", hash = "sha256:4cff0997f152bcee58cac26916a0cedfd783a7dcfe01e3407c4d6ceda39feb41", size = 710390, upload-time = "2026-11-24T13:34:42.3Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/59/d22bb0dfeb3745b6d09e4eb3c07e42f58d25d3ecad0d0536c681e6812a3f/django_spec_rest-0.17.0-py3-none-any.whl", hash = "sha256:a31ae04154a5c1ca4268a28fea5453287ad1729a06f509521375482d0acc5574", size = 156992, upload-time = "2026-11-24T13:34:40.8Z" },
+]
+
+[[package]]
+name = "django-spec-tasks"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.19", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-service-specs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/6c/5adcb512f095664417c032fa4090c8b24a6a272bf150c4415289919e3f76/django_spec_tasks-0.2.0.tar.gz", hash = "sha256:fb7dd449ab8d8af57ea2544a801af1a3e933e94b20bf3ce16e1a6236c140fb6e", size = 217800, upload-time = "2026-11-14T09:49:31.921Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/61/bb204022a8a41d52149909059c35a02e2b6f5f5c75b54682fe5d7327d14b/django_spec_tasks-0.2.0-py3-none-any.whl", hash = "sha256:db25e8f6fcbfcf1257bfa1dbfd6b41dedad21d3589c82dadd1f8d5430d223814", size = 35120, upload-time = "2026-11-14T09:49:30.521Z" },
+]
+
+[package.optional-dependencies]
+django-tasks = [
+    { name = "django-tasks" },
+]
+
+[[package]]
+name = "django-stubs-ext"
+version = "6.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.19", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d9/62/de532d58736d671b9ac0c0467909a9429758ae579d636e868ce74519566b/django_stubs_ext-6.1.2.tar.gz", hash = "sha256:2142da7fffbbe897ccecf9b4c97e09ea1a2e9291760b0a824b4c402b375ce6f9", size = 7221, upload-time = "2026-10-05T06:46:43.717Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/21/bb/393c3c1e24aaf37d62918ea50f3ea22e30d5f3162fc62f4c3bf3275e5ed3/django_stubs_ext-6.1.2-py3-none-any.whl", hash = "sha256:7334e687ab6dc78a6c3da90ab1ccb0e412efd827ea11de8d3f85adbad948abb1", size = 10850, upload-time = "2026-10-05T06:46:42.647Z" },
+]
+
+[[package]]
+name = "django-tasks"
+version = "0.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.19", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-stubs-ext" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/6e/34d4e77bb7951e5a5acbd846f43240f062c68bb04d9c246cb446a55d4cbc/django_tasks-0.12.0.tar.gz", hash = "sha256:58be66c1e487da32a3ce7320bd1949d0d1dc381b9004819f92591eb37fb2c1b8", size = 15445, upload-time = "2026-02-06T16:15:33.593Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/e7/40c45768e84efd77e3ae6ffdcd2b5540011036cbb00c6df6ef2a2ad69551/django_tasks-0.12.0-py3-none-any.whl", hash = "sha256:ffcc1d7bdfad3bc5ef9c2d498596c6546484c9ec6b182fb9709c691eb66a8709", size = 15758, upload-time = "2026-02-06T16:15:32.168Z" },
+]
+
+[[package]]
+name = "django-tasks-db"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.19", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-stubs-ext" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6c/e9/fd12dc51bb25c52658bbf329a6f2454b215d063fca8c8342458a474dae16/django_tasks_db-0.13.0.tar.gz", hash = "sha256:09630d417cf722b07e1439b837403e18e86455908ba532fa6795b0d23dc3ff23", size = 29608, upload-time = "2026-08-28T15:05:32.098Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/d2/8b10117fca37a2d1f2e45f4878ffa07cf6c0c8df1920e250db30e2228b9e/django_tasks_db-0.13.0-py3-none-any.whl", hash = "sha256:a3a47250b09d40e9b289851d2a550d840d29e59ee3e7115129831e291bb35576", size = 31991, upload-time = "2026-08-28T15:05:30.767Z" },
 ]
 
 [[package]]

@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import django
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Demo only. A real deployment reads this from the environment and never has a
@@ -40,6 +42,15 @@ INSTALLED_APPS = [
     # The reference conversation store, so chat history survives a reload and
     # the web component's history drawer has something to list.
     "django_spec_agents.contrib.store",
+    # Routines: `run_due_routines`, and the check that refuses a routine model
+    # with no policy at startup.
+    "django_spec_agents",
+    # The task queue a routine's firing runs on: the run record, Django Tasks'
+    # database backend and its `db_worker`. Below Django 6.0 `django.tasks` is
+    # the backport's app; from 6.0 it is Django's own and needs no entry.
+    *(["django_tasks"] if django.VERSION < (6, 0) else []),
+    "django_tasks_db",
+    "django_spec_tasks",
     "board",
 ]
 
@@ -101,6 +112,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "media/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# One queue with no broker: a task is a row in this database, and `db_worker`
+# runs it. `make worker` starts one; `make routines` sweeps for due routines.
+TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}
 
 # Demo only, and only honoured while DEBUG is on: `/demo-login/` signs the seeded
 # demo user in so the admin surface needs no password typed anywhere. Delete this
