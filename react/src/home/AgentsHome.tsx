@@ -72,7 +72,7 @@ export function AgentsHome({ onBoard }: { onBoard: () => void }) {
       setCurrent(provider.agent);
     });
     provider.addEventListener("ag-ui-agent-change", (event) => {
-      setCurrent((event as CustomEvent<{ agent: string }>).detail.agent);
+      setCurrent((event as CustomEvent<{ agent: Entry }>).detail.agent.id);
     });
 
     // The badge sits outside the provider, in the header, bound by the provider's id.
