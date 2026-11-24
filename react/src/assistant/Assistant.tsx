@@ -233,6 +233,21 @@ export function Assistant(props: AssistantProps) {
       }
     });
 
+    // A child-session link on a card names the agent the child runs on. This chat is the
+    // board agent's only, so a child on another agent opens in the agents home, which
+    // holds every mount; the board's own threads still open in place.
+    chat.addEventListener("ag-ui-open-thread", (event) => {
+      const { agentId, threadId } = (
+        event as CustomEvent<{ agentId: string | null; threadId: string }>
+      ).detail;
+      if (agentId === null || agentId === "board") {
+        return;
+      }
+      event.preventDefault();
+      const query = new URLSearchParams({ agent: agentId, thread: threadId });
+      latest.current.navigate(`/home?${query}`);
+    });
+
     host.current?.appendChild(chat);
     element.current = chat;
     return () => {

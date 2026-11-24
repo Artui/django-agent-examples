@@ -26,7 +26,10 @@ import "./home.css";
 const NARROW = "(max-width: 640px)";
 
 type WithHeaders = HTMLElement & { headers: Record<string, string> };
-type Provider = WithHeaders & { agent: string | null };
+type Provider = WithHeaders & {
+  agent: string | null;
+  openThread: (agentId: string, threadId: string) => Promise<void>;
+};
 type Entry = { id: string; name: string };
 
 export function AgentsHome({ onBoard }: { onBoard: () => void }) {
@@ -70,10 +73,24 @@ export function AgentsHome({ onBoard }: { onBoard: () => void }) {
       url: "/mcp-agent/mcp-apps/",
     });
 
+    // `/home?agent=mcp&thread=<id>` opens that thread once the directory lists its agent:
+    // how a child-session link on the board's own chat lands here.
+    const wanted = new URLSearchParams(window.location.search);
+    let pending =
+      wanted.get("agent") !== null && wanted.get("thread") !== null
+        ? { agent: wanted.get("agent") as string, thread: wanted.get("thread") as string }
+        : null;
+
     provider.append(rail, chat);
     provider.addEventListener("ag-ui-agents-change", (event) => {
-      setAgents((event as CustomEvent<{ agents: Entry[] }>).detail.agents);
+      const listed = (event as CustomEvent<{ agents: Entry[] }>).detail.agents;
+      setAgents(listed);
       setCurrent(provider.agent);
+      const target = pending;
+      if (target !== null && listed.some((entry) => entry.id === target.agent)) {
+        pending = null;
+        void provider.openThread(target.agent, target.thread);
+      }
     });
     provider.addEventListener("ag-ui-agent-change", (event) => {
       setCurrent((event as CustomEvent<{ agent: Entry }>).detail.agent.id);

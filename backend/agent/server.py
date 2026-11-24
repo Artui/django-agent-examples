@@ -20,11 +20,11 @@ from django_spec_agents.contrib.store.default_attachment_store import (
 from django_spec_agents.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
-from django_spec_agents.contrib.store.default_run_store import DefaultRunStore
 from django_spec_agents.contrib.store.default_step_store import DefaultStepStore
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
 from agent.auth import token_user
+from agent.child_sessions import child_sessions, drain, inbound_queue, run_store, runner
 from agent.delegation import delegation
 from agent.model import build_demo_model, build_reviewer_model
 from agent.tools import registry as tool_registry
@@ -64,8 +64,6 @@ skills.add(
     chip=True,
 )
 
-# Module-level so every mount that must see the same runs shares this one instance.
-run_store = DefaultRunStore()
 
 agent = AGUIServer(
     tool_registry,
@@ -94,8 +92,17 @@ agent = AGUIServer(
     # named, so they always ask. The mount takes it as a capability because the
     # transport does not forward `approval_reviewer` into the agent config, and
     # the capability orders itself before the handler that raises the card.
+    #
+    # Beside the inline hand-off, a durable one: `start_session` opens a whole thread on
+    # the MCP agent, which runs headless and reports into this thread's inbox when it
+    # settles; the report wakes this thread, and `drain` hands it to the model. The tool
+    # result names the child's thread, which is what the card links to after a reload.
+    toolsets=[child_sessions()],
+    inbound_queue=inbound_queue,
+    child_threads=runner,
     capabilities=[
         delegation(),
+        drain("board"),
         ReviewedApprovals(
             ApprovalReviewerConfig(
                 model=build_reviewer_model(),

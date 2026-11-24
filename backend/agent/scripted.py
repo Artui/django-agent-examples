@@ -23,6 +23,7 @@ from __future__ import annotations
 import csv
 import datetime
 import io
+import html
 import json
 import re
 from collections.abc import AsyncIterator, Sequence
@@ -35,6 +36,7 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     RetryPromptPart,
+    TextContent,
     TextPart,
     ToolCallPart,
     ToolReturnPart,
@@ -221,6 +223,10 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     """The whole script: one utterance plus a round number in, one response out."""
     text = turn.prompt.lower()
 
+    # A child session's report, woken into this thread: answer from it, whatever it says.
+    if text.startswith("<task_output"):
+        return _report_script(turn)
+
     # Which surface is this? The tools the client declared say so, and they differ
     # completely: the board apps register page actions, the admin registers
     # admin-aware ones. Routing on capability rather than on configuration is how
@@ -228,6 +234,9 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if "open_changelist" in available:
         return _admin_respond(turn, available, text)
 
+    # Before the planner and every verb below, for the same reason as the planner.
+    if _MCP_AGENT.search(text):
+        return _child_session_script(turn, available)
     # Before every verb below: "ask the planner to find a free hour" holds
     # "find", which the scroll branch would otherwise take.
     if _PLANNER.search(text):
@@ -963,6 +972,35 @@ def _titles(content: Any) -> list[str]:
 # --- delegation ---------------------------------------------------------------
 
 _PLANNER = re.compile(r"\bplanner\b")
+_MCP_AGENT = re.compile(r"\bmcp agent\b")
+_REPORT = re.compile(r"^<task_output[^>]*>\n?(.*?)\n?</task_output>", re.DOTALL)
+
+
+def _child_session_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Start a child session on the MCP agent with the question alone, then say where it went."""
+    if "start_session" not in available:
+        return [_missing_tools("start_session")]
+    if turn.round == 0:
+        question = _MCP_AGENT.split(turn.prompt.lower(), maxsplit=1)[-1].strip(" ,:")
+        task = question or "what is on the board?"
+        return [_call("start_session", {"agent": "mcp", "prompt": task})]
+    receipt = turn.last
+    thread = getattr(receipt, "thread_id", None) or (
+        receipt.get("thread_id") if isinstance(receipt, dict) else None
+    )
+    if thread is None:
+        return [f"The MCP agent could not take that: {getattr(receipt, 'reason', receipt)}"]
+    return [
+        "I have asked the MCP agent in a thread of its own. Its answer lands here when it "
+        "reports; open its thread from the card to watch it work."
+    ]
+
+
+def _report_script(turn: Turn) -> list[Any]:
+    """Answer the user from a child's `<task_output>` report, which arrives as the prompt."""
+    found = _REPORT.search(turn.prompt)
+    said = html.unescape(found.group(1)).strip() if found else turn.prompt
+    return [f"The MCP agent reports: {said}"]
 
 
 def _delegate_script(turn: Turn, available: set[str]) -> list[Any]:
@@ -1180,7 +1218,12 @@ def _read_turn(messages: Sequence[ModelMessage], attached: tuple[Attached, ...])
 
 
 def _flatten(content: Sequence[Any]) -> str:
-    return " ".join(item for item in content if isinstance(item, str))
+    """The text of a multi-part prompt; a child's report arrives as `TextContent`."""
+    return " ".join(
+        item if isinstance(item, str) else item.content
+        for item in content
+        if isinstance(item, (str, TextContent))
+    )
 
 
 def _as_page(content: Any) -> dict[str, Any]:

@@ -43,6 +43,7 @@ from django_spec_agents import ScopedConversationStore, ToolGuardConfig
 from django_spec_agents.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
+from django_spec_agents.contrib.store.default_step_store import DefaultStepStore
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 from django_spec_mcp import MCPServer
 from django_spec_mcp.registry.types.ui_tool_meta import UIToolMeta
@@ -51,6 +52,7 @@ from django_spec_mcp.ui.build_app_document import build_app_document
 from django_spec_mcp.config import build_mcp_config
 
 from agent.auth import token_user
+from agent.child_sessions import drain, inbound_queue, run_store, runner
 from agent.model import build_demo_model
 from board.selectors import list_events
 from board.serializers import CreateEventInput
@@ -288,6 +290,13 @@ agent = AGUIServer(
     # The board mount keeps the default, and two mounts sharing one namespace
     # cannot both be reversed.
     namespace="mcp_agent",
+    # A child session's mount: the board agent starts threads here, which run headless
+    # (hence the run and step stores) and report through the shared inbox.
+    run_store=run_store,
+    step_store=DefaultStepStore,
+    inbound_queue=inbound_queue,
+    child_threads=runner,
+    capabilities=[drain("mcp")],
     # Gated without naming the write. The bridge marks a tool destructive from
     # the annotations the server lists, and a service tool is not read-only, so
     # the guard defers `create_event` on that alone. The board mount next door
