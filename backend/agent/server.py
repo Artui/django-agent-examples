@@ -20,6 +20,7 @@ from django_spec_agents.contrib.store.default_attachment_store import (
 from django_spec_agents.contrib.store.default_conversation_store import (
     DefaultConversationStore,
 )
+from django_spec_agents.contrib.store.default_run_store import DefaultRunStore
 from django_spec_agents.contrib.store.default_step_store import DefaultStepStore
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 
@@ -61,6 +62,9 @@ skills.add(
     send_immediately=True,
     chip=True,
 )
+
+# Module-level so every mount that must see the same runs shares this one instance.
+run_store = DefaultRunStore()
 
 agent = AGUIServer(
     tool_registry,
@@ -139,6 +143,13 @@ agent = AGUIServer(
     # under two names: both seed a *new* run from a saved snapshot, and the verb
     # only says what the user meant by it.
     step_store=DefaultStepStore,
+    # Runs outlive their connection. With a store the mount claims each thread for
+    # one run at a time (a second start is a 409 naming it), logs the run's events,
+    # and serves `threads/<id>/events/` and `cancel/`, which is what lets a client
+    # that asked to detach come back to a run still going. A browser opts in per
+    # run (`data-detach-runs`); a run that did not ask is still cancelled when its
+    # client leaves. The same store is what a headless run records into.
+    run_store=run_store,
     # Voice input, and the last of the gallery's offline stand-ins. Setting this
     # mounts `transcribe/` and turns the composer's mic on; leaving it unset is why
     # the mic does not exist at all rather than existing and failing -- the same
@@ -201,5 +212,8 @@ agent = AGUIServer(
         # `show-usage` draws under each finished turn. Per endpoint like the rest:
         # the MCP mount and the admin keep the default and send none.
         include_usage=True,
+        # A detached run needs a ceiling, or the mount refuses to let it outlive
+        # its client: nothing else would ever stop one that hangs.
+        run_timeout_seconds=300,
     ),
 )

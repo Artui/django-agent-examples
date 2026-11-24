@@ -27,6 +27,7 @@ import json
 import re
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
+from asyncio import sleep
 from typing import Any
 
 from pydantic_ai.messages import (
@@ -144,6 +145,16 @@ class Turn:
         )
 
 
+SLOW_CUE = "slowly"
+SLOW_PACE = 0.5
+SLOW_ANSWER = (
+    "Here is an answer that takes its time, one word at a time, so there is room to "
+    "switch threads while it streams, come back, or reload the page and find it still "
+    "going. A run that asked to detach keeps writing on the server whether or not anyone "
+    "is watching, and a browser that returns replays what it missed and follows the rest."
+)
+
+
 def build_scripted_model() -> FunctionModel:
     return FunctionModel(stream_function=_stream, model_name="scripted-demo")
 
@@ -151,6 +162,11 @@ def build_scripted_model() -> FunctionModel:
 async def _stream(messages: list[ModelMessage], info: AgentInfo) -> AsyncIterator[Any]:
     turn = _read_turn(messages, _attached(info.instructions))
     available = {definition.name for definition in info.function_tools}
+    if SLOW_CUE in turn.prompt.lower() and "open_changelist" not in available:
+        for word in SLOW_ANSWER.split():
+            await sleep(SLOW_PACE)
+            yield f"{word} "
+        return
     for chunk in _respond(turn, available):
         yield chunk
 

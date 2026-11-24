@@ -18,7 +18,6 @@ and the `run_id` must be fresh because the tool-effect ledger is keyed on
 from __future__ import annotations
 
 import json
-import logging
 from typing import Any
 
 import pytest
@@ -133,55 +132,20 @@ async def test_another_users_run_is_absent_rather_than_forbidden() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-async def test_reusing_the_source_run_id_is_refused_in_the_stream(caplog) -> None:
-    """The documented hazard, checked instead of trusted — and it is guarded.
-
-    The ledger is keyed on `(run_id, tool_call_id)`, so continuing a run under its
-    own id would write a second history into the first run's rows. It does not:
-    pydantic-ai refuses the reused id by name, before the harness's own store guard
-    is reached, and the source's records are untouched. Worth knowing
-    the guard exists, because the warning to send a fresh id reads like the only
-    thing standing between you and a corrupted ledger.
-
-    The refusal is a `RUN_ERROR` **event**, not an HTTP status, and it could not
-    be otherwise: `RUN_STARTED` has already gone out, so the response is committed
-    at 200 before anything is validated. Anything that goes wrong in a streaming
-    endpoint after its first byte is an event — a client that only checks
-    `response.ok` treats this as a success.
-    """
+async def test_reusing_the_source_run_id_is_refused_at_the_claim() -> None:
+    """With a run store the mount refuses a reused run id with a 409 before any stream opens."""
     await _seed()
     await run(user_message("what is on the board?"), thread="t-reuse")
     source = (await _runs())[0]["run_id"]
 
-    # django-spec-agents kept the audit logger's old name.
-    with caplog.at_level(logging.WARNING, logger="django_pydantic_agent.audit"):
-        events = await _stream(
-            await _post("resume", source, "how busy is the week?", thread="t-reuse", run_id=source)
-        )
+    response = await _post(
+        "resume", source, "how busy is the week?", thread="t-reuse", run_id=source
+    )
 
-    assert [event["type"] for event in events] == ["RUN_STARTED", "RUN_ERROR"]
-    # **The browser is not told why**, and that is the transport doing its job:
-    # from django-ag-ui 0.50.0 a ``RUN_ERROR`` raised outside a tool carries a
-    # fixed sentence unless ``TOOL_FAILURE["INCLUDE_DETAIL"]`` opts in, because
-    # pydantic-ai builds the message as ``str(error)`` and an exception's own
-    # words are written for an operator -- an ORM error carrying SQL, an
-    # ``OSError`` carrying a server path.
-    #
-    # This gallery leaves the safe default in place, so the assertion here is
-    # that the redaction is in force, not that it is absent.
-    assert events[-1]["message"] == "The run failed. The failure has been recorded."
+    assert response.status_code == 409
     rows = await _runs()
     assert [row["run_id"] for row in rows] == [source], "nothing new was recorded"
     assert rows[0]["continuable"] is True, "and the source can still be continued"
-    # The operator's copy keeps what the browser was not given, so the redaction
-    # is a disclosure boundary rather than a swallowed error. Asserted because
-    # the two halves are only correct together: redacting *and* dropping the
-    # detail passes the assertion above and leaves the refusal reaching nobody,
-    # which is exactly what the default null audit logger does.
-    assert any(
-        "already appears in `message_history`" in record.getMessage()
-        for record in caplog.records
-    ), "the refusal names the guard in the audit record"
 
 
 # --- the three endpoints a step store mounts ----------------------------------

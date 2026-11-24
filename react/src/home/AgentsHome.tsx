@@ -60,6 +60,8 @@ export function AgentsHome({ onBoard }: { onBoard: () => void }) {
     const chat = document.createElement("ag-ui-chat") as WithHeaders;
     chat.setAttribute("placement", "page");
     chat.setAttribute("title-text", "Agents home");
+    // Runs outlive this page, so a thread left mid-answer is joined again when opened.
+    chat.setAttribute("data-detach-runs", "");
     chat.headers = authHeaders();
     // The MCP agent's views are read through its own mount, whichever agent is in front.
     registerMcpApps(chat as unknown as Parameters<typeof registerMcpApps>[0], {

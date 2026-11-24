@@ -112,6 +112,10 @@ export function Assistant(props: AssistantProps) {
     // The mic, on the same terms as the clip: built only when a host points at
     // an endpoint, so an app that says nothing gets no dead control.
     chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
+    // A run outlives the page: switching threads or reloading mid-answer leaves it
+    // going on the server, and opening that thread again joins it. It needs the
+    // threads URL above and a mount with a run store (`agent/server.py`).
+    chat.setAttribute("data-detach-runs", "");
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     // A muted token-count line under each finished turn, from the usage the
