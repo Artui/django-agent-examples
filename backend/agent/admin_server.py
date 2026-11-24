@@ -35,6 +35,9 @@ or a filter reloads the page. Say what changed, in one sentence.
 """.strip()
 
 agent = AdminAgentServer(
+    id="admin",
+    name="Admin assistant",
+    description="Works the Django admin for staff: changelists, records, bulk edits.",
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
     # The same planner the board mount delegates to, in a capability of its own.

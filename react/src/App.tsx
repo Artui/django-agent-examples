@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Assistant } from "./assistant/Assistant";
+import { AgentsHome } from "./home/AgentsHome";
 import { WeekNote } from "./board/WeekNote";
 import { AgendaView } from "./board/AgendaView";
 import { Backlog } from "./board/Backlog";
@@ -44,6 +45,19 @@ const ROUTE_MAP: RouteMap = [
 ];
 
 export function App() {
+  const navigate = useNavigate();
+  // The home is a page of its own, beside the board rather than inside it: the
+  // board's embedded chat is on the same agent, and two chats on one agent on
+  // one page would share a store namespace.
+  return (
+    <Routes>
+      <Route path="/home" element={<AgentsHome onBoard={() => navigate("/week")} />} />
+      <Route path="*" element={<Board />} />
+    </Routes>
+  );
+}
+
+function Board() {
   const board = useBoard();
   // The one piece of page state that is *not* exposed as a tool: it rides AG-UI
   // shared state instead, so the agent and the page hold the same object. See
@@ -79,6 +93,9 @@ export function App() {
               {route.title}
             </button>
           ))}
+          <button type="button" onClick={() => navigate("/home")}>
+            Agents home
+          </button>
         </nav>
         <label className="filter">
           Room

@@ -64,6 +64,9 @@ skills.add(
 
 agent = AGUIServer(
     tool_registry,
+    id="board",
+    name="Board assistant",
+    description="Books, moves and reads events on the scheduling board.",
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
     # The board's operations, declared once in board/specs.py, reaching the

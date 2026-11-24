@@ -164,6 +164,9 @@ server.register_tool(
 
 agent = AGUIServer(
     ToolRegistry(),
+    id="mcp",
+    name="Board over MCP",
+    description="Reads and books on the board through its MCP server.",
     model=build_demo_model(),
     instructions=INSTRUCTIONS,
     mcp_server=server,
