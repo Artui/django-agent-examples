@@ -188,6 +188,8 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
         return _book_script(turn, available)
     if re.search(r"\b(move|reschedule|drag|shift)\b", text) and "backlog" not in text:
         return _move_script(turn, available)
+    if re.search(r"\b(draw|show) the board\b", text):
+        return _view_script(turn, available)
     if re.search(r"\b(scroll|jump|show me|find|where is)\b", text):
         return _scroll_script(turn, available)
     if re.search(r"\b(agenda|day view|week view|switch to|open the)\b", text):
@@ -206,6 +208,15 @@ def _respond(turn: Turn, available: set[str]) -> list[Any]:
     if re.search(r"\b(what|which|list|how many|summar|overview|busy)\b", text):
         return _overview_script(turn, available)
     return [HELP]
+
+
+def _view_script(turn: Turn, available: set[str]) -> list[Any]:
+    """Draw the board as a view: the tool's result is the view's, so the reply is short."""
+    if turn.round == 0 and "show_board" in available:
+        return [_call("show_board", {})]
+    if "show_board" not in available:
+        return [_missing_tools("show_board")]
+    return ["There is the board, drawn above."]
 
 
 # --- the admin surface --------------------------------------------------------

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
+from collections import Counter
 from typing import Any
 
 from django_ag_ui import AGUIServer, ToolRegistry, build_ag_ui_config
@@ -44,6 +45,9 @@ from django_spec_agents.contrib.store.default_conversation_store import (
 )
 from django_spec_agents.policy.audit.logging_audit_logger import LoggingAuditLogger
 from django_spec_mcp import MCPServer
+from django_spec_mcp.registry.types.ui_tool_meta import UIToolMeta
+from django_spec_mcp.types.ui_visibility import UIVisibility
+from django_spec_mcp.ui.build_app_document import build_app_document
 from django_spec_mcp.config import build_mcp_config
 
 from agent.auth import token_user
@@ -54,7 +58,7 @@ from board.services import create_event, slot_is_free
 
 INSTRUCTIONS = """
 You read and book on a scheduling board for the user, through the board's MCP
-server. Read it with `list_events` before answering about it. Say what changed,
+server. Read it with `list_events` before answering about it, and draw it with `show_board`. Say what changed,
 in one sentence.
 """.strip()
 
@@ -102,10 +106,60 @@ def title_is_set(*, user: Any, data: CreateEventInput) -> None:
         raise ServiceValidationError({"title": ["This field may not be blank."]})
 
 
+@dataclass
+class Overview:
+    """What the board view draws on arrival: counts and the rooms in use."""
+
+    scheduled: int
+    backlog: int
+    rooms: list[str]
+
+
+@dataclass
+class RoomLoad:
+    """Hours booked per room, what the view asks for after it is drawn."""
+
+    hours: dict[str, int]
+
+
+def board_overview(*, user: Any) -> Overview:
+    """The acting user's board in three numbers, for the view to open on."""
+    events = list(list_events(user=user))
+    scheduled = [e for e in events if e.day is not None]
+    return Overview(
+        scheduled=len(scheduled),
+        backlog=len(events) - len(scheduled),
+        rooms=sorted({e.room for e in scheduled}),
+    )
+
+
+def room_load(*, user: Any) -> RoomLoad:
+    """Booked hours per room, summed over the acting user's scheduled events."""
+    hours: Counter[str] = Counter()
+    for event in list_events(user=user):
+        if event.day is not None:
+            hours[event.room] += event.duration_hours
+    return RoomLoad(hours=dict(hours))
+
+
 list_events_spec = SelectorSpec(
     kind=SelectorKind.LIST,
     selector=list_events,
     presenter=DataclassPresenter(EventRow),
+    permissions=[SignedIn()],
+)
+
+board_overview_spec = SelectorSpec(
+    kind=SelectorKind.RETRIEVE,
+    selector=board_overview,
+    presenter=DataclassPresenter(Overview),
+    permissions=[SignedIn()],
+)
+
+room_load_spec = SelectorSpec(
+    kind=SelectorKind.RETRIEVE,
+    selector=room_load,
+    presenter=DataclassPresenter(RoomLoad),
     permissions=[SignedIn()],
 )
 
@@ -160,6 +214,62 @@ server.register_tool(
     # may be refused, and a refusal ends the run. A deployment that would rather
     # the tool not exist for such a user leaves this off.
     always_listed=True,
+)
+
+VIEW_URI = "ui://gallery-board/overview"
+
+VIEW_BODY = """
+<style>
+#mcp-app-root { background: Canvas; color: CanvasText; padding: 8px; border-radius: 6px; }
+</style>
+<h3>Board overview</h3>
+<p id="counts">Waiting for the result...</p>
+<p><button id="load" type="button">Hours per room</button>
+<button id="full" type="button">Fullscreen</button></p>
+<pre id="out" style="min-height: 2.5em"></pre>
+<script>
+var out = document.getElementById("out");
+mcpApp.onToolResult = function (data) {
+  document.getElementById("counts").textContent =
+    data.scheduled + " scheduled, " + data.backlog + " in the backlog";
+};
+document.getElementById("load").onclick = function () {
+  mcpApp.callTool("room_load", {}).then(function (r) {
+    out.textContent = JSON.stringify(r.structuredContent.hours);
+  });
+};
+var mode = "inline";
+mcpApp.onHostContext = function (context) {
+  mode = context.displayMode || mode;
+};
+document.getElementById("full").onclick = function () {
+  mcpApp.requestDisplayMode(mode === "fullscreen" ? "inline" : "fullscreen");
+};
+</script>
+"""
+
+server.register_ui_resource(
+    name="board_overview_view",
+    uri=VIEW_URI,
+    html=build_app_document(VIEW_BODY, title="Board overview"),
+    title="Board overview",
+    description="Counts of scheduled and backlog events, and hours booked per room.",
+)
+server.register_tool(
+    board_overview_spec,
+    name="show_board",
+    title="Show the board",
+    description="Draw the board overview: how many events are scheduled and in the backlog.",
+    ui=UIToolMeta(resource_uri=VIEW_URI),
+    include_structured_content=True,
+)
+server.register_tool(
+    room_load_spec,
+    name="room_load",
+    title="Hours per room",
+    description="Hours booked in each room. Called by the board view, never by the model.",
+    ui=UIToolMeta(resource_uri=VIEW_URI, visibility=[UIVisibility.APP]),
+    include_structured_content=True,
 )
 
 agent = AGUIServer(

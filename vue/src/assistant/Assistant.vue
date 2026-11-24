@@ -19,7 +19,11 @@ import { onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
 import { defineChat } from "@artooi/agents-web-components/chat";
+import { registerMcpApps, type McpAppsHost } from "@artooi/agents-web-components/mcp-apps";
 import { authHeaders } from "../api";
+
+// The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
+const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
 
 const props = defineProps<{
   getPageMap: () => PageMap;
@@ -78,6 +82,7 @@ const vConfigure = {
     // the component renders the card, the answer returns as the tool result.
     element.askUser = true;
     element.headers = authHeaders();
+    registerMcpApps(element as unknown as McpAppsHost, { url: `${BASE}mcp-apps/` });
     element.getPageMap = () => props.getPageMap();
     element.skillContext = () => props.skillContext();
     // Page-map ids are not CSS selectors, so the default resolver cannot find
@@ -152,13 +157,13 @@ onBeforeUnmount(() => {
          directive covers everything that has to be a property. -->
     <ag-ui-chat
       v-configure
-      endpoint="/agent/"
-      data-tools-url="/agent/tools/"
-      data-skills-url="/agent/skills/"
-      data-threads-url="/agent/threads/"
-      data-attachments-url="/agent/attachments/"
-      data-runs-url="/agent/runs/"
-      data-transcribe-url="/agent/transcribe/"
+      :endpoint="BASE"
+      :data-tools-url="`${BASE}tools/`"
+      :data-skills-url="`${BASE}skills/`"
+      :data-threads-url="`${BASE}threads/`"
+      :data-attachments-url="`${BASE}attachments/`"
+      :data-runs-url="`${BASE}runs/`"
+      :data-transcribe-url="`${BASE}transcribe/`"
       data-prompt-chips=""
       data-slash-commands=""
       data-page-actions="scroll,drag"

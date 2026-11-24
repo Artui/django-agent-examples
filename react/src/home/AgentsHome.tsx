@@ -16,6 +16,7 @@
 
 import { defineAgents } from "@artooi/agents-web-components";
 import { defineChat } from "@artooi/agents-web-components/chat";
+import { registerMcpApps } from "@artooi/agents-web-components/mcp-apps";
 import { defineInbox } from "@artooi/agents-web-components/inbox";
 import { defineThreads } from "@artooi/agents-web-components/threads";
 import { useEffect, useRef, useState } from "react";
@@ -60,6 +61,10 @@ export function AgentsHome({ onBoard }: { onBoard: () => void }) {
     chat.setAttribute("placement", "page");
     chat.setAttribute("title-text", "Agents home");
     chat.headers = authHeaders();
+    // The MCP agent's views are read through its own mount, whichever agent is in front.
+    registerMcpApps(chat as unknown as Parameters<typeof registerMcpApps>[0], {
+      url: "/mcp-agent/mcp-apps/",
+    });
 
     provider.append(rail, chat);
     provider.addEventListener("ag-ui-agents-change", (event) => {

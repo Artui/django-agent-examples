@@ -16,6 +16,7 @@
    */
   import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components";
   import { defineChat } from "@artooi/agents-web-components/chat";
+  import { registerMcpApps, type McpAppsHost } from "@artooi/agents-web-components/mcp-apps";
   import { authHeaders } from "../api";
   import { BOARD, CHAT } from "../i18n";
   import { router } from "../router.svelte";
@@ -58,6 +59,8 @@
     }) => void;
   };
 
+  // The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
+  const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
   let host: HTMLDivElement | undefined = $state();
   // Plain, not `$state`: the effect below must not rebuild the element.
   let element: ChatElement | undefined;
@@ -70,13 +73,13 @@
     const chat = document.createElement("ag-ui-chat") as ChatElement;
 
     // Read once, at connect: set before the element is inserted.
-    chat.setAttribute("endpoint", "/agent/");
-    chat.setAttribute("data-tools-url", "/agent/tools/");
-    chat.setAttribute("data-skills-url", "/agent/skills/");
-    chat.setAttribute("data-threads-url", "/agent/threads/");
-    chat.setAttribute("data-attachments-url", "/agent/attachments/");
-    chat.setAttribute("data-runs-url", "/agent/runs/");
-    chat.setAttribute("data-transcribe-url", "/agent/transcribe/");
+    chat.setAttribute("endpoint", BASE);
+    chat.setAttribute("data-tools-url", `${BASE}tools/`);
+    chat.setAttribute("data-skills-url", `${BASE}skills/`);
+    chat.setAttribute("data-threads-url", `${BASE}threads/`);
+    chat.setAttribute("data-attachments-url", `${BASE}attachments/`);
+    chat.setAttribute("data-runs-url", `${BASE}runs/`);
+    chat.setAttribute("data-transcribe-url", `${BASE}transcribe/`);
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
     chat.setAttribute("data-page-actions", "scroll,drag");
@@ -88,6 +91,7 @@
     // the component renders the card, the answer returns as the tool result.
     chat.askUser = true;
     chat.headers = authHeaders();
+    registerMcpApps(chat as unknown as McpAppsHost, { url: `${BASE}mcp-apps/` });
 
     // Read lazily: per request, per run, per tool round. The props are captured by
     // reference, so the element always sees the board as it is now.
