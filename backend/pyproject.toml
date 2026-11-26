@@ -299,8 +299,8 @@ dependencies = [
     # draws a card from the child and hides the wake line; it adds `scope` to a
     # skill editor entry, which `board/skill_policy.py` answers personal or
     # shared; and it mounts a task's steer, answer and cancel routes on a mount
-    # with a run store, which both agent mounts pass, so the controls on a
-    # delegated task's row work rather than being refused.
+    # with a run store, which both agent mounts pass, ready for a delegation with
+    # task control. The planner's has none, so no task row offers them yet.
     "django-ag-ui[specs,harness,mcp]>=0.91.0",
     # Declared because `agent/delegation.py` imports `SubAgent` and `SubAgents`
     # from it directly: the planner sub-agent both agent mounts delegate to is a
@@ -661,9 +661,9 @@ dependencies = [
     #     opt-ins this project leaves unset, so the surface owes no host wiring.
     #   - A release that re-vendored, so the frontends' ranges moved with it.
     #     Citations, the fallback model's line and a child's report card draw
-    #     with no setting; the sidebar's task controls want a run store, which
-    #     the admin mount does not pass and no admin run here delegates, so the
-    #     surface owes no host wiring.
+    #     with no setting; the sidebar's task controls draw only for a
+    #     delegation with task control, and the planner here delegates without
+    #     one, so the surface owes no host wiring.
     "django-admin-agent>=0.64.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
