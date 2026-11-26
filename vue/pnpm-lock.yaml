@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@artooi/agents-web-components':
-        specifier: '>=0.14.0 <1.0.0'
-        version: 0.14.0(zod@3.25.76)
+        specifier: '>=0.18.0 <1.0.0'
+        version: 0.18.0(zod@3.25.76)
       vue:
         specifier: ^3.5.45
         version: 3.5.45(typescript@5.9.3)
@@ -50,8 +50,8 @@ packages:
   '@ag-ui/proto@1.0.0':
     resolution: {integrity: sha512-RXEdjD3RfZ/8fUEX+ZqN5SrZAxrOZ9oQt0FlEhN4Ie/YEOKDVv0u1g83fOhGxWJTTVAmYSM/xf+ijwixsmz2RA==}
 
-  '@artooi/agents-web-components@0.14.0':
-    resolution: {integrity: sha512-veicDaBQnOcod9omabLhN5XN3ZYG7YenMdKbsWSUyAD5DJPckyT2Ve9aozK8eQ7iNxK/ZxMKROdKlCmb1GSdcA==}
+  '@artooi/agents-web-components@0.18.0':
+    resolution: {integrity: sha512-Q66TIiw03SWdTfXIHQvxHKuoRfhA811fwdKtea3MUoY1yd0pYcUhwjWhMQJwytbr+WyGzoSa02Q4YEvbNq4xmw==}
     engines: {node: '>=22'}
 
   '@babel/helper-string-parser@7.29.13':
@@ -781,7 +781,7 @@ snapshots:
       '@protobuf-ts/protoc': 2.11.1
       zod: 3.25.76
 
-  '@artooi/agents-web-components@0.14.0(zod@3.25.76)':
+  '@artooi/agents-web-components@0.18.0(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 1.0.0
       '@ag-ui/core': 1.0.0(zod@3.25.76)

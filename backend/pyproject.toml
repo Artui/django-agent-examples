@@ -293,7 +293,15 @@ dependencies = [
     # mount's capabilities, which the component's provider reads. The lowest
     # resolution stopped importing `demo/urls.py` below the first of these;
     # `test_routines.py` reads a parked firing's run id off the inbox row.
-    "django-ag-ui[specs,harness,mcp]>=0.88.1",
+    #
+    # Raised to the transport the component 0.18.0 draws on: it marks a child's
+    # report and the line it wakes with `metadata.origin`, so the parent chat
+    # draws a card from the child and hides the wake line; it adds `scope` to a
+    # skill editor entry, which `board/skill_policy.py` answers personal or
+    # shared; and it mounts a task's steer, answer and cancel routes on a mount
+    # with a run store, which both agent mounts pass, so the controls on a
+    # delegated task's row work rather than being refused.
+    "django-ag-ui[specs,harness,mcp]>=0.91.0",
     # Declared because `agent/delegation.py` imports `SubAgent` and `SubAgents`
     # from it directly: the planner sub-agent both agent mounts delegate to is a
     # pydantic-ai-harness capability, which django-ag-ui's `SubAgentObserver`
@@ -416,7 +424,11 @@ dependencies = [
     # Raised with the transport, which requires it, and the gallery now imports
     # from it directly: `ReviewedApprovals` and `ApprovalReviewerConfig`, the
     # approval reviewer the board mount composes in `agent/server.py`.
-    "django-spec-agents>=0.25.0",
+    #
+    # Raised with the transport, which requires it: it writes the report frame
+    # and the wake line the transport marks, so a child's report reaches the
+    # parent chat as a card.
+    "django-spec-agents>=0.28.0",
     # The spec kernel, declared because both spec sets are written in it:
     # `board/specs.py` with DRF in its seats, and `agent/mcp_server.py` with the
     # kernel's own validator, presenters and permission checks, over the same
@@ -647,7 +659,12 @@ dependencies = [
     #     sidebar gains the header's More menu and the reworded run-failure
     #     sentence; its skill editor, MCP Apps proxy and routine model are
     #     opt-ins this project leaves unset, so the surface owes no host wiring.
-    "django-admin-agent>=0.63.0",
+    #   - A release that re-vendored, so the frontends' ranges moved with it.
+    #     Citations, the fallback model's line and a child's report card draw
+    #     with no setting; the sidebar's task controls want a run store, which
+    #     the admin mount does not pass and no admin run here delegates, so the
+    #     surface owes no host wiring.
+    "django-admin-agent>=0.64.0",
     # Declared because `agent/tools.py` and `agent/scripted.py` import it
     # directly: `RunContext` and `ToolReturn` for the server-side tools, and
     # `FunctionModel` plus the message parts for the scripted stand-in. It arrives

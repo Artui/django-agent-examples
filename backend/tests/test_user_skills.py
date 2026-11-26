@@ -181,3 +181,14 @@ async def test_a_user_only_skill_reaches_the_run_without_a_load() -> None:
     text = "".join(e["delta"] for e in events if e["type"] == "TEXT_MESSAGE_CONTENT")
     assert not [e for e in events if e["type"] == "TOOL_CALL_START"]
     assert "pineapple" in text
+
+
+def test_each_editor_row_says_whose_skill_it_is(seeded: None) -> None:
+    member = _client(MEMBER)
+    member.post(EDITOR, _skill("my-notes"), content_type="application/json")
+
+    mine = {s["name"]: s["scope"] for s in member.get(EDITOR).json()["skills"]}
+    company = {s["name"]: s["scope"] for s in _client(AUTH).get(EDITOR).json()["skills"]}
+
+    assert mine == {"my-notes": "personal"}
+    assert company[COMPANY_SKILL["name"]] == "shared"

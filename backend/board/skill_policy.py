@@ -29,6 +29,10 @@ class OrganisationSkillPolicy:
             return False
         return not _name_taken_in_scope(skill)
 
+    def scope(self, request: HttpRequest, skill: Skill) -> str:
+        """The editor's badge: Personal for a member's own skill, Company for the shared one."""
+        return "shared" if skill.owner_id is None else "personal"
+
     def new_skill(self, request: HttpRequest) -> Skill:
         """An admin's new skill is the company's, a member's their own: the wire names no scope."""
         membership = _membership(request)
