@@ -38,7 +38,6 @@ import { defineChat } from "@artooi/agents-web-components/chat";
 import { registerMcpApps, type McpAppsHost } from "@artooi/agents-web-components/mcp-apps";
 import { authHeaders } from "../api";
 
-
 const props = defineProps<{
   getPageMap: () => PageMap;
   /**

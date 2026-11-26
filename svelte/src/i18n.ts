@@ -88,6 +88,13 @@ export const CHAT: Partial<UiStrings> = {
   subAgentFinished: "{agent} ist fertig",
   subAgentFailed: "Der Unteragent ist fehlgeschlagen",
   subAgentSteps: "Schritte des Unteragenten",
+  // A delegated task's own conversation: the parent's card from it, and the links between them.
+  childReport: "Bericht von {agent}",
+  childQuestion: "Frage von {agent}",
+  childSessionOpen: "Aufgabe von {agent} öffnen",
+  childSessionNeedsYou: "Die Aufgabe von {agent} braucht dich",
+  parentThread: "Aus {title}",
+  parentThreadUnlisted: "Aus dem Gespräch, das dieses begonnen hat",
   connectionLost: "Verbindung verloren.",
   skillNeeds: "„{title}“ braucht {fields} — unten ausfüllen und senden.",
   // The place chip in the composer, which every app gets from its `routeMap`.
@@ -197,6 +204,11 @@ export const CHAT: Partial<UiStrings> = {
   decisionApproved: "von dir genehmigt",
   decisionDeclined: "von dir abgelehnt",
   answeredByReviewer: "Von einem Prüfmodell genehmigt",
+  // A folded group's count of calls the reviewer cleared, and the model and sources of an answer.
+  toolGroupPreApproved: "{count} vorab genehmigt",
+  answeredByModel: "Beantwortet von {model}",
+  citations: "Quellen ({count})",
+  citationDocument: "Dokument",
   // Checkpoints: why a run cannot be continued yet.
   continueNeedsTurn:
     "Schreib zuerst den nächsten Beitrag ins Eingabefeld und wähle dann einen Lauf zum Fortsetzen.",
@@ -247,4 +259,7 @@ export const CHAT: Partial<UiStrings> = {
   skillTurnedOff: "/{name} ist aus",
   skillsUnavailable: "Die Skills konnten nicht geladen werden.",
   skillSaveFailed: "Der Skill konnte nicht gespeichert werden.",
+  // Whose skill a row is: this policy answers `personal` or `shared`.
+  "skillScope:personal": "Persönlich",
+  "skillScope:shared": "Firma",
 };
