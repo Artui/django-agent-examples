@@ -23,7 +23,7 @@ DEMO_USERNAME = "demo"
 # local SQLite file seeded from this command.
 DEMO_TOKEN = "demo-token-not-a-secret"
 # A second person in the demo user's organisation who is not its admin, so the
-# skill policy has someone to refuse: run an app with `VITE_DEMO_TOKEN` set to this.
+# skill policy has someone to refuse: run a Vite app with `VITE_DEMO_TOKEN` set to this.
 MEMBER_USERNAME = "member"
 MEMBER_TOKEN = "member-token-not-a-secret"
 ORGANISATION = "Demo Co"

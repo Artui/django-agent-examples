@@ -13,6 +13,9 @@ media/
 
 # Node
 node_modules/
+# Vite's local env files (`.env.local`, `.env.development.local`), where a
+# `VITE_DEMO_TOKEN` of your own goes.
+*.local
 dist/
 *.tsbuildinfo
 
