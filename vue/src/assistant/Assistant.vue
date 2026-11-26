@@ -24,6 +24,9 @@ import { authHeaders } from "../api";
 
 // The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
 const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
+// The agent this chat serves, and the thread a child-session link asked it to open.
+const AGENT = BASE === "/mcp-agent/" ? "mcp" : "board";
+const WANTED = new URLSearchParams(window.location.search).get("thread");
 
 const props = defineProps<{
   getPageMap: () => PageMap;
@@ -52,6 +55,7 @@ type ChatElement = HTMLElement & {
   confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
   strings: Partial<UiStrings>;
   refreshPlace: () => void;
+  switchThread: (threadId: string) => Promise<void>;
   registerPageState: (binding: {
     name: string;
     read: () => unknown;
@@ -130,6 +134,19 @@ const vConfigure = {
       }
     });
 
+    // A child-session link or its parent breadcrumb names the agent the thread runs on. This
+    // app has no agents home, so a thread on the other mount reloads the page on that mount.
+    element.addEventListener("ag-ui-open-thread", (event) => {
+      const { agentId, threadId } = (event as CustomEvent<{ agentId: string | null; threadId: string }>)
+        .detail;
+      if (agentId === null || agentId === AGENT) {
+        return;
+      }
+      event.preventDefault();
+      const query = new URLSearchParams({ agent: agentId, thread: threadId });
+      window.location.assign(`${window.location.pathname}?${query}`);
+    });
+
     element.registerPageState({
       name: "board",
       read: () => props.readBoardState(),
@@ -142,6 +159,12 @@ const vConfigure = {
         },
       },
     });
+  },
+  // Only a connected element can switch threads, so this waits for insertion.
+  mounted(element: ChatElement) {
+    if (WANTED !== null) {
+      void element.switchThread(WANTED);
+    }
   },
 };
 

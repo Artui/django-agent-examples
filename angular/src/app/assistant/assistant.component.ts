@@ -17,6 +17,7 @@
 import {
   Component,
   ElementRef,
+  AfterViewInit,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -32,6 +33,9 @@ import { authHeaders } from "../api";
 
 // The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
 const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
+// The agent this chat serves, and the thread a child-session link asked it to open.
+const AGENT = BASE === "/mcp-agent/" ? "mcp" : "board";
+const WANTED = new URLSearchParams(window.location.search).get("thread");
 
 /** This app's own marks, in place of the component's text glyphs. */
 const HISTORY_PATH = "M4 6h16M4 12h16M4 18h10";
@@ -72,6 +76,7 @@ type ChatElement = HTMLElement & {
   confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
   strings: Partial<UiStrings>;
   refreshPlace: () => void;
+  switchThread: (threadId: string) => Promise<void>;
   registerPageState: (binding: {
     name: string;
     read: () => unknown;
@@ -90,7 +95,7 @@ type ChatElement = HTMLElement & {
   // rather than the board's.
   styles: [":host { display: contents; }"],
 })
-export class AssistantComponent implements OnInit, OnDestroy {
+export class AssistantComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly getPageMap = input.required<() => PageMap>();
   readonly skillContext = input.required<() => Record<string, unknown>>();
   readonly readBoardState = input.required<() => unknown>();
@@ -216,8 +221,28 @@ export class AssistantComponent implements OnInit, OnDestroy {
       }
     });
 
+    // A child-session link or its parent breadcrumb names the agent the thread runs on. This
+    // app has no agents home, so a thread on the other mount reloads the page on that mount.
+    chat.addEventListener("ag-ui-open-thread", (event) => {
+      const { agentId, threadId } = (event as CustomEvent<{ agentId: string | null; threadId: string }>)
+        .detail;
+      if (agentId === null || agentId === AGENT) {
+        return;
+      }
+      event.preventDefault();
+      const query = new URLSearchParams({ agent: agentId, thread: threadId });
+      window.location.assign(`${window.location.pathname}?${query}`);
+    });
+
     this.host.nativeElement.appendChild(chat);
     this.chat = chat;
+  }
+
+  // Only a connected element can switch threads, and `ngOnInit` runs before the view is.
+  ngAfterViewInit(): void {
+    if (WANTED !== null) {
+      void this.chat?.switchThread(WANTED);
+    }
   }
 
   ngOnDestroy(): void {

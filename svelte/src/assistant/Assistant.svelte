@@ -51,6 +51,7 @@
     confirmPredicate: (name: string, args: Record<string, unknown>) => boolean;
     strings: Partial<UiStrings>;
     refreshPlace: () => void;
+    switchThread: (threadId: string) => Promise<void>;
     registerPageState: (binding: {
       name: string;
       read: () => unknown;
@@ -61,6 +62,9 @@
 
   // The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
   const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
+  // The agent this chat serves, and the thread a child-session link asked it to open.
+  const AGENT = BASE === "/mcp-agent/" ? "mcp" : "board";
+  const WANTED = new URLSearchParams(window.location.search).get("thread");
   let host: HTMLDivElement | undefined = $state();
   // Plain, not `$state`: the effect below must not rebuild the element.
   let element: ChatElement | undefined;
@@ -166,7 +170,24 @@
       }
     });
 
+    // A child-session link or its parent breadcrumb names the agent the thread runs on. This
+    // app has no agents home, so a thread on the other mount reloads the page on that mount.
+    chat.addEventListener("ag-ui-open-thread", (event) => {
+      const { agentId, threadId } = (event as CustomEvent<{ agentId: string | null; threadId: string }>)
+        .detail;
+      if (agentId === null || agentId === AGENT) {
+        return;
+      }
+      event.preventDefault();
+      const query = new URLSearchParams({ agent: agentId, thread: threadId });
+      window.location.assign(`${window.location.pathname}?${query}`);
+    });
+
     host.appendChild(chat);
+    // Only a connected element can switch threads, so this follows insertion.
+    if (WANTED !== null) {
+      void chat.switchThread(WANTED);
+    }
     element = chat;
     return () => {
       element = undefined;
