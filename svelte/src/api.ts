@@ -21,16 +21,15 @@ export interface EventRow {
 export const DEMO_TOKEN = readToken();
 
 function readToken(): string {
-  // Vite exposes build-time env on `import.meta.env`; the Angular CLI does not.
-  // Written to compile under both so this file stays identical in every app.
-  const meta = import.meta as ImportMeta & { env?: Record<string, string | undefined> };
+  // Vite substitutes `import.meta.env.VITE_*` only where it is written out in
+  // full: read through an alias, a set variable is silently ignored.
   // The `??` is load-bearing for the demo and wrong for anything else. It is safe
   // here because the fallback *is* the seeded token and running with no
   // configuration at all is the point. Rename this to a real credential and the
   // shape has to go with it: a build environment that forgot the variable would
   // otherwise succeed quietly and bake this literal into every browser bundle.
   // A value that matters should throw when it is missing, not default.
-  return meta.env?.["VITE_DEMO_TOKEN"] ?? "demo-token-not-a-secret";
+  return import.meta.env.VITE_DEMO_TOKEN ?? "demo-token-not-a-secret";
 }
 
 export function authHeaders(): Record<string, string> {
