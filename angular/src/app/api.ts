@@ -21,8 +21,8 @@ export interface EventRow {
 export const DEMO_TOKEN = readToken();
 
 function readToken(): string {
-  // Vite exposes build-time env on `import.meta.env`; the Angular CLI does not.
-  // Written to compile under both so this file stays identical in every app.
+  // The Angular CLI has no `import.meta.env`, so unlike the Vite apps this one
+  // takes no `VITE_DEMO_TOKEN`: the read finds nothing and the fallback applies.
   const meta = import.meta as ImportMeta & { env?: Record<string, string | undefined> };
   // The `??` is load-bearing for the demo and wrong for anything else. It is safe
   // here because the fallback *is* the seeded token and running with no

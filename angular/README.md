@@ -63,10 +63,11 @@ state in an injectable service built on signals.
 is pointer-event based and would never see it, so the agent's drag would silently
 do nothing while a user's worked fine. That rules the CDK out for this demo.
 
-`src/app/api.ts`, `board/calendar.ts`, `board/dragging.ts` and `board/pageMap.ts`
-are identical across the apps in this gallery. They are copied rather than shared on
-purpose: each app has to stand alone as something you can read start to finish and
-lift into your own project.
+`board/calendar.ts`, `board/dragging.ts` and `board/pageMap.ts` are identical across
+the apps in this gallery. `src/app/api.ts` differs from the Vite apps' copy in one
+place: the Angular CLI has no `import.meta.env`, so it takes no `VITE_DEMO_TOKEN`.
+They are copied rather than shared on purpose: each app has to stand alone as
+something you can read start to finish and lift into your own project.
 
 ## How this app themes the widget: slots
 
