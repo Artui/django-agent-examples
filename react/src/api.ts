@@ -23,13 +23,15 @@ export const DEMO_TOKEN = readToken();
 function readToken(): string {
   // Vite substitutes `import.meta.env.VITE_*` only where it is written out in
   // full: read through an alias, a set variable is silently ignored.
-  // The `??` is load-bearing for the demo and wrong for anything else. It is safe
-  // here because the fallback *is* the seeded token and running with no
-  // configuration at all is the point. Rename this to a real credential and the
-  // shape has to go with it: a build environment that forgot the variable would
-  // otherwise succeed quietly and bake this literal into every browser bundle.
-  // A value that matters should throw when it is missing, not default.
-  return import.meta.env.VITE_DEMO_TOKEN ?? "demo-token-not-a-secret";
+  // The `||` is load-bearing for the demo and wrong for anything else. It reads an
+  // empty `VITE_DEMO_TOKEN=` as unset, where `??` kept the empty string and sent
+  // `Token ` with no key. It is safe here because the fallback *is* the seeded
+  // token and running with no configuration at all is the point. Rename this to a
+  // real credential and the shape has to go with it: a build environment that
+  // forgot the variable would otherwise succeed quietly and bake this literal into
+  // every browser bundle. A value that matters should throw when it is missing,
+  // not default.
+  return import.meta.env.VITE_DEMO_TOKEN || "demo-token-not-a-secret";
 }
 
 export function authHeaders(): Record<string, string> {

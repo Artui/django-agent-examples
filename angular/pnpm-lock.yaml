@@ -24,8 +24,8 @@ importers:
         specifier: ^22.2.6
         version: 22.2.6(@angular/common@22.2.6(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(@angular/platform-browser@22.2.6(@angular/common@22.2.6(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@artooi/agents-web-components':
-        specifier: '>=0.14.0 <1.0.0'
-        version: 0.14.0(zod@3.25.76)
+        specifier: '>=0.18.0 <1.0.0'
+        version: 0.18.0(zod@3.25.76)
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -35,7 +35,7 @@ importers:
     devDependencies:
       '@angular/build':
         specifier: ^22.2.7
-        version: 22.2.7(@angular/compiler-cli@22.2.6(@angular/compiler@22.2.6)(typescript@6.0.3))(@angular/compiler@22.2.6)(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(@angular/platform-browser@22.2.6(@angular/common@22.2.6(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2)))(postcss@8.5.32)(supports-color@8.1.1)(tslib@2.9.1)(typescript@6.0.3)
+        version: 22.2.7(@angular/compiler-cli@22.2.6(@angular/compiler@22.2.6)(typescript@6.0.3))(@angular/compiler@22.2.6)(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(@angular/platform-browser@22.2.6(@angular/common@22.2.6(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2)))(postcss@8.5.32)(tslib@2.9.1)(typescript@6.0.3)
       '@angular/cli':
         specifier: ^22.2.7
         version: 22.2.7(chokidar@5.0.0)
@@ -199,8 +199,8 @@ packages:
       '@angular/platform-browser': 22.2.6
       rxjs: ^6.5.3 || ^7.4.0
 
-  '@artooi/agents-web-components@0.14.0':
-    resolution: {integrity: sha512-veicDaBQnOcod9omabLhN5XN3ZYG7YenMdKbsWSUyAD5DJPckyT2Ve9aozK8eQ7iNxK/ZxMKROdKlCmb1GSdcA==}
+  '@artooi/agents-web-components@0.18.0':
+    resolution: {integrity: sha512-Q66TIiw03SWdTfXIHQvxHKuoRfhA811fwdKtea3MUoY1yd0pYcUhwjWhMQJwytbr+WyGzoSa02Q4YEvbNq4xmw==}
     engines: {node: '>=22'}
 
   '@babel/code-frame@8.0.6':
@@ -1130,6 +1130,11 @@ packages:
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
@@ -1979,7 +1984,7 @@ snapshots:
   '@angular-devkit/core@22.2.7(chokidar@5.0.0)':
     dependencies:
       ajv: 8.20.0
-      ajv-formats: 3.0.1
+      ajv-formats: 3.0.1(ajv@8.20.0)
       jsonc-parser: 3.3.1
       picomatch: 4.0.7
       rxjs: 7.8.2
@@ -1997,7 +2002,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular/build@22.2.7(@angular/compiler-cli@22.2.6(@angular/compiler@22.2.6)(typescript@6.0.3))(@angular/compiler@22.2.6)(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(@angular/platform-browser@22.2.6(@angular/common@22.2.6(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2)))(postcss@8.5.32)(supports-color@8.1.1)(tslib@2.9.1)(typescript@6.0.3)':
+  '@angular/build@22.2.7(@angular/compiler-cli@22.2.6(@angular/compiler@22.2.6)(typescript@6.0.3))(@angular/compiler@22.2.6)(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(@angular/platform-browser@22.2.6(@angular/common@22.2.6(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.6(@angular/compiler@22.2.6)(rxjs@7.8.2)))(postcss@8.5.32)(tslib@2.9.1)(typescript@6.0.3)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2202.7(chokidar@5.0.0)
@@ -2011,7 +2016,7 @@ snapshots:
       browserslist: 4.28.9
       chokidar: 5.0.0
       esbuild: 0.28.2
-      https-proxy-agent: 9.1.0(supports-color@8.1.1)
+      https-proxy-agent: 9.1.0
       jsonc-parser: 3.3.1
       listr2: 11.1.0
       magic-string: 1.4.1
@@ -2113,7 +2118,7 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.9.1
 
-  '@artooi/agents-web-components@0.14.0(zod@3.25.76)':
+  '@artooi/agents-web-components@0.18.0(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 1.0.0
       '@ag-ui/core': 1.0.0(zod@3.25.76)
@@ -2767,8 +2772,8 @@ snapshots:
 
   agent-base@9.0.0: {}
 
-  ajv-formats@3.0.1:
-    dependencies:
+  ajv-formats@3.0.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
 
   ajv@8.20.0:
@@ -2859,11 +2864,9 @@ snapshots:
 
   css-what@8.0.0: {}
 
-  debug@4.4.3(supports-color@8.1.1):
+  debug@4.4.3:
     dependencies:
       ms: 2.1.3
-    optionalDependencies:
-      supports-color: 8.1.1
 
   detect-libc@2.1.2: {}
 
@@ -2974,10 +2977,10 @@ snapshots:
       domutils: 4.0.2
       entities: 8.0.0
 
-  https-proxy-agent@9.1.0(supports-color@8.1.1):
+  https-proxy-agent@9.1.0:
     dependencies:
       agent-base: 9.0.0
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3
       proxy-agent-negotiate: 1.1.0
     transitivePeerDependencies:
       - kerberos

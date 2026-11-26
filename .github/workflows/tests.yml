@@ -154,6 +154,19 @@ jobs:
       - name: Build
         working-directory: ${{ matrix.app }}
         run: pnpm build
+      # Every build above runs with `VITE_DEMO_TOKEN` unset, so a read Vite never
+      # substitutes (an alias of `import.meta`) passed here while a set token was
+      # silently dropped. Build once with a sentinel, which has to reach `dist/`, and
+      # once with the variable empty, which has to read as unset. Angular's CLI has
+      # no `import.meta.env`, so it is not asked.
+      - name: VITE_DEMO_TOKEN reaches the bundle
+        if: matrix.app != 'angular'
+        working-directory: ${{ matrix.app }}
+        run: |
+          VITE_DEMO_TOKEN=ci-sentinel-token pnpm build
+          grep -rq ci-sentinel-token dist/
+          VITE_DEMO_TOKEN= pnpm build
+          grep -rq demo-token-not-a-secret dist/
 
   # Every other repository in the family scans its history for secrets; this one
   # did not, which is the kind of gap that opens when a repo is created after the

@@ -63,6 +63,14 @@ Ask the assistant:
 - *ask the planner when Friday is free* — the agent hands the question to a
   sub-agent, and the tool card shows the planner working until it answers
 
+To be someone else, set `VITE_DEMO_TOKEN` before `pnpm dev` or `pnpm build` in the
+React, Vue or Svelte app, or put it in that app's `.env.local` (git-ignored).
+`seed_board` seeds a second person, `member-token-not-a-secret`, in the demo user's
+organisation but not its admin, so the skill editor has someone to refuse a company
+skill. Unset or empty, the app sends the demo user's
+`demo-token-not-a-secret`. The Angular app has no `import.meta.env` and always sends
+the demo user's token ([angular/README.md](angular/README.md)).
+
 Or press the **What is on this day?** chip, in a fresh chat, or from `/` once a
 message is sent. In the day view it sends *What is on Thu 13?*, because the page
 filled the day in; in the week view it refuses to send and says which value is

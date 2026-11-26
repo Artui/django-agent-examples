@@ -34,7 +34,16 @@ import { authHeaders } from "../api";
 const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
 // The agent this chat serves, and the thread a child-session link asked it to open.
 const AGENT = BASE === "/mcp-agent/" ? "mcp" : "board";
-const WANTED = new URLSearchParams(window.location.search).get("thread");
+// A link names its agent; an empty thread, or one meant for another agent, opens nothing.
+const ASKED = new URLSearchParams(window.location.search);
+const WANTED = (ASKED.get("agent") ?? AGENT) === AGENT ? ASKED.get("thread") || null : null;
+
+// Dropped on import, before a router can write it back, so New chat survives a reload.
+if (WANTED !== null) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("thread");
+  window.history.replaceState(window.history.state, "", url);
+}
 
 /** This app's own marks, in place of the component's text glyphs. */
 const HISTORY_PATH = "M4 6h16M4 12h16M4 18h10";
@@ -128,6 +137,8 @@ export class AssistantComponent implements OnInit, OnDestroy {
       chat.setAttribute("data-transcribe-url", `${BASE}transcribe/`);
       chat.setAttribute("data-skill-editor-url", "/agent/skills/editor/");
       chat.setAttribute("data-skill-editor-button", "");
+      // A run outlives the page, so following a child link mid-answer keeps the turn.
+      chat.setAttribute("data-detach-runs", "");
     }
     chat.setAttribute("data-threads-url", `${BASE}threads/`);
     // A reopened child thread shows its parent link only once the thread list is watched.

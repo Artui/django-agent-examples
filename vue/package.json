@@ -10,7 +10,7 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@artooi/agents-web-components": ">=0.14.0 <1.0.0",
+    "@artooi/agents-web-components": ">=0.18.0 <1.0.0",
     "vue": "^3.5.45",
     "vue-router": "^5.5.1"
   },

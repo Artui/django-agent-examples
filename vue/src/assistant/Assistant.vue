@@ -1,3 +1,19 @@
+<script lang="ts">
+// The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
+const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
+// The agent this chat serves, and the thread a child-session link asked it to open.
+const AGENT = BASE === "/mcp-agent/" ? "mcp" : "board";
+// A link names its agent; an empty thread, or one meant for another agent, opens nothing.
+const ASKED = new URLSearchParams(window.location.search);
+const WANTED = (ASKED.get("agent") ?? AGENT) === AGENT ? ASKED.get("thread") || null : null;
+// Dropped on import, before a router can write it back, so New chat survives a reload.
+if (WANTED !== null) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("thread");
+  window.history.replaceState(window.history.state, "", url);
+}
+</script>
+
 <script setup lang="ts">
 /**
  * The chat element, hosted in Vue.
@@ -21,12 +37,6 @@ import type { PageMap, RouteMap, UiStrings } from "@artooi/agents-web-components
 import { defineChat } from "@artooi/agents-web-components/chat";
 import { registerMcpApps, type McpAppsHost } from "@artooi/agents-web-components/mcp-apps";
 import { authHeaders } from "../api";
-
-// The MCP mount's chat, reached with `?agent=mcp`: its tool results can carry views.
-const BASE = new URLSearchParams(window.location.search).get("agent") === "mcp" ? "/mcp-agent/" : "/agent/";
-// The agent this chat serves, and the thread a child-session link asked it to open.
-const AGENT = BASE === "/mcp-agent/" ? "mcp" : "board";
-const WANTED = new URLSearchParams(window.location.search).get("thread");
 
 const props = defineProps<{
   getPageMap: () => PageMap;
@@ -187,6 +197,7 @@ onBeforeUnmount(() => {
       :data-skill-editor-button="BASE === '/agent/' ? '' : undefined"
       :data-threads-url="`${BASE}threads/`"
       :data-thread-status="AGENT === 'mcp' ? 'poll' : undefined"
+      :data-detach-runs="BASE === '/agent/' ? '' : undefined"
       :data-attachments-url="BASE === '/agent/' ? '/agent/attachments/' : undefined"
       :data-runs-url="`${BASE}runs/`"
       :data-transcribe-url="BASE === '/agent/' ? '/agent/transcribe/' : undefined"
