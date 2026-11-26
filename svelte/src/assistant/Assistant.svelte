@@ -88,6 +88,10 @@
       chat.setAttribute("data-skill-editor-button", "");
     }
     chat.setAttribute("data-threads-url", `${BASE}threads/`);
+    // A reopened child thread shows its parent link only once the thread list is watched.
+    if (AGENT === "mcp") {
+      chat.setAttribute("data-thread-status", "poll");
+    }
     chat.setAttribute("data-runs-url", `${BASE}runs/`);
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");

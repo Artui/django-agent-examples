@@ -17,7 +17,6 @@
 import {
   Component,
   ElementRef,
-  AfterViewInit,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -95,7 +94,7 @@ type ChatElement = HTMLElement & {
   // rather than the board's.
   styles: [":host { display: contents; }"],
 })
-export class AssistantComponent implements OnInit, AfterViewInit, OnDestroy {
+export class AssistantComponent implements OnInit, OnDestroy {
   readonly getPageMap = input.required<() => PageMap>();
   readonly skillContext = input.required<() => Record<string, unknown>>();
   readonly readBoardState = input.required<() => unknown>();
@@ -131,6 +130,10 @@ export class AssistantComponent implements OnInit, AfterViewInit, OnDestroy {
       chat.setAttribute("data-skill-editor-button", "");
     }
     chat.setAttribute("data-threads-url", `${BASE}threads/`);
+    // A reopened child thread shows its parent link only once the thread list is watched.
+    if (AGENT === "mcp") {
+      chat.setAttribute("data-thread-status", "poll");
+    }
     chat.setAttribute("data-runs-url", `${BASE}runs/`);
     chat.setAttribute("data-prompt-chips", "");
     chat.setAttribute("data-slash-commands", "");
@@ -236,12 +239,9 @@ export class AssistantComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.host.nativeElement.appendChild(chat);
     this.chat = chat;
-  }
-
-  // Only a connected element can switch threads, and `ngOnInit` runs before the view is.
-  ngAfterViewInit(): void {
+    // Only a connected element can switch threads, so this follows insertion.
     if (WANTED !== null) {
-      void this.chat?.switchThread(WANTED);
+      void chat.switchThread(WANTED);
     }
   }
 
