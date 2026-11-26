@@ -59,10 +59,10 @@ a `$state` class (`board.svelte.ts`).
 see it, and the agent's drag would silently do nothing.
 
 `src/board/calendar.ts`, `src/board/dragging.ts` and `src/board/pageMap.ts` are
-identical across the apps in this gallery, and `src/api.ts` is across the Vite apps
-(Angular's reads no build-time token). They are copied rather than shared on
-purpose: each app has to stand alone as something you can read start to finish and
-lift into your own project.
+identical across the apps in this gallery, and `src/api.ts` is identical across
+the Vite apps (Angular's reads no build-time token). They are copied rather than
+shared on purpose: each app has to stand alone as something you can read start to
+finish and lift into your own project.
 
 ## This is the gallery's localized app
 

@@ -77,10 +77,10 @@ container, native `draggable` cards, and `@dragover.prevent` / `@drop` handlers.
 see it, and the agent's drag would silently do nothing.
 
 `src/board/calendar.ts`, `src/board/dragging.ts` and `src/board/pageMap.ts` are
-byte-identical across the apps in this gallery, and `src/api.ts` is across the Vite apps
-(Angular's reads no build-time token). They are copied rather than shared on
-purpose: each app has to stand alone as something you can read start to finish and
-lift into your own project.
+byte-identical across the apps in this gallery, and `src/api.ts` is byte-identical across
+the Vite apps (Angular's reads no build-time token). They are copied rather than
+shared on purpose: each app has to stand alone as something you can read start to
+finish and lift into your own project.
 
 ## How this app themes the widget: `::part()`
 
